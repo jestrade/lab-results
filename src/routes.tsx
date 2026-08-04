@@ -8,6 +8,7 @@ import { Dashboard } from '@/pages/app/Dashboard';
 import { NotFound } from '@/pages/app/NotFound';
 import { Reports } from '@/pages/app/Reports';
 import { Upload } from '@/pages/app/Upload';
+import { Variables } from '@/pages/app/Variables';
 import { LegalPage } from '@/pages/legal/LegalPage';
 import { ForgotPassword } from '@/pages/public/ForgotPassword';
 import { Landing } from '@/pages/public/Landing';
@@ -61,15 +62,16 @@ export function AppRoutes() {
               />
             }
           />
+          <Route path="variables" element={<Variables />} />
           <Route
-            path="variables"
+            path="variables/:variableId"
             element={
               <ComingSoon
                 kicker="Tracked over time"
-                title="Laboratory variables"
-                ticket="KAN-45"
+                title="Variable details"
+                ticket="KAN-14 / KAN-46"
                 icon="flask"
-                description="Each test you have a result for, with its latest value and how it has moved."
+                description="The full history of one test, with its trend chart, explanation and analysis."
               />
             }
           />

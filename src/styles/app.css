@@ -1032,3 +1032,111 @@
 .quota-meter[data-tone='danger'] .quota-meter-bar::-moz-meter-bar {
   background: var(--feedback-danger-ink);
 }
+
+/* ── laboratory variables (KAN-45) ─────────────────────────────────────── */
+
+.variable-grid {
+  display: grid;
+  /* Auto-fit rather than a fixed four columns: the design board is drawn at
+     1440px, and this keeps the same card size while the count adapts down to
+     one on a phone. */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.variable-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.variable-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* A filter chip is a toggle, so it is a real button with aria-pressed rather
+   than a styled span — it has to be reachable and operable by keyboard. */
+.chip {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-800);
+  cursor: pointer;
+}
+.chip:hover {
+  background: var(--color-neutral-200);
+}
+.chip[aria-pressed='true'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.variable-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  color: var(--color-text);
+  font-weight: 400;
+}
+.variable-card:hover {
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  text-decoration: none;
+}
+/* A wash of the status colour, echoing the design board. It is reinforcement
+   only — the badge inside already names the status in words. */
+.variable-card[data-flagged][data-status='critical'] {
+  background: #fff5f6;
+}
+.variable-card[data-flagged][data-status='high'] {
+  background: #fffbf2;
+}
+.variable-card[data-flagged][data-status='low'] {
+  background: #f8f6ff;
+}
+
+.variable-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.variable-card-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.variable-card-number {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1;
+}
+.variable-card-unit {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+/* Pins the summary to the bottom of every card, so a title that wraps to two
+   lines ("Vitamin D (25-OH)") does not leave the row ragged. */
+.variable-card .card-meta {
+  margin-top: auto;
+}
+
+.sparkline-empty {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-text-muted);
+}

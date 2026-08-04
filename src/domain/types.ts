@@ -152,6 +152,47 @@ export interface ReferenceRange {
   source: ReferenceRangeSource;
 }
 
+/**
+ * `users/{userId}/variableSeries/{variableId}` — one tracked test, with its
+ * history flattened for display (KAN-11).
+ *
+ * Deliberately denormalised: `canonicalName`, `category` and `aliases` are
+ * copied from the catalog, and the recent points are inlined. The variables
+ * grid renders two dozen cards, and reading a catalog document plus a results
+ * subcollection per card would be fifty round trips to draw one screen. The
+ * trend engine owns keeping this in step, and the client cannot write it.
+ */
+export interface VariableSeries {
+  variableId: string;
+  canonicalName: string;
+  aliases: string[];
+  category: VariableCategory;
+  unit: string | null;
+
+  /** Most recent measurement. `value` is null for non-numeric results. */
+  latestValue: number | null;
+  /** Verbatim form, for results like "Negative" or "Trace". */
+  latestRawValue: string;
+  latestStatus: ResultStatus;
+  latestObservedAt: Timestamp;
+  /** The range the latest result was reported with — never a remembered one. */
+  referenceRange: ReferenceRange;
+
+  resultCount: number;
+  trend: TrendDirection;
+
+  /**
+   * Recent points, oldest first, for the sparkline. Capped by the trend engine
+   * — a card is 120px wide and cannot show more than a handful meaningfully.
+   */
+  points: VariablePoint[];
+}
+
+export interface VariablePoint {
+  value: number;
+  observedAt: Timestamp;
+}
+
 /** `variables/{variableId}` — the canonical catalog (KAN-8). */
 export interface LabVariable {
   id: string;
