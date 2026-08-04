@@ -9,13 +9,32 @@
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill it in — see below
+cp .env.example .env   # then fill it in — see below
 npm run dev
 ```
 
 ## Configuration
 
-`.env.local` holds the Firebase web config. The values are public by design:
+### One file
+
+**`.env` at the repository root is the only environment file you edit.**
+`functions/.env` and `functions/.env.local` are generated from it by
+`npm run sync:env` (which `dev`, `emulators` and the functions build all run
+for you). They are gitignored; editing them directly loses the change on the
+next sync.
+
+The prefix is the security boundary, and it is enforced:
+
+| Prefix | Reaches | Notes |
+| --- | --- | --- |
+| `VITE_*` | the browser | Vite inlines these into the bundle. **Public.** |
+| anything else | Cloud Functions only | Never enters the bundle. Credentials go here. |
+
+`sync:env` refuses to run if a known secret is given a `VITE_` prefix, because
+that one prefix is all that separates "server-side secret" from "published on
+the next deploy".
+
+The Firebase web config values are public by design:
 they identify the project, they do not grant access. Access is enforced by
 `firestore.rules` and `storage.rules`, never by keeping these secret. They are
 still gitignored, so that switching projects is a local change.
@@ -29,6 +48,8 @@ Firebase SDK.
 | `VITE_FIREBASE_*` | Web app config from the Firebase console |
 | `VITE_USE_FIREBASE_EMULATORS` | `true` routes Auth/Firestore/Storage to the local suite |
 | `VITE_SENTRY_DSN` | Leave blank to disable error reporting entirely |
+| `AI_PROVIDER`, `GEMINI_MODEL` | AI provider and model selection — see [ai.md](ai.md) |
+| `GEMINI_API_KEY` | **Server-only.** Emulator reads it here; deploys read Secret Manager |
 
 ## Two ways to run
 
@@ -80,6 +101,7 @@ the codebase.
 | `npm run e2e` | Playwright, against a production build |
 | `npm run lint` / `npm run typecheck` | Static checks |
 | `npm run audit:deps` | Dependency audit (`high` and above fails) |
+| `npm run sync:env` | Regenerate `functions/.env*` from the root `.env` |
 | `npm run test:functions` | Build and test the Cloud Functions package |
 | `npm run build:functions` | Compile the Cloud Functions package |
 

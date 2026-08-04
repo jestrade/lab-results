@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run sync:env && vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -16,10 +16,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "emulators": "firebase emulators:start",
+    "emulators": "npm run sync:env && firebase emulators:start",
     "audit:deps": "npm audit --audit-level=high",
-    "test:functions": "npm --prefix functions run build && npm --prefix functions test",
-    "build:functions": "npm --prefix functions run build"
+    "test:functions": "npm run sync:env && npm --prefix functions run build && npm --prefix functions test",
+    "build:functions": "npm run sync:env && npm --prefix functions run build",
+    "sync:env": "node scripts/sync-env.mjs"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.1.0",

@@ -3,7 +3,9 @@
   "private": true,
   "type": "commonjs",
   "main": "lib/index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "sync:quotas": "node -e \"require('fs').copyFileSync('../config/quotas.json','src/quotas.generated.json')\"",
     "build": "npm run sync:quotas && tsc",
@@ -13,6 +15,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@google/genai": "^2.15.0",
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.2.0"
   },

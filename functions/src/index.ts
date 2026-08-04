@@ -12,3 +12,4 @@ initializeApp();
 export { onReportUploaded, onReportDeleted } from './usage';
 export { reconcileUsage } from './reconcile';
 export { setUserRole } from './roles';
+export { aiHealthCheck } from './ai/healthCheck';

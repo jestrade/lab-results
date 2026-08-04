@@ -25,6 +25,8 @@ npm install && npm run dev
   accessibility baseline every page is held to
 - **[docs/quotas.md](docs/quotas.md)** — capacity limits, how they are enforced,
   and the billing budget you must set up by hand
+- **[docs/ai.md](docs/ai.md)** — the AI provider layer, swapping models or
+  vendors, and what redaction does and does not do
 
 ## Layout
 
