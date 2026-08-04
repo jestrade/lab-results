@@ -6,6 +6,7 @@ import { PublicLayout } from '@/layouts/PublicLayout';
 import { ComingSoon } from '@/pages/app/ComingSoon';
 import { Dashboard } from '@/pages/app/Dashboard';
 import { NotFound } from '@/pages/app/NotFound';
+import { Reports } from '@/pages/app/Reports';
 import { Upload } from '@/pages/app/Upload';
 import { LegalPage } from '@/pages/legal/LegalPage';
 import { ForgotPassword } from '@/pages/public/ForgotPassword';
@@ -47,15 +48,16 @@ export function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="upload" element={<Upload />} />
+          <Route path="reports" element={<Reports />} />
           <Route
-            path="reports"
+            path="reports/:reportId"
             element={
               <ComingSoon
-                kicker="Your reports"
-                title="Reports"
-                ticket="KAN-13 / KAN-43"
-                icon="files"
-                description="Every report you have uploaded, with its processing status and how many results were out of range."
+                kicker="Report"
+                title="Report details"
+                ticket="KAN-44"
+                icon="file-pdf"
+                description="The original PDF beside the results extracted from it."
               />
             }
           />

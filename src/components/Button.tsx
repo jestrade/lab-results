@@ -58,12 +58,27 @@ export function Button({
 
 export interface ButtonLinkProps extends CommonProps {
   to: string;
+  /**
+   * Overrides the accessible name. Use when several links share the same
+   * visible label and only context distinguishes them — a row of "View
+   * details" links, say. Keep the visible text as a prefix of the label, or
+   * voice control ("click view details") stops working (WCAG 2.5.3).
+   */
+  'aria-label'?: string;
 }
 
 /** A router link wearing the button's clothes — still a link to assistive tech. */
-export function ButtonLink({ to, variant = 'secondary', icon, block, className, children }: ButtonLinkProps) {
+export function ButtonLink({
+  to,
+  variant = 'secondary',
+  icon,
+  block,
+  className,
+  children,
+  'aria-label': ariaLabel,
+}: ButtonLinkProps) {
   return (
-    <Link to={to} className={classesFor({ variant, block, className, children })}>
+    <Link to={to} className={classesFor({ variant, block, className, children })} aria-label={ariaLabel}>
       {icon ? <Icon name={icon} size={16} /> : null}
       {children}
     </Link>
