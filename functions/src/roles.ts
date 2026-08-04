@@ -15,12 +15,12 @@
  * or with the Admin SDK from a machine holding service-account credentials.
  */
 
-import { logger } from 'firebase-functions';
+import * as logger from 'firebase-functions/logger';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { REGION } from './region';
 
-const REGION = 'us-central1';
 const ROLES = ['user', 'admin'] as const;
 type Role = (typeof ROLES)[number];
 

@@ -16,9 +16,9 @@
  * by object name, and an event whose key is already present is a no-op.
  */
 
-import { logger } from 'firebase-functions';
+import * as logger from 'firebase-functions/logger';
 import { onObjectDeleted, onObjectFinalized } from 'firebase-functions/v2/storage';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldPath, FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 import {
   SYSTEM_USAGE_COLLECTION,
@@ -27,8 +27,8 @@ import {
   currentUploadPeriod,
   parseReportPath,
 } from './quotas';
+import { REGION } from './region';
 
-const REGION = 'us-central1';
 
 /** Firestore forbids `/` in a document id and dislikes it in a field key. */
 function ledgerKey(objectName: string): string {
@@ -84,14 +84,26 @@ async function applyDelta(
         storageBytes: nextBytes,
         uploadPeriod: period,
         uploadsThisMonth: uploadsBase + (countsAsUpload ? 1 : 0),
-        ledger:
-          deltaBytes > 0
-            ? { ...ledger, [key]: deltaBytes }
-            : Object.fromEntries(Object.entries(ledger).filter(([k]) => k !== key)),
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
     );
+
+    // The ledger is written separately, because a merged write cannot REMOVE a
+    // map key — it only adds and overwrites. Handing `set(…, {merge: true})` a
+    // map with the key filtered out leaves the key exactly where it was, so
+    // deletes would never clear their entry and the document would grow until
+    // it hit Firestore's 1 MiB limit. Every upload reads this document through
+    // `storage.rules`, so an unbounded map is not harmless.
+    //
+    // FieldPath with literal segments rather than a dotted string: object names
+    // can contain `~`, `*`, `[` and `]`, all of which are special in a field
+    // path expression and would otherwise need escaping.
+    if (deltaBytes > 0) {
+      tx.set(userRef, { ledger: { [key]: deltaBytes } }, { merge: true });
+    } else {
+      tx.update(userRef, new FieldPath('ledger', key), FieldValue.delete());
+    }
 
     const priorSystemBytes = (systemSnap.data()?.storageBytes as number | undefined) ?? 0;
     tx.set(

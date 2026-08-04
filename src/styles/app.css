@@ -1140,3 +1140,36 @@
   font-style: italic;
   color: var(--color-text-muted);
 }
+
+/* ── native <dialog> correction ────────────────────────────────────────────
+ *
+ * Broadsheet's `.dialog` sets `display: flex` unconditionally, because it is
+ * written for a `<div class="dialog">` sitting inside a `.dialog-backdrop`
+ * div. Our Modal uses a real `<dialog>` element instead, for the focus trap,
+ * Escape handling and top-layer placement the platform gives us for free.
+ *
+ * Those two things collide. A closed `<dialog>` is hidden by the user-agent
+ * stylesheet's `dialog:not([open]) { display: none }`, and an author-level
+ * `display: flex` beats it — so the dialog rendered permanently, on every
+ * page, with empty content. Restore the closed state here.
+ *
+ * The rule is `dialog.dialog`, not `.dialog`, so Broadsheet's div-based
+ * pattern keeps working if anything ever uses it.
+ */
+dialog.dialog:not([open]) {
+  display: none;
+}
+
+/* A native dialog's overlay is the ::backdrop pseudo-element, not the
+   `.dialog-backdrop` div Broadsheet ships — without this there is no dimming
+   at all, and the dialog appears to float on live content. */
+dialog.dialog::backdrop {
+  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+}
+
+dialog.dialog {
+  border: 0;
+  /* Centres in the top layer. The UA default is `margin: auto`, but Broadsheet
+     sets a width, and some engines then pin it to the inline start. */
+  margin: auto;
+}

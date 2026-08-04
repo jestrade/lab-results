@@ -14,7 +14,7 @@
  * deploy.
  */
 
-import { logger } from 'firebase-functions';
+import * as logger from 'firebase-functions/logger';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
@@ -27,8 +27,8 @@ import {
   USAGE_COLLECTION,
   parseReportPath,
 } from './quotas';
+import { REGION } from './region';
 
-const REGION = 'us-central1';
 
 /** Re-enable uploads automatically once usage falls back under this. */
 const RESUME_BELOW_BYTES = Math.floor(GLOBAL_STORAGE_BYTES * 0.95);
@@ -130,15 +130,21 @@ export async function reconcile(): Promise<{
     // The upload counter is deliberately NOT rebuilt here: it counts
     // operations spent, and a deleted object still spent one. Only bytes and
     // the ledger are derived from what is actually in the bucket.
-    await db.collection(USAGE_COLLECTION).doc(userId).set(
+    const ref = db.collection(USAGE_COLLECTION).doc(userId);
+    await ref.set(
       {
         userId,
         storageBytes: actual.bytes,
-        ledger: actual.ledger,
         reconciledAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
     );
+    // Replaces the map wholesale. A merged write would only ever add keys, so
+    // entries for objects that no longer exist would survive every
+    // reconciliation — the opposite of what this job is for. `update` on a
+    // single field replaces its value outright, and the `set` above guarantees
+    // the document exists.
+    await ref.update('ledger', actual.ledger);
   }
 
   const systemRef = db.collection(SYSTEM_USAGE_COLLECTION).doc(SYSTEM_USAGE_DOC);

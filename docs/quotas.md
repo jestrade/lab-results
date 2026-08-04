@@ -130,7 +130,7 @@ automatically once usage falls back below 95% of the cap.
 ### Forcing a reconciliation
 
 ```bash
-gcloud scheduler jobs run firebase-schedule-reconcileUsage-us-central1
+gcloud scheduler jobs run firebase-schedule-reconcileUsage-us-east1
 ```
 
 ### Raising a limit

@@ -21,7 +21,7 @@
  * all provider-agnostic by construction.
  */
 
-import { logger } from 'firebase-functions';
+import * as logger from 'firebase-functions/logger';
 
 import { loadAiConfig, resolveApiKey, type AiConfig } from './config';
 import { createGeminiProvider } from './providers/gemini';

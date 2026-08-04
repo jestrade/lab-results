@@ -9,15 +9,15 @@
  * Sends a fixed nonsense prompt. No report data, no user content.
  */
 
-import { logger } from 'firebase-functions';
+import * as logger from 'firebase-functions/logger';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
 import { AI_SECRETS } from './config';
 import { getAiProvider } from './registry';
 import { HEALTH_CHECK } from './prompts';
 import { AiProviderError } from './types';
+import { REGION } from '../region';
 
-const REGION = 'us-central1';
 
 export const aiHealthCheck = onCall(
   { region: REGION, memory: '256MiB', secrets: AI_SECRETS, timeoutSeconds: 60 },
