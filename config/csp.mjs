@@ -26,7 +26,16 @@ const STRICT = {
   'default-src': ["'self'"],
   // No 'unsafe-inline', no 'unsafe-eval'. This is the directive that matters;
   // everything else is depth behind it.
-  'script-src': ["'self'"],
+  //
+  // apis.google.com is REQUIRED for Google sign-in: the Firebase Auth SDK
+  // loads gapi from there to drive the popup and the auth iframe. Without it
+  // the flow dies with
+  //   Loading the script 'https://apis.google.com/js/api.js?onload=...'
+  //   violates ... "script-src 'self'"
+  // and the user sees a generic failure. There is no way to run the Google
+  // popup flow without this host; the alternative is dropping Google sign-in.
+  // It is a Google-operated origin we already trust by using Firebase Auth.
+  'script-src': ["'self'", 'https://apis.google.com'],
   // React inline styles and the design system's style attributes need this.
   // Style injection is a defacement risk, not a code-execution one.
   'style-src': ["'self'", "'unsafe-inline'"],
@@ -43,8 +52,11 @@ const STRICT = {
     'https://*.ingest.sentry.io',
     'wss://*.firebaseio.com',
   ],
-  // The Google sign-in popup renders from the Firebase auth domain.
-  'frame-src': ['https://*.firebaseapp.com'],
+  // The auth flow frames three things: our own /__/auth/iframe (same-origin
+  // now that authDomain is the Hosting domain — hence 'self'), Google's
+  // account chooser, and the legacy *.firebaseapp.com handler, kept so that
+  // reverting authDomain does not silently break sign-in again.
+  'frame-src': ["'self'", 'https://accounts.google.com', 'https://*.firebaseapp.com'],
   'object-src': ["'none'"],
   'base-uri': ["'none'"],
   'form-action': ["'self'"],

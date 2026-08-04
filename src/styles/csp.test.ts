@@ -26,8 +26,23 @@ describe('content security policy', () => {
 
   it('never allows inline or eval scripts in production', () => {
     // The one directive that turns a defacement into code execution.
-    expect(productionCsp).toContain("script-src 'self'");
     expect(productionCsp).not.toMatch(/script-src[^;]*unsafe-(inline|eval)/);
+  });
+
+  it('allows exactly the script hosts Google sign-in requires, and no others', () => {
+    // Pinned as an explicit list so widening it is a deliberate edit with a
+    // test to justify, not something that accretes. apis.google.com is where
+    // the Firebase Auth SDK loads gapi from; without it the popup flow dies.
+    const scriptSrc = productionCsp.match(/script-src ([^;]*)/)![1]!.trim();
+    expect(scriptSrc.split(/\s+/).sort()).toEqual(["'self'", 'https://apis.google.com']);
+  });
+
+  it('frames the auth handler and the Google account chooser', () => {
+    // authDomain is our own Hosting domain, so /__/auth/iframe is same-origin
+    // and needs 'self' — that is easy to miss when moving authDomain.
+    const frameSrc = productionCsp.match(/frame-src ([^;]*)/)![1]!;
+    expect(frameSrc).toContain("'self'");
+    expect(frameSrc).toContain('https://accounts.google.com');
   });
 
   it('keeps font-src locked to self, which requires fonts never be inlined', () => {
