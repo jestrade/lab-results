@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/react';
+
 /**
  * Firebase auth error codes → the messages the design board specifies (KAN-1).
  *
@@ -18,13 +20,28 @@ export interface AuthErrorMessage {
   message: string;
   /** Set when the UI should offer a specific recovery path alongside the text. */
   action?: 'reset-password' | 'sign-in-with-password' | 'contact-support' | 'retry';
+  /**
+   * The raw Firebase code, present only when we had no specific message for it.
+   *
+   * This exists because of a real incident: Google sign-in failed on the
+   * deployed site and showed only "Something went wrong", which told nobody
+   * anything — not the user, not support, not the developer reading the
+   * report. An auth error code carries no personal data, so surfacing it is
+   * free, and it is the difference between a bug report that can be acted on
+   * and one that cannot.
+   */
+  code?: string;
 }
 
-const GENERIC: AuthErrorMessage = {
-  message:
-    'Something went wrong while signing you in. Please try again, and contact support if it keeps happening.',
-  action: 'retry',
-};
+function generic(code: string | null): AuthErrorMessage {
+  return {
+    message:
+      'Something went wrong while signing you in. Please try again, and contact support if it keeps happening.' +
+      (code ? ` (reference: ${code})` : ''),
+    action: 'retry',
+    ...(code ? { code } : {}),
+  };
+}
 
 const MESSAGES: Record<string, AuthErrorMessage> = {
   'auth/invalid-credential': {
@@ -86,6 +103,33 @@ const MESSAGES: Record<string, AuthErrorMessage> = {
     message:
       'Your browser blocked the Google sign-in window. Allow pop-ups for this site, or sign in with your email and password.',
   },
+  'auth/operation-not-allowed': {
+    message:
+      'That sign-in method is not enabled for this application. Please contact support.',
+    action: 'contact-support',
+  },
+  'auth/unauthorized-domain': {
+    message:
+      'Sign-in is not permitted from this address. Please contact support.',
+    action: 'contact-support',
+  },
+  'auth/web-storage-unsupported': {
+    message:
+      'Your browser is blocking the storage this sign-in needs. Allow cookies and site data for this site, or sign in with your email and password.',
+  },
+  'auth/internal-error': {
+    message:
+      'Sign-in could not be completed. Try again, or sign in with your email and password instead.',
+    action: 'retry',
+  },
+  'auth/timeout': {
+    message: 'Sign-in took too long to respond. Please try again.',
+    action: 'retry',
+  },
+  'auth/user-cancelled': {
+    message: 'Sign-in was cancelled before it finished. Try again when you are ready.',
+    action: 'retry',
+  },
   'auth/requires-recent-login': {
     message: 'For your security, sign in again before making this change.',
   },
@@ -108,7 +152,17 @@ function codeOf(error: unknown): string | null {
 
 export function toAuthErrorMessage(error: unknown): AuthErrorMessage {
   const code = codeOf(error);
-  return (code && MESSAGES[code]) || GENERIC;
+  const known = code ? MESSAGES[code] : undefined;
+  if (known) return known;
+
+  // Unrecognised. Report it so it stops being invisible — an unmapped code is
+  // usually a configuration problem, and configuration problems affect
+  // everyone at once rather than one unlucky user.
+  if (code) {
+    Sentry.captureMessage(`Unmapped auth error: ${code}`, 'warning');
+    if (import.meta.env.DEV) console.error('Unmapped auth error code:', code, error);
+  }
+  return generic(code);
 }
 
 export const __messagesForTests = MESSAGES;
