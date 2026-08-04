@@ -1,0 +1,4 @@
+lib
+node_modules
+# Copied from ../config/quotas.json by `npm run sync:quotas`. Never edit here.
+src/quotas.generated.json

@@ -144,6 +144,36 @@ service cloud.firestore {
       }
     }
 
+    // ── usage/{userId} ───────────────────────────────────────────────────
+    // Storage consumption per user (spec §79). Read by `storage.rules` via
+    // firestore.get() to decide whether an upload fits, and by the app to draw
+    // the quota meter.
+    //
+    // Client writes are denied outright. This document is the thing the quota
+    // is enforced against — if a user could edit it, the quota would be
+    // decorative. Only the Storage-triggered functions and the nightly
+    // reconciliation update it, through the Admin SDK.
+
+    match /usage/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+
+    // ── systemUsage/global ───────────────────────────────────────────────
+    // Project-wide totals and the upload kill switch (spec §79).
+    //
+    // Readable by any signed-in user because `storage.rules` consults it on
+    // every upload and the app needs to explain a "service at capacity"
+    // refusal. It holds aggregate byte counts and a boolean — nothing about
+    // any individual — so exposing it discloses nothing personal.
+
+    match /systemUsage/{docId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+
     // ── variables/{variableId} ───────────────────────────────────────────
     // The canonical laboratory-variable catalog (KAN-8). Reference data:
     // readable by any signed-in user, maintained by admins.

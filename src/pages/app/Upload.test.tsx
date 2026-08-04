@@ -8,6 +8,13 @@ import { expectNoA11yViolations } from '@/test/axe';
 import { Upload } from './Upload';
 
 const uploadReport = vi.hoisted(() => vi.fn());
+const quotaState = vi.hoisted(() => ({ value: null as unknown }));
+
+// The quota hook is a live Firestore subscription; stub it at the hook so the
+// page's behaviour is what gets tested, not the SDK.
+vi.mock('@/hooks/useStorageQuota', () => ({
+  useStorageQuota: () => quotaState.value,
+}));
 
 vi.mock('@/services/reports', async (importOriginal) => {
   // Keep the real validation and formatting — those are the parts under test.
@@ -19,6 +26,39 @@ function drop(file: File) {
   const zone = screen.getByRole('button', { name: /drag your laboratory pdf/i })
     .parentElement as HTMLElement;
   fireEvent.drop(zone, { dataTransfer: { files: [file], types: ['Files'] } });
+}
+
+const MB = 1024 * 1024;
+const PER_USER = 400 * MB;
+
+function makeQuota(overrides: Record<string, unknown> = {}) {
+  const usedBytes = (overrides.usedBytes as number | undefined) ?? 0;
+  const uploadsUsed = (overrides.uploadsUsed as number | undefined) ?? 0;
+  const remaining = Math.max(0, PER_USER - usedBytes);
+  return {
+    loading: false,
+    usage: { storageBytes: usedBytes, uploadsThisMonth: uploadsUsed, uploadPeriod: '2026-08' },
+    system: { storageBytes: 0, uploadsDisabled: false },
+    storage: {
+      usedBytes,
+      limitBytes: PER_USER,
+      remainingBytes: remaining,
+      fraction: usedBytes / PER_USER,
+      isWarning: usedBytes / PER_USER >= 0.8,
+      isFull: remaining <= 0,
+    },
+    uploads: { used: uploadsUsed, limit: 400, remaining: Math.max(0, 400 - uploadsUsed) },
+    systemStorage: {
+      usedBytes: 0,
+      limitBytes: 4 * 1024 * MB,
+      remainingBytes: 4 * 1024 * MB,
+      fraction: 0,
+      isWarning: false,
+      isFull: false,
+    },
+    uploadsDisabled: false,
+    ...overrides,
+  };
 }
 
 function pdf(name = 'panel.pdf', size = 1_800_000): File {
@@ -33,6 +73,7 @@ describe('Upload', () => {
   // no arguments.
   beforeEach(() => {
     uploadReport.mockReset();
+    quotaState.value = makeQuota();
   });
 
   it('uploads an accepted PDF for the signed-in user', async () => {
@@ -99,6 +140,60 @@ describe('Upload', () => {
 
     const bar = await screen.findByRole('progressbar');
     await waitFor(() => expect(bar).toHaveAttribute('aria-valuenow', '62'));
+  });
+
+  it('shows how much of the storage allowance is used', () => {
+    quotaState.value = makeQuota({ usedBytes: 100 * MB });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    const meter = screen.getByRole('meter', { name: /storage used/i });
+    expect(meter).toHaveAttribute('value', String(100 * MB));
+    expect(meter).toHaveAttribute('max', String(PER_USER));
+  });
+
+  it('refuses an upload that would exceed the per-user quota, without contacting Storage', async () => {
+    quotaState.value = makeQuota({ usedBytes: PER_USER - 1 * MB });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    drop(pdf('big.pdf', 5 * MB));
+
+    expect(await screen.findByText(/delete a report you no longer need/i)).toBeInTheDocument();
+    expect(uploadReport).not.toHaveBeenCalled();
+  });
+
+  it('disables the dropzone and explains why when storage is full', () => {
+    quotaState.value = makeQuota({ usedBytes: PER_USER });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    expect(
+      screen.getByRole('button', { name: /your storage is full/i }),
+    ).toBeDisabled();
+  });
+
+  it('stops uploads when the service-wide kill switch is on', async () => {
+    quotaState.value = makeQuota({ uploadsDisabled: true });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    expect(screen.getByText(/uploads are paused/i)).toBeInTheDocument();
+    expect(uploadReport).not.toHaveBeenCalled();
+  });
+
+  it('refuses once the monthly upload allowance is spent', async () => {
+    quotaState.value = makeQuota({ uploadsUsed: 400 });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    expect(
+      screen.getByRole('button', { name: /used all your uploads for this month/i }),
+    ).toBeDisabled();
+  });
+
+  it('warns before the allowance runs out, while there is still room to act', () => {
+    quotaState.value = makeQuota({ usedBytes: 340 * MB });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    expect(screen.getByText(/running low on space/i)).toBeInTheDocument();
+    // Still usable — a warning, not a block.
+    expect(screen.getByRole('button', { name: /drag your laboratory pdf/i })).toBeEnabled();
   });
 
   it('has no serious accessibility violations', async () => {

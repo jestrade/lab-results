@@ -23,6 +23,8 @@ npm install && npm run dev
 - **[docs/setup.md](docs/setup.md)** — local development, configuration, CI/CD
 - **[docs/design-system.md](docs/design-system.md)** — tokens, components, the
   accessibility baseline every page is held to
+- **[docs/quotas.md](docs/quotas.md)** — capacity limits, how they are enforced,
+  and the billing budget you must set up by hand
 
 ## Layout
 
@@ -37,6 +39,8 @@ src/
   services/     Firestore and Storage access
   styles/       Broadsheet base, LabResults theme, app layout
 firestore.rules storage.rules   The real security boundary
+config/quotas.json              Every capacity limit, in one place
+functions/                      Cloud Functions: usage accounting, roles
 ```
 
 ## Two rules worth knowing before you write code
@@ -48,6 +52,12 @@ from `domain/status.ts`. See the design-system doc.
 classifications, processing state and audit records are written by the Admin SDK
 only. `firestore.rules` denies them from the browser, which is what makes the
 extracted data trustworthy.
+
+**Everything runs inside the free tier.** 400 MiB per user, 4 GiB in total,
+enforced in `storage.rules` against counters that Cloud Functions maintain. All
+the numbers live in one file, `config/quotas.json`. See
+[docs/quotas.md](docs/quotas.md) — and note that upload *operations*, not
+stored bytes, are what actually binds.
 
 ## Phase 1 scope
 

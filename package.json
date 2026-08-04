@@ -17,7 +17,9 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "emulators": "firebase emulators:start",
-    "audit:deps": "npm audit --audit-level=high"
+    "audit:deps": "npm audit --audit-level=high",
+    "test:functions": "npm --prefix functions run build && npm --prefix functions test",
+    "build:functions": "npm --prefix functions run build"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.1.0",

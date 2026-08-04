@@ -55,9 +55,19 @@ the codebase.
 2. **Authentication → Settings → Authorized domains**: add the hosting domain
    (`localhost` is authorized by default).
 3. **Firestore** and **Storage**: create both, then deploy the rules above.
-4. **Custom claims**: the `role` claim is what grants admin. It has to be set by
-   a trusted server — a Cloud Function or the Admin SDK — never by the client.
-   See the note in `firestore.rules`.
+4. **Custom claims**: the `role` claim is what grants admin. It is set by the
+   `setUserRole` callable in `functions/src/roles.ts`, which requires an admin
+   caller — so the *first* admin must be bootstrapped by hand:
+
+   ```bash
+   firebase functions:shell
+   > admin.auth().setCustomUserClaims('<uid>', { role: 'admin' })
+   ```
+
+5. **Billing budget** — required, and not optional. The capacity caps protect
+   the free tier, not the bill. Set a $1 budget with alerts at 50/90/100% on
+   project `labresults-2a13f`. Full rationale in
+   [quotas.md](quotas.md#what-this-does-not-protect-against).
 
 ## Everyday commands
 
@@ -70,6 +80,8 @@ the codebase.
 | `npm run e2e` | Playwright, against a production build |
 | `npm run lint` / `npm run typecheck` | Static checks |
 | `npm run audit:deps` | Dependency audit (`high` and above fails) |
+| `npm run test:functions` | Build and test the Cloud Functions package |
+| `npm run build:functions` | Compile the Cloud Functions package |
 
 `npm run e2e` needs browsers once: `npx playwright install chromium`.
 

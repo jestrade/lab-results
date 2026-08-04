@@ -946,3 +946,89 @@
 .table-scroll {
   overflow-x: auto;
 }
+
+/* ── quota meter (spec §79) ────────────────────────────────────────────── */
+
+.quota-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--r-card);
+  background: var(--panel-bg);
+}
+.quota-meter[data-compact] {
+  padding: 0;
+  background: transparent;
+}
+.quota-meter-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.quota-meter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.quota-meter-value {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.quota-meter-detail {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.quota-meter[data-tone='warning'] .quota-meter-label {
+  color: var(--feedback-warning-ink);
+}
+.quota-meter[data-tone='danger'] .quota-meter-label {
+  color: var(--feedback-danger-ink);
+}
+
+/* `<meter>` has no agreed default appearance across engines, so it is styled
+   explicitly for both the WebKit/Blink and Gecko pseudo-elements. The element
+   is kept (rather than swapped for a div) for its built-in semantics. */
+.quota-meter-bar {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--color-neutral-200);
+  appearance: none;
+}
+.quota-meter-bar::-webkit-meter-bar {
+  background: var(--color-neutral-200);
+  border: 0;
+  border-radius: var(--r-pill);
+  height: 8px;
+}
+.quota-meter-bar::-webkit-meter-optimum-value,
+.quota-meter-bar::-webkit-meter-suboptimum-value,
+.quota-meter-bar::-webkit-meter-even-less-good-value {
+  border-radius: var(--r-pill);
+}
+.quota-meter-bar::-webkit-meter-optimum-value {
+  background: var(--color-accent);
+}
+.quota-meter-bar::-webkit-meter-suboptimum-value {
+  background: var(--feedback-warning-ink);
+}
+.quota-meter-bar::-webkit-meter-even-less-good-value {
+  background: var(--feedback-danger-ink);
+}
+.quota-meter-bar::-moz-meter-bar {
+  border-radius: var(--r-pill);
+  background: var(--color-accent);
+}
+.quota-meter[data-tone='warning'] .quota-meter-bar::-moz-meter-bar {
+  background: var(--feedback-warning-ink);
+}
+.quota-meter[data-tone='danger'] .quota-meter-bar::-moz-meter-bar {
+  background: var(--feedback-danger-ink);
+}

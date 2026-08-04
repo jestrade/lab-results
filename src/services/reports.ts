@@ -12,8 +12,12 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { deleteObject, ref, uploadBytesResumable } from 'firebase/storage';
 
 import { getDb, getStorageClient } from '@/lib/firebase';
+// One number, one place (spec §79) — config/quotas.json also drives the
+// literal in storage.rules, and a drift test keeps the two in step.
+import { MAX_FILE_BYTES, formatBytes } from '@/domain/quotas';
 
-export const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB — mirrored in storage.rules
+export { MAX_FILE_BYTES, formatBytes };
+
 export const ACCEPTED_MIME = 'application/pdf';
 
 export type FileRejectionReason = 'not-a-pdf' | 'too-large' | 'empty';
@@ -49,16 +53,10 @@ export function validateFile(file: File): FileRejection | null {
   if (file.size > MAX_FILE_BYTES) {
     return {
       reason: 'too-large',
-      message: `${file.name} is ${formatBytes(file.size)}, over the 25 MB limit. Nothing was uploaded.`,
+      message: `${file.name} is ${formatBytes(file.size)}, over the ${formatBytes(MAX_FILE_BYTES)} limit. Nothing was uploaded.`,
     };
   }
   return null;
-}
-
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /**

@@ -1,0 +1,23 @@
+{
+  "name": "lab-results-functions",
+  "private": true,
+  "type": "commonjs",
+  "main": "lib/index.js",
+  "engines": { "node": "22" },
+  "scripts": {
+    "sync:quotas": "node -e \"require('fs').copyFileSync('../config/quotas.json','src/quotas.generated.json')\"",
+    "build": "npm run sync:quotas && tsc",
+    "watch": "npm run sync:quotas && tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.7"
+  }
+}

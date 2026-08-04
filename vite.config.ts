@@ -32,7 +32,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
-    exclude: ['e2e/**', 'node_modules/**'],
+    // `functions/` is a separate package with its own toolchain and its own
+    // vitest run — its sources are CommonJS and depend on a generated JSON
+    // file that only its build produces.
+    exclude: ['e2e/**', 'node_modules/**', 'functions/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

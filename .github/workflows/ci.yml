@@ -38,6 +38,12 @@ jobs:
       - name: Unit tests
         run: npm run test:coverage
 
+      - name: Install Cloud Functions dependencies
+        run: npm --prefix functions ci
+
+      - name: Build and test Cloud Functions
+        run: npm run test:functions
+
       - name: Build
         run: npm run build
         env:
@@ -157,7 +163,7 @@ jobs:
 
   # Deploy on green, from main only.
   deploy:
-    name: Deploy to Firebase Hosting
+    name: Deploy to Firebase
     runs-on: ubuntu-latest
     needs: [verify, e2e, security]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -186,12 +192,37 @@ jobs:
           VITE_SENTRY_ENVIRONMENT: production
           VITE_APP_VERSION: ${{ github.sha }}
 
-      # Rules are deployed with the app: shipping a UI that expects a rule the
-      # project does not have yet is how a permission-denied outage happens.
-      - name: Deploy hosting and security rules
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      - name: Write deploy credentials
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "${{ github.workspace }}/service-account.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Build Cloud Functions
+        run: npm --prefix functions ci && npm run build:functions
+
+      # One `firebase deploy` for everything, rather than the hosting-deploy
+      # action — that action only ships hosting, and hosting alone would put a
+      # UI live against rules and functions that had not moved with it.
+      #
+      # Order is not optional. Rules first, so the security and quota gates are
+      # in force before anything can reach them. Functions next, so the
+      # counters those rules read are actually being written. Hosting last, so
+      # no user sees a UI whose backend is not ready yet.
+      - name: Deploy rules, indexes, functions and hosting
+        run: |
+          npm install --no-save firebase-tools@^13
+          npx firebase deploy \
+            --only firestore:rules,firestore:indexes,storage,functions,hosting \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive \
+            --force
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          # Workload Identity Federation would be better than a long-lived key;
+          # tracked as the least-privilege IAM item on KAN-36.
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+
+      - name: Remove deploy credentials
+        if: always()
+        run: rm -f "${{ github.workspace }}/service-account.json"
