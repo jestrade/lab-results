@@ -1,0 +1,222 @@
+/* LabResults theme — KAN-38.
+ *
+ * This file is the project's design-token layer. It sits on top of
+ * `broadsheet.css` and retunes it into the look the design board specifies:
+ * a violet accent, Plus Jakarta Sans throughout, generous radii and soft
+ * elevation instead of Broadsheet's editorial hairlines.
+ *
+ * The `:root` block below is taken from the design document's own token
+ * override (`Lab Results UI.dc.html`, <helmet>), so the app and the board
+ * cannot drift. The semantic layer beneath it — status, feedback, chart —
+ * is derived from the colours the board actually uses on screen, promoted
+ * into named tokens so no component hardcodes a hex value.
+ */
+
+:root {
+  /* ── surface & ink ─────────────────────────────────────────────────── */
+  --color-bg: #f4f3f8;
+  --color-surface: #ffffff;
+  --color-text: #1d1b33;
+  --color-accent: #6355c6;
+  --color-accent-2: #e11d74;
+  --color-divider: rgba(29, 27, 51, 0.1);
+
+  --color-neutral-100: #f7f7fa;
+  --color-neutral-200: #ededf3;
+  --color-neutral-300: #dedee8;
+  --color-neutral-400: #c3c3d2;
+  --color-neutral-500: #9e9eb4;
+  --color-neutral-600: #7c7c95;
+  --color-neutral-700: #5c5c74;
+  --color-neutral-800: #3e3e55;
+  --color-neutral-900: #2a2a3c;
+
+  --color-accent-100: #f0edff;
+  --color-accent-200: #e0daff;
+  --color-accent-300: #c7bdfb;
+  --color-accent-400: #a797f3;
+  --color-accent-500: #8674e8;
+  --color-accent-600: #5a4cbb;
+  --color-accent-700: #493d9e;
+  --color-accent-800: #352c77;
+  --color-accent-900: #241e50;
+
+  /* ── type ──────────────────────────────────────────────────────────── */
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-heading-weight: 700;
+
+  /* ── shape & elevation ─────────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 2px 8px rgba(29, 27, 51, 0.06);
+  --shadow-md: 0 8px 24px rgba(29, 27, 51, 0.09);
+  --shadow-lg: 0 20px 48px rgba(29, 27, 51, 0.14);
+
+  --r-pill: 999px;
+  --r-pill-sm: 14px;
+  --r-card: 18px;
+  --r-frame: 22px;
+  --r-field: 12px;
+
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 10px rgba(29, 27, 51, 0.06);
+  --card-border: 0 solid transparent;
+  --panel-bg: #ffffff;
+  --panel-border: 0 solid transparent;
+
+  /* ── secondary ink (accessibility correction) ──────────────────────────
+   *
+   * The design board writes quiet text as `color-mix(--color-text 55%,
+   * transparent)`. Composited on white that lands at 3.78:1 — below the 4.5:1
+   * AA bar for the 12–13px sizes it is used at, which KAN-25 and KAN-53 both
+   * require us to clear. These two tokens replace that expression everywhere
+   * in the app: same visual intent, measured against the bar.
+   *
+   *   --color-text-muted   6.49:1 on white — safe at any size.
+   *   --color-text-faint   5.00:1 on white — still AA, one step quieter.
+   *
+   * Both are existing Broadsheet ramp steps, so the correction stays on-system
+   * rather than inventing a colour.
+   */
+  --color-text-muted: #5c5c74;
+  --color-text-faint: #6f6d84;
+
+  /* ── semantic: result status (KAN-38) ──────────────────────────────────
+   *
+   * Five states, each with a surface, an ink and — crucially — a paired icon
+   * and text label defined in `src/domain/status.ts`. Colour is never the only
+   * carrier: the spec (§60) and KAN-25 both require icon + text alongside it,
+   * because a red pill means nothing to a red-blind reader or a printout.
+   *
+   * Every ink/surface pair here is >= 4.5:1, verified by
+   * `src/styles/contrast.test.ts` — that test fails the build if a token is
+   * retuned below the WCAG AA bar.
+   */
+  --status-normal-bg: #f7f7fa;
+  --status-normal-ink: #3e3e55;
+
+  --status-low-bg: #f0edff;
+  --status-low-ink: #352c77;
+
+  --status-high-bg: #fff1d6;
+  --status-high-ink: #7a4600;
+
+  --status-critical-bg: #ffe3e7;
+  --status-critical-ink: #a0263c;
+
+  --status-unknown-bg: #ededf3;
+  --status-unknown-ink: #5c5c74;
+
+  /* ── semantic: feedback surfaces ───────────────────────────────────── */
+  --feedback-info-bg: #f0edff;
+  --feedback-info-ink: #352c77;
+  --feedback-info-border: #c7bdfb;
+
+  --feedback-success-bg: #e6f6ee;
+  --feedback-success-ink: #1c5c3c;
+  --feedback-success-border: #a9dcc3;
+
+  --feedback-warning-bg: #fff1d6;
+  --feedback-warning-ink: #7a4600;
+  --feedback-warning-border: #f2d79a;
+
+  --feedback-danger-bg: #ffe3e7;
+  --feedback-danger-ink: #a0263c;
+  --feedback-danger-border: #f5b8c0;
+
+  /* ── semantic: charts ──────────────────────────────────────────────── */
+  --chart-line: var(--color-accent);
+  --chart-band: var(--color-accent-100);
+  --chart-band-edge: var(--color-accent-400);
+  --chart-axis: var(--color-divider);
+  --chart-point-critical: #c81e3a;
+
+  /* ── layout ────────────────────────────────────────────────────────── */
+  --sidebar-width: 248px;
+  --content-max: 1160px;
+
+  /* ── breakpoints (documentation; media queries inline the values) ──── */
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+}
+
+/* Component-class retuning the design board applies on top of Broadsheet.
+   Kept identical to the board's <helmet> block. */
+
+body {
+  background: var(--color-bg);
+  font-family: var(--font-body);
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.025em;
+}
+a {
+  text-decoration: none;
+  font-weight: 600;
+}
+a:hover {
+  color: var(--color-accent-700);
+  text-decoration: underline;
+}
+i[class^='ph-'] {
+  display: inline-block;
+  line-height: 1;
+}
+.card {
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+.btn {
+  border-radius: var(--r-pill);
+  font-weight: 600;
+}
+.btn-secondary {
+  background: var(--panel-bg);
+  border-color: var(--color-divider);
+}
+.input {
+  background: var(--panel-bg);
+  border-radius: var(--r-field);
+}
+.tag {
+  border-radius: var(--r-pill);
+  font-weight: 600;
+}
+.seg {
+  border-radius: var(--r-pill);
+  background: var(--panel-bg);
+}
+.table th {
+  border-bottom-color: var(--color-divider);
+}
+
+/* Broadsheet's primary button paints its label with --color-bg, which on this
+   theme is the near-white page ground — correct there, but the accent is dark
+   enough here that pure white reads better and measures higher. */
+.btn-primary {
+  color: #ffffff;
+}
+
+/* Motion is opt-out across the app. Anything that animates below respects
+   this, so the whole system honours the preference in one place (KAN-53). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

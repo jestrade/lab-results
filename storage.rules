@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// LabResults — Cloud Storage security rules (KAN-4).
+//
+// Layout mirrors ownership so the rule can be decided from the path alone:
+//
+//   users/{userId}/reports/{reportId}/{fileName}.pdf
+//
+// Original PDFs are never made public and never given a download token by the
+// client. The app reads them back through a short-lived signed URL issued by
+// the server, so a leaked path is not a leaked report.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    match /users/{userId}/reports/{reportId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Upload constraints match the ones the dropzone enforces in the browser
+      // (KAN-3). The browser check is for the user; this one is the real one.
+      allow create: if isOwner(userId)
+        && isVerified()
+        && request.resource.size <= 25 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf'
+        && fileName.matches('.*\\.pdf');
+
+      // A stored report is immutable — a corrected report is a new upload,
+      // linked to the old one by the versioning workflow (KAN-31).
+      allow update: if false;
+
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
