@@ -75,6 +75,17 @@ the codebase.
 1. **Authentication → Sign-in method**: enable **Email/Password** and **Google**.
 2. **Authentication → Settings → Authorized domains**: add the hosting domain
    (`localhost` is authorized by default).
+
+   Leave `VITE_FIREBASE_AUTH_DOMAIN` as the default `<project>.firebaseapp.com`.
+   Pointing it at your Hosting domain makes `signInWithPopup` same-origin —
+   genuinely better, because the popup then does not depend on third-party
+   storage — but Firebase's auto-created Google OAuth client only authorises
+   `https://<project>.firebaseapp.com/__/auth/handler`. Changing `authDomain`
+   alone breaks Google sign-in with **Error 400: redirect_uri_mismatch**, which
+   is awkward to diagnose because it fails on Google's side after the popup
+   opens. To make the switch, do both halves: change the variable *and* add
+   `https://<hosting-domain>/__/auth/handler` to the OAuth client's authorised
+   redirect URIs in Google Cloud Console → APIs & Services → Credentials.
 3. **Firestore** and **Storage**: create both, then deploy the rules above.
 4. **Custom claims**: the `role` claim is what grants admin. It is set by the
    `setUserRole` callable in `functions/src/roles.ts`, which requires an admin
