@@ -75,10 +75,32 @@ the codebase.
 
 ## CI/CD
 
-`.github/workflows/ci.yml` runs four jobs: **verify** (lint, typecheck, unit
-tests, build), **e2e**, **security** (`npm audit` + gitleaks), and **deploy** to
-Firebase Hosting on a green push to `main`.
+`.github/workflows/ci.yml` runs five jobs:
 
-Deploy needs these repository secrets: `FIREBASE_SERVICE_ACCOUNT`, each
-`VITE_FIREBASE_*`, and `VITE_SENTRY_DSN`. The build job uses dummy values
-instead — a build must never depend on production secrets.
+| Job | When | Does |
+| --- | --- | --- |
+| `verify` | every push and PR | lint, typecheck, unit tests with coverage, build |
+| `e2e` | after `verify` | Playwright on desktop and mobile, including the axe pass |
+| `security` | every push and PR | `npm audit` at `high`, gitleaks over the history |
+| `preview` | PRs from this repo | deploys a Hosting preview channel against **staging** |
+| `deploy` | green push to `main` | builds and deploys hosting + rules to production |
+
+Dependabot (`.github/dependabot.yml`) opens grouped dependency PRs weekly.
+
+### Required repository secrets
+
+| Secret | Used by |
+| --- | --- |
+| `FIREBASE_SERVICE_ACCOUNT` | production deploy |
+| `FIREBASE_STAGING_SERVICE_ACCOUNT` | PR previews |
+| `VITE_FIREBASE_*` | production build |
+| `VITE_STAGING_FIREBASE_*` | preview build |
+| `VITE_SENTRY_DSN` | production build |
+
+The `verify` job builds with dummy values instead — a build must never depend on
+production secrets. Previews point at the staging project, never production, so
+a PR build cannot reach real users' data.
+
+Two things still have to be set in GitHub itself, because a workflow cannot set
+them: **branch protection** on `main` requiring the `verify`, `e2e` and
+`security` checks, and least-privilege IAM on both deploy service accounts.

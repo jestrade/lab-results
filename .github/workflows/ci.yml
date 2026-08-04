@@ -113,6 +113,48 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Every PR gets a clickable build on its own Hosting channel, so a reviewer
+  # can try the change instead of reading a diff and imagining it.
+  preview:
+    name: Preview deploy
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_STAGING_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_STAGING_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_STAGING_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_STAGING_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_STAGING_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_STAGING_FIREBASE_APP_ID }}
+          VITE_SENTRY_ENVIRONMENT: staging
+          VITE_APP_VERSION: ${{ github.sha }}
+
+      # Points at the staging project, never production: a preview must not be
+      # able to write to real users' data.
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.VITE_STAGING_FIREBASE_PROJECT_ID }}
+          expires: 7d
+
   # Deploy on green, from main only.
   deploy:
     name: Deploy to Firebase Hosting
