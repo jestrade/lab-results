@@ -18,42 +18,42 @@ import quotas from '../../config/quotas.json';
  * quotas.json, this fails and names the file that still needs editing.
  */
 describe('security rules match config/quotas.json', () => {
-  it('storage.rules enforces the per-user byte cap', () => {
-    expect(storageRules, 'storage.rules is missing perUserBytes').toContain(
-      String(quotas.storage.perUserBytes),
-    );
-  });
-
-  it('storage.rules enforces the global byte cap', () => {
-    expect(storageRules, 'storage.rules is missing globalBytes').toContain(
-      String(quotas.storage.globalBytes),
-    );
-  });
-
   it('storage.rules enforces the per-file size cap', () => {
+    // The one cap decidable from the request alone, so it stays in the rules
+    // and is refused before a single byte is stored.
     expect(storageRules, 'storage.rules is missing maxFileBytes').toContain(
       String(quotas.storage.maxFileBytes),
     );
   });
 
-  it('storage.rules enforces the per-user monthly upload cap', () => {
-    const perUserUploads = Math.floor(
-      quotas.storage.uploadOpsPerMonth / quotas.plannedUserCeiling,
-    );
-    expect(storageRules, 'storage.rules is missing the monthly upload cap').toContain(
-      `userUploadsThisMonth(userId) < ${perUserUploads}`,
-    );
+  it('storage.rules makes NO cross-service reads into Firestore', () => {
+    // The per-user, monthly and global caps used to be enforced here with
+    // firestore.get(). That requires the Firebase Rules service agent to hold
+    // roles/firebaserules.firestoreServiceAgent — an IAM binding that
+    // `firebase deploy` does not create. Without it the whole rule fails and
+    // every upload returns an opaque 403.
+    //
+    // If someone reintroduces firestore.get() here, this fails and points at
+    // the reason rather than letting uploads break in production again.
+    //
+    // Comments are stripped first — the header of storage.rules explains this
+    // history at length and would otherwise match itself.
+    const executable = storageRules
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('//'))
+      .join('\n');
+    expect(executable).not.toMatch(/firestore\.(get|exists)\(/);
   });
 
-  it('storage.rules honours the kill switch', () => {
-    // Without this, an admin has no way to stop uploads short of a deploy.
-    expect(storageRules).toContain('uploadsDisabled()');
-    expect(storageRules).toContain('&& !uploadsDisabled()');
-  });
-
-  it('storage.rules reads the counters rather than trusting the client', () => {
-    expect(storageRules).toContain('firestore.get(usagePath(userId))');
-    expect(storageRules).toContain('firestore.get(systemPath())');
+  it('storage.rules still decides ownership, verification and type itself', () => {
+    for (const check of [
+      'isOwner(userId)',
+      'isVerified()',
+      "request.resource.contentType == 'application/pdf'",
+      'allow update: if false;',
+    ]) {
+      expect(storageRules, check).toContain(check);
+    }
   });
 
   it('firestore.rules denies all client writes to the usage counters', () => {

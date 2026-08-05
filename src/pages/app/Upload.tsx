@@ -24,6 +24,7 @@ import {
   type FileRejection,
   type UploadHandle,
 } from '@/services/reports';
+import { toStorageErrorMessage } from '@/services/storageErrors';
 
 type Phase = 'idle' | 'uploading' | 'stored' | 'failed';
 
@@ -105,11 +106,9 @@ export function Upload() {
       // A cancel rejects the same promise; don't dress that up as a failure.
       if (handleRef.current !== handle) return;
       setPhase('failed');
-      setFailure(
-        caught instanceof Error && caught.message === 'Upload cancelled'
-          ? 'Upload cancelled. Nothing was stored.'
-          : 'The upload did not finish. Check your connection and try again — nothing was stored.',
-      );
+      // Mapped rather than assumed. A 403 once surfaced as "check your
+      // connection", which sent everyone looking in the wrong place.
+      setFailure(toStorageErrorMessage(caught).message);
     }
   }
 

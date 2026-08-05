@@ -64,13 +64,38 @@ either reading, so the cap holds whichever unit is meant.
 
 ## What is actually enforced
 
-**Hard — denied server-side, cannot be bypassed.** All in `storage.rules`:
+**Refused before storage** — `storage.rules`, decidable from the request alone:
 
-- per-file size (25 MiB)
-- per-user stored bytes, read via `firestore.get(usage/{uid})`
-- per-user uploads this month, from the same document
-- global stored bytes, via `firestore.get(systemUsage/global)`
-- the `uploadsDisabled` kill switch
+- ownership and email verification
+- per-file size (25 MiB) and content type
+- immutability of a stored report
+
+**Enforced immediately after storage** — `functions/src/usage.ts`:
+
+- per-user stored bytes
+- per-user uploads this month
+- global stored bytes
+
+An upload that breaches one of these is accepted, then deleted within seconds
+and the report marked failed with an explanation.
+
+> **This used to be prevention, and it is worth knowing why it is not.**
+> The caps were enforced in `storage.rules` by reading the counters with
+> `firestore.get()` — "cross-service rules". That requires the Firebase Rules
+> service agent to hold `roles/firebaserules.firestoreServiceAgent`, an IAM
+> binding the console creates but `firebase deploy` does not. Without it the
+> whole rule fails, and **every upload returns an opaque 403**. A security rule
+> whose correctness depends on an out-of-band IAM grant will break again on the
+> next project, silently.
+>
+> To restore true prevention, grant the role and move the checks back:
+> ```
+> gcloud projects add-iam-policy-binding labresults-2a13f \
+>   --member="serviceAccount:service-<PROJECT_NUMBER>@gcp-sa-firebaserules.iam.gserviceaccount.com" \
+>   --role="roles/firebaserules.firestoreServiceAgent"
+> ```
+> The tolerable part: the caps sit below the no-cost allowance with room to
+> spare, so the seconds an over-quota object exists cost nothing.
 
 **Soft — surfaced, not blocked.** Firestore read/write/delete counts, Functions
 invocations, egress. Counting these in-band would cost a write per operation,

@@ -18,9 +18,13 @@
 
 import * as logger from 'firebase-functions/logger';
 import { onObjectDeleted, onObjectFinalized } from 'firebase-functions/v2/storage';
+import { getStorage } from 'firebase-admin/storage';
 import { FieldPath, FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 import {
+  GLOBAL_STORAGE_BYTES,
+  PER_USER_STORAGE_BYTES,
+  PER_USER_UPLOADS_PER_MONTH,
   SYSTEM_USAGE_COLLECTION,
   SYSTEM_USAGE_DOC,
   USAGE_COLLECTION,
@@ -35,18 +39,24 @@ function ledgerKey(objectName: string): string {
   return objectName.replace(/[./]/g, '_');
 }
 
+interface UsageAfter {
+  userBytes: number;
+  systemBytes: number;
+  uploadsThisMonth: number;
+}
+
 async function applyDelta(
   objectName: string,
   userId: string,
   deltaBytes: number,
   countsAsUpload: boolean,
-): Promise<void> {
+): Promise<UsageAfter | null> {
   const db = getFirestore();
   const userRef = db.collection(USAGE_COLLECTION).doc(userId);
   const systemRef = db.collection(SYSTEM_USAGE_COLLECTION).doc(SYSTEM_USAGE_DOC);
   const key = ledgerKey(objectName);
 
-  await db.runTransaction(async (tx) => {
+  return db.runTransaction<UsageAfter | null>(async (tx) => {
     const [userSnap, systemSnap] = await Promise.all([tx.get(userRef), tx.get(systemRef)]);
 
     const ledger = (userSnap.data()?.ledger ?? {}) as Record<string, number>;
@@ -56,11 +66,11 @@ async function applyDelta(
     // is a duplicate delivery. Drop it rather than corrupting the total.
     if (deltaBytes > 0 && alreadyCounted) {
       logger.debug('Duplicate finalize event ignored', { objectName });
-      return;
+      return null;
     }
     if (deltaBytes < 0 && !alreadyCounted) {
       logger.debug('Delete event for an uncounted object ignored', { objectName });
-      return;
+      return null;
     }
 
     const period = currentUploadPeriod();
@@ -106,16 +116,49 @@ async function applyDelta(
     }
 
     const priorSystemBytes = (systemSnap.data()?.storageBytes as number | undefined) ?? 0;
+    const nextSystemBytes = Math.max(0, priorSystemBytes + deltaBytes);
     tx.set(
       systemRef,
       {
-        storageBytes: Math.max(0, priorSystemBytes + deltaBytes),
+        storageBytes: nextSystemBytes,
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
     );
+
+    return {
+      userBytes: nextBytes,
+      systemBytes: nextSystemBytes,
+      uploadsThisMonth: uploadsBase + (countsAsUpload ? 1 : 0),
+    };
   });
 }
+
+/**
+ * Which cap, if any, this upload breached.
+ *
+ * These used to be enforced in `storage.rules`, which refused the upload
+ * outright. That required cross-service rules and an IAM binding that CLI
+ * deploys do not create, so every upload failed with an opaque 403. The checks
+ * live here now: the object lands, and if it should not have, it is removed
+ * immediately. See the header comment in storage.rules.
+ */
+function breachedCap(usage: UsageAfter): string | null {
+  if (usage.userBytes > PER_USER_STORAGE_BYTES) return 'per-user-storage';
+  if (usage.uploadsThisMonth > PER_USER_UPLOADS_PER_MONTH) return 'per-user-monthly-uploads';
+  if (usage.systemBytes > GLOBAL_STORAGE_BYTES) return 'global-storage';
+  return null;
+}
+
+/** Shown to the user on the rejected report, so the removal is not a mystery. */
+const CAP_MESSAGES: Record<string, string> = {
+  'per-user-storage':
+    'This report would have taken you over your 400 MB storage allowance, so it was not kept. Delete a report you no longer need and upload it again.',
+  'per-user-monthly-uploads':
+    'You have used all your uploads for this month, so this report was not kept. Your allowance resets on the 1st.',
+  'global-storage':
+    'The service is at capacity, so this report could not be kept. Please try again later.',
+};
 
 export const onReportUploaded = onObjectFinalized(
   { region: REGION, memory: '256MiB', retry: false },
@@ -131,7 +174,37 @@ export const onReportUploaded = onObjectFinalized(
       return;
     }
 
-    await applyDelta(event.data.name, parsed.userId, size, true);
+    const usage = await applyDelta(event.data.name, parsed.userId, size, true);
+    if (!usage) return; // duplicate delivery, already counted
+
+    const breach = breachedCap(usage);
+    if (breach) {
+      // Remove it and let the delete trigger unwind the counters, so the
+      // rejection leaves no trace in the user's usage. The Firestore report
+      // record is marked rather than deleted: the user attempted this upload
+      // and deserves to see why it did not survive.
+      logger.warn('Upload breached a capacity cap and was removed', {
+        userId: parsed.userId,
+        reportId: parsed.reportId,
+        breach,
+        bytes: size,
+      });
+      await getStorage().bucket(event.data.bucket).file(event.data.name).delete()
+        .catch((error: unknown) => logger.error('Failed to remove over-quota object', { error }));
+
+      await getFirestore().collection('reports')
+        .where('storagePath', '==', event.data.name).limit(1).get()
+        .then((snap) => snap.docs[0]?.ref.set(
+          {
+            status: 'failed',
+            warnings: [{ code: `quota/${breach}`, message: CAP_MESSAGES[breach] ?? 'Storage limit reached.' }],
+          },
+          { merge: true },
+        ))
+        .catch((error: unknown) => logger.error('Failed to mark report rejected', { error }));
+      return;
+    }
+
     logger.info('Storage usage incremented', {
       userId: parsed.userId,
       reportId: parsed.reportId,

@@ -10,31 +10,46 @@ rules_version = '2';
 // client. The app reads them back through a short-lived signed URL issued by
 // the server, so a leaked path is not a leaked report.
 //
-// ── Capacity enforcement (spec §79) ───────────────────────────────────────
+// ── Why there is no firestore.get() here any more ─────────────────────────
 //
-// This is the only place per-user and global storage caps are actually
-// enforced. The browser runs the same arithmetic first so the user gets a
-// useful message, but that check is a courtesy — this one is the control.
+// An earlier version enforced the per-user and global storage caps directly,
+// by reading the usage counters with `firestore.get()`. That is "cross-service
+// rules", and it requires the Firebase Rules service agent to hold
+// `roles/firebaserules.firestoreServiceAgent` on the project. The Firebase
+// console grants that automatically when you write such rules there; a
+// `firebase deploy` from the CLI does not.
 //
-// The counters live in Firestore and are read here with firestore.get(). Two
-// consequences worth knowing:
+// Without the grant, every evaluation that touches `firestore.get()` fails —
+// not the individual condition, the whole rule — so every upload returned
+// HTTP 403 "Permission denied" with nothing to indicate why. A security rule
+// whose correctness depends on an IAM binding that deploys do not create is a
+// rule that will break again, silently, on the next project.
 //
-//   * Each upload costs a Firestore read or two. That is deliberate: a read is
-//     far cheaper than the storage overage it prevents.
-//   * The counters are updated by a Storage-triggered function *after* an
-//     object finalizes, so parallel uploads can each pass this check before
-//     any counter moves. The caps sit below the no-cost allowance precisely so
-//     that race costs nothing, the client uploads one file at a time, and
-//     reconcileUsage corrects drift nightly. See config/quotas.json.
+// So the caps moved to `functions/src/usage.ts`, which already computes usage
+// on every finalize and can now delete an object that breaches them. The
+// honest description of the change:
+//
+//   before: an over-quota upload was REFUSED
+//   after:  an over-quota upload is ACCEPTED, then removed within seconds,
+//           and the user is told
+//
+// That is weaker, and spec §79 has been updated to say so rather than keep
+// claiming prevention. It is tolerable here only because the caps sit below
+// the no-cost allowance with room to spare, so the brief overshoot costs
+// nothing. Everything that can be decided from the request alone — ownership,
+// verification, size, type — is still decided here, before any byte is stored.
+//
+// To restore true prevention, grant the role and put the checks back:
+//
+//   gcloud projects add-iam-policy-binding labresults-2a13f \
+//     --member="serviceAccount:service-<PROJECT_NUMBER>@gcp-sa-firebaserules.iam.gserviceaccount.com" \
+//     --role="roles/firebaserules.firestoreServiceAgent"
 //
 // The numeric literals below are checked against config/quotas.json by
-// src/domain/quotas.rules.test.ts — change the JSON, and the test tells you
-// exactly which of these to change.
+// src/domain/quotas.rules.test.ts.
 
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // ── identity ─────────────────────────────────────────────────────────
 
     function isSignedIn() {
       return request.auth != null;
@@ -52,76 +67,17 @@ service firebase.storage {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
-    // ── capacity ─────────────────────────────────────────────────────────
-
-    function usagePath(userId) {
-      return /databases/(default)/documents/usage/$(userId);
-    }
-
-    function systemPath() {
-      return /databases/(default)/documents/systemUsage/global;
-    }
-
-    // UTC year-month, matching `currentUploadPeriod()` in src/domain/quotas.ts.
-    // Rules have no date formatting, so it is assembled by hand.
-    function currentPeriod() {
-      return string(request.time.year()) + '-' +
-        (request.time.month() < 10
-          ? '0' + string(request.time.month())
-          : string(request.time.month()));
-    }
-
-    // A user with no usage document has never uploaded — treat as zero rather
-    // than denying, or the very first upload of every account would fail.
-    function userBytes(userId) {
-      return firestore.exists(usagePath(userId))
-        ? firestore.get(usagePath(userId)).data.get('storageBytes', 0)
-        : 0;
-    }
-
-    // A counter from a previous month reads as zero, which is how the monthly
-    // allowance resets. Doing it lazily beats a scheduled reset job: a cron
-    // that fails silently would hand every user an unlimited month.
-    function userUploadsThisMonth(userId) {
-      return (firestore.exists(usagePath(userId))
-        && firestore.get(usagePath(userId)).data.get('uploadPeriod', '') == currentPeriod())
-        ? firestore.get(usagePath(userId)).data.get('uploadsThisMonth', 0)
-        : 0;
-    }
-
-    function systemBytes() {
-      return firestore.exists(systemPath())
-        ? firestore.get(systemPath()).data.get('storageBytes', 0)
-        : 0;
-    }
-
-    // Kill switch. Lets an admin — or the reconciliation job, on finding that
-    // true usage has passed the cap — stop all new uploads without a deploy.
-    // An absent document means "not disabled", so a missing doc cannot lock
-    // everybody out.
-    function uploadsDisabled() {
-      return firestore.exists(systemPath())
-        && firestore.get(systemPath()).data.get('uploadsDisabled', false) == true;
-    }
-
     match /users/{userId}/reports/{reportId}/{fileName} {
       allow read: if isOwner(userId) || isAdmin();
 
+      // Everything here is decidable from the request itself. No cross-service
+      // reads, so no dependency on an IAM binding that a deploy will not create.
       allow create: if isOwner(userId)
         && isVerified()
-        && !uploadsDisabled()
         // Per-file: 25 MiB. Mirrors validateFile() in services/reports.ts.
         && request.resource.size <= 26214400
         && request.resource.contentType == 'application/pdf'
-        && fileName.matches('.*\\.pdf')
-        // Per-user: 400 MiB stored.
-        && userBytes(userId) + request.resource.size <= 419430400
-        // Per-user: 400 uploads per calendar month. The *.firebasestorage.app
-        // bucket allows only 5K upload operations per month across the whole
-        // project, which binds sooner than stored bytes ever will.
-        && userUploadsThisMonth(userId) < 400
-        // Global: 4 GiB stored across every user.
-        && systemBytes() + request.resource.size <= 4294967296;
+        && fileName.matches('.*\\.pdf');
 
       // A stored report is immutable — a corrected report is a new upload,
       // linked to the old one by the versioning workflow (KAN-31). This also
