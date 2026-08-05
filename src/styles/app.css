@@ -1173,3 +1173,32 @@ dialog.dialog {
      sets a width, and some engines then pin it to the inline start. */
   margin: auto;
 }
+
+/* ── AI processing consent gate (spec §54) ─────────────────────────────── */
+
+.consent-gate {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px 22px;
+  border-radius: var(--r-card);
+  background: var(--feedback-info-bg);
+  color: var(--feedback-info-ink);
+}
+.consent-gate .alert-icon {
+  color: var(--color-accent);
+  font-size: 22px;
+  margin-top: 2px;
+}
+.consent-gate-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.consent-gate p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 720px;
+}

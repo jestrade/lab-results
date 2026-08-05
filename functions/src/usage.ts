@@ -32,6 +32,8 @@ import {
   parseReportPath,
 } from './quotas';
 import { REGION } from './region';
+import { AI_SECRETS } from './ai/config';
+import { processReport } from './pipeline';
 
 
 /** Firestore forbids `/` in a document id and dislikes it in a field key. */
@@ -161,7 +163,15 @@ const CAP_MESSAGES: Record<string, string> = {
 };
 
 export const onReportUploaded = onObjectFinalized(
-  { region: REGION, memory: '256MiB', retry: false },
+  {
+    region: REGION,
+    // Larger than the delete trigger: this one parses a PDF and waits on two
+    // model round trips.
+    memory: '1GiB',
+    timeoutSeconds: 540,
+    secrets: AI_SECRETS,
+    retry: false,
+  },
   async (event) => {
     const parsed = parseReportPath(event.data.name);
     // Anything outside users/{uid}/reports/ is not metered — and nothing else
@@ -209,6 +219,29 @@ export const onReportUploaded = onObjectFinalized(
       userId: parsed.userId,
       reportId: parsed.reportId,
       bytes: size,
+    });
+
+    // Only now — an object that breached a cap was removed above and must not
+    // be processed, and processing before the counters moved would let a
+    // burst of uploads bypass the budget entirely.
+    const reportDoc = await getFirestore()
+      .collection('reports')
+      .where('storagePath', '==', event.data.name)
+      .limit(1)
+      .get();
+    const report = reportDoc.docs[0];
+    if (!report) {
+      // The client writes the Firestore record only after the bytes land, so a
+      // brief gap is normal rather than an error.
+      logger.warn('No report record for finalized object yet', { name: event.data.name });
+      return;
+    }
+
+    await processReport({
+      id: report.id,
+      ownerId: parsed.userId,
+      storagePath: event.data.name,
+      bucket: event.data.bucket,
     });
   },
 );

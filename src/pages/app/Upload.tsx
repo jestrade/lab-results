@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/auth/useAuth';
 import { Alert } from '@/components/Alert';
@@ -10,6 +10,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { StepIndicator, type Step } from '@/components/StepIndicator';
 import { QuotaMeter } from '@/components/QuotaMeter';
 import { useToast } from '@/components/useToast';
+import { useAiConsent } from '@/hooks/useAiConsent';
 import { useStorageQuota } from '@/hooks/useStorageQuota';
 import {
   checkUploadAllowed,
@@ -45,6 +46,7 @@ export function Upload() {
   const { push } = useToast();
   const navigate = useNavigate();
   const quota = useStorageQuota();
+  const consent = useAiConsent();
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [file, setFile] = useState<File | null>(null);
@@ -193,6 +195,38 @@ export function Upload() {
         </Alert>
       ) : null}
 
+      {!consent.loading && !consent.granted ? (
+        <div className="consent-gate">
+          <Icon name="sparkle" className="alert-icon" />
+          <div>
+            <div className="consent-gate-title">Before your first upload</div>
+            <p>
+              To read your report we send its contents to <strong>Google Gemini</strong>, a
+              third-party AI provider. Identifiers we can detect — email addresses, phone numbers,
+              record numbers, dates — are removed first, but this is not full anonymisation:{' '}
+              <strong>names written in the document are not reliably removable</strong>.
+            </p>
+            <p>
+              On the free tier, Google&rsquo;s terms permit submitted content to be used to improve
+              their products. <Link to="/legal/ai-processing">What is sent, in detail</Link>.
+            </p>
+            {consent.error ? (
+              <Alert tone="danger" live>
+                {consent.error}
+              </Alert>
+            ) : null}
+            <Button
+              variant="primary"
+              onClick={() => void consent.grant()}
+              loading={consent.saving}
+              loadingLabel="Saving…"
+            >
+              I understand and agree
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {!isEmailVerified ? (
         <Alert
           tone="warning"
@@ -220,6 +254,7 @@ export function Upload() {
           onFileSelected={handleFileSelected}
           disabled={
             !isEmailVerified ||
+            !consent.granted ||
             quota.uploadsDisabled ||
             quota.storage.isFull ||
             quota.uploads.remaining <= 0
@@ -227,11 +262,13 @@ export function Upload() {
           disabledReason={
             !isEmailVerified
               ? 'Verify your email address first.'
-              : quota.uploadsDisabled
-                ? 'The service is at capacity. Please try again later.'
-                : quota.storage.isFull
-                  ? 'Your storage is full. Delete a report to free space.'
-                  : 'You have used all your uploads for this month.'
+              : !consent.granted
+                ? 'Agree to AI processing before uploading.'
+                : quota.uploadsDisabled
+                  ? 'The service is at capacity. Please try again later.'
+                  : quota.storage.isFull
+                    ? 'Your storage is full. Delete a report to free space.'
+                    : 'You have used all your uploads for this month.'
           }
         />
       ) : null}

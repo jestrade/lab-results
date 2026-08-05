@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { act, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import type * as ReportsModule from '@/services/reports';
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
@@ -9,6 +10,14 @@ import { Upload } from './Upload';
 
 const uploadReport = vi.hoisted(() => vi.fn());
 const quotaState = vi.hoisted(() => ({ value: null as unknown }));
+const consentState = vi.hoisted(() => ({ value: null as unknown }));
+const grantConsent = vi.hoisted(() => vi.fn());
+
+// Consent is a live Firestore subscription; stub at the hook so these tests
+// stay about the page.
+vi.mock('@/hooks/useAiConsent', () => ({
+  useAiConsent: () => consentState.value,
+}));
 
 // The quota hook is a live Firestore subscription; stub it at the hook so the
 // page's behaviour is what gets tested, not the SDK.
@@ -61,6 +70,17 @@ function makeQuota(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeConsent(overrides: Record<string, unknown> = {}) {
+  return {
+    loading: false,
+    granted: false,
+    grant: grantConsent,
+    saving: false,
+    error: null,
+    ...overrides,
+  };
+}
+
 function pdf(name = 'panel.pdf', size = 1_800_000): File {
   const file = new File(['%PDF-1.4'], name, { type: 'application/pdf' });
   Object.defineProperty(file, 'size', { value: size });
@@ -73,7 +93,11 @@ describe('Upload', () => {
   // no arguments.
   beforeEach(() => {
     uploadReport.mockReset();
+    grantConsent.mockReset();
     quotaState.value = makeQuota();
+    // Granted by default: most tests are about upload behaviour, and the gate
+    // has its own tests below.
+    consentState.value = makeConsent({ granted: true });
   });
 
   it('uploads an accepted PDF for the signed-in user', async () => {
@@ -194,6 +218,44 @@ describe('Upload', () => {
     expect(screen.getByText(/running low on space/i)).toBeInTheDocument();
     // Still usable — a warning, not a block.
     expect(screen.getByRole('button', { name: /drag your laboratory pdf/i })).toBeEnabled();
+  });
+
+  it('will not let a user upload before agreeing to AI processing', () => {
+    // A Google sign-up never sees the registration form, so it arrives having
+    // agreed to nothing about its report text going to a third-party model.
+    consentState.value = makeConsent({ granted: false });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    expect(screen.getByText(/before your first upload/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /agree to ai processing before uploading/i }),
+    ).toBeDisabled();
+  });
+
+  it('names the provider and does not oversell the redaction', () => {
+    consentState.value = makeConsent({ granted: false });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    // Consent is only meaningful if it says what actually happens.
+    expect(screen.getByText(/Google Gemini/)).toBeInTheDocument();
+    expect(screen.getByText(/not full anonymisation/i)).toBeInTheDocument();
+    expect(screen.getByText(/names written in the document are not reliably removable/i))
+      .toBeInTheDocument();
+    expect(screen.getByText(/used to improve their products/i)).toBeInTheDocument();
+  });
+
+  it('records consent when the user agrees', async () => {
+    const user = userEvent.setup();
+    consentState.value = makeConsent({ granted: false });
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+
+    await user.click(screen.getByRole('button', { name: /i understand and agree/i }));
+    expect(grantConsent).toHaveBeenCalled();
+  });
+
+  it('hides the gate once consent is on record', () => {
+    renderWithProviders(<Upload />, { auth: signedInAuth() });
+    expect(screen.queryByText(/before your first upload/i)).not.toBeInTheDocument();
   });
 
   it('has no serious accessibility violations', async () => {
