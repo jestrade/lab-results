@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -7,6 +10,7 @@ import {
   formatReferenceRange,
   groupByCategory,
   matchesQuery,
+  MIN_POINTS_FOR_TREND,
   sparklinePath,
   summariseSeries,
 } from './variables';
@@ -228,5 +232,20 @@ describe('category metadata', () => {
     const labelled = Object.keys(CATEGORY_LABEL) as VariableCategory[];
     expect([...CATEGORY_ORDER].sort()).toEqual([...labelled].sort());
     expect(new Set(CATEGORY_ORDER).size).toBe(CATEGORY_ORDER.length);
+  });
+});
+
+describe('MIN_POINTS_FOR_TREND', () => {
+  it('matches the threshold the trend engine actually enforces', async () => {
+    // The UI explains this rule to the user ("a direction needs at least
+    // three measurements"). If the engine's threshold moves and this copy does
+    // not, the page states a rule the backend is not following.
+    const engine = await readFile(
+      resolve(process.cwd(), 'functions/src/trends.ts'),
+      'utf8',
+    );
+    const declared = /MIN_POINTS_FOR_TREND = (\d+)/.exec(engine)?.[1];
+    expect(declared).toBeDefined();
+    expect(Number(declared)).toBe(MIN_POINTS_FOR_TREND);
   });
 });

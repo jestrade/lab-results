@@ -49,6 +49,15 @@ export const CATEGORY_ORDER: readonly VariableCategory[] = [
   'other',
 ];
 
+/**
+ * Points below which no direction is reported.
+ *
+ * Mirrors `MIN_POINTS_FOR_TREND` in `functions/src/trends.ts`, which is where
+ * the rule is actually enforced — this copy exists so the UI can explain the
+ * rule rather than assert one of its own. The two must move together.
+ */
+export const MIN_POINTS_FOR_TREND = 3;
+
 export interface FormattedRange {
   /** The range itself, or null when none was available. */
   text: string | null;

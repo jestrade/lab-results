@@ -17,13 +17,14 @@
  */
 
 import * as logger from 'firebase-functions/logger';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
 import { analyseResult, needsAnalysis } from './analysis';
 import { classify, isOutOfRange, parseValue, type ReferenceRange } from './classification';
 import { PARTIAL_PROCESSING_NOTICE } from './copy';
 import { extractResults, NoTextLayerError, readPdfText } from './extraction';
+import { calculateTrend, mergePoints, variableKey } from './trends';
 import { AiProviderError } from './ai/types';
 
 /** Bounded so one pathological report cannot spend the month's AI budget. */
@@ -157,7 +158,10 @@ export async function processReport(report: ReportRef): Promise<void> {
     const range = rangeFrom(row);
     const value = parseValue(row.rawValue);
     return {
-      id: `${String(index).padStart(3, '0')}-${row.rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}`,
+      // Document id keeps report order for the details page; variableId is the
+      // cross-report identity the trend engine groups on.
+      id: `${String(index).padStart(3, '0')}-${variableKey(row.rawName)}`,
+      variableId: variableKey(row.rawName),
       row,
       range,
       value,
@@ -165,14 +169,21 @@ export async function processReport(report: ReportRef): Promise<void> {
     };
   });
 
+  // One instant for the whole report, so every result from it lines up on the
+  // time axis. The report's own date when the laboratory printed one, falling
+  // back to when it was uploaded.
+  const observedAt = extraction.output.reportDate
+    ? new Date(`${extraction.output.reportDate}T00:00:00Z`)
+    : new Date();
+
   const batch = db.batch();
   const resultsRef = db.collection('reports').doc(report.id).collection('results');
   for (const entry of classified) {
     batch.set(resultsRef.doc(entry.id), {
-      // The canonical variable catalog (KAN-8) does not exist yet, so the
-      // printed name is used as the identity. When it lands, this is where
-      // alias matching plugs in — the stored rawName is what it will match on.
-      variableId: entry.id,
+      // The canonical variable catalog (KAN-8) does not exist yet, so a
+      // normalised form of the printed name is the identity. When the catalog
+      // lands, alias resolution plugs in here — rawName is what it matches on.
+      variableId: entry.variableId,
       rawName: entry.row.rawName,
       value: entry.value,
       rawValue: entry.row.rawValue,
@@ -186,10 +197,13 @@ export async function processReport(report: ReportRef): Promise<void> {
       status: entry.status,
       confidence: entry.row.confidence,
       sourcePage: null,
-      observedAt: FieldValue.serverTimestamp(),
+      observedAt: Timestamp.fromDate(observedAt),
     });
   }
   await batch.commit();
+
+  // ── series: what makes /variables and /trends show anything ─────────────
+  await updateSeries(report.ownerId, observedAt, classified);
 
   // ── analysis: only where it adds something ──────────────────────────────
   const worthAnalysing = classified
@@ -249,4 +263,97 @@ export async function processReport(report: ReportRef): Promise<void> {
     analysed,
     dropped: extraction.dropped,
   });
+}
+
+/**
+ * Folds this report's results into the user's per-variable series (KAN-11).
+ *
+ * The series is a denormalised cache: the variables grid draws two dozen cards
+ * and the trend page overlays several histories, and doing either from the raw
+ * results would be a collection-group query plus a read per card. The results
+ * on each report remain the record; this is the shape.
+ *
+ * Written by the Admin SDK only — `firestore.rules` denies every client write,
+ * which is what lets the grid present a trend as computed rather than claimed.
+ */
+async function updateSeries(
+  ownerId: string,
+  observedAt: Date,
+  classified: {
+    variableId: string;
+    row: { rawName: string; unit?: string };
+    range: ReferenceRange;
+    value: number | null;
+    status: string;
+  }[],
+): Promise<void> {
+  const db = getFirestore();
+  const at = observedAt.getTime();
+
+  await Promise.all(
+    classified.map(async (entry) => {
+      const ref = db
+        .collection('users')
+        .doc(ownerId)
+        .collection('variableSeries')
+        .doc(entry.variableId);
+
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const existing = (snap.data()?.pointsRaw as { value: number; at: number }[]) ?? [];
+
+        // A non-numeric result still updates the latest value and status, but
+        // contributes no point — there is nothing to plot for "Negative".
+        const points =
+          entry.value === null ? existing : mergePoints(existing, { value: entry.value, at });
+
+        const trend = calculateTrend({
+          points,
+          rangeLow: entry.range.low,
+          rangeHigh: entry.range.high,
+        });
+
+        // Only overwrite "latest" when this report is at least as recent as
+        // what is stored, so uploading an old report does not rewrite history
+        // with a stale value.
+        const storedLatestAt = (snap.data()?.latestAt as number | undefined) ?? -Infinity;
+        const isNewest = at >= storedLatestAt;
+
+        tx.set(
+          ref,
+          {
+            variableId: entry.variableId,
+            canonicalName: entry.row.rawName,
+            aliases: [],
+            category: 'other',
+            resultCount: points.length,
+            trend,
+            pointsRaw: points,
+            points: points.map((point) => ({
+              value: point.value,
+              observedAt: Timestamp.fromMillis(point.at),
+            })),
+            ...(isNewest
+              ? {
+                  unit: entry.row.unit ?? null,
+                  latestValue: entry.value,
+                  latestRawValue: String(entry.value ?? ''),
+                  latestStatus: entry.status,
+                  latestObservedAt: Timestamp.fromMillis(at),
+                  latestAt: at,
+                  referenceRange: {
+                    low: entry.range.low,
+                    high: entry.range.high,
+                    text: entry.range.text,
+                    source: entry.range.source,
+                  },
+                }
+              : {}),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      });
+    }),
+  );
 }

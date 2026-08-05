@@ -12,3 +12,8 @@ test-results
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Firebase CLI debug output
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

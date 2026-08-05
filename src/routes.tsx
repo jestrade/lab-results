@@ -9,6 +9,7 @@ import { ReportDetails } from '@/pages/app/ReportDetails';
 import { Dashboard } from '@/pages/app/Dashboard';
 import { NotFound } from '@/pages/app/NotFound';
 import { Reports } from '@/pages/app/Reports';
+import { Trends } from '@/pages/app/Trends';
 import { Upload } from '@/pages/app/Upload';
 import { Variables } from '@/pages/app/Variables';
 import { LegalPage } from '@/pages/legal/LegalPage';
@@ -66,18 +67,7 @@ export function AppRoutes() {
               />
             }
           />
-          <Route
-            path="trends"
-            element={
-              <ComingSoon
-                kicker="Compare variables"
-                title="Trend analysis"
-                ticket="KAN-47"
-                icon="chart-line"
-                description="Chart several variables together over a date range you choose."
-              />
-            }
-          />
+          <Route path="trends" element={<Trends />} />
           <Route
             path="profile"
             element={
