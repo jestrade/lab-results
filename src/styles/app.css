@@ -1202,3 +1202,110 @@ dialog.dialog {
   line-height: 1.65;
   max-width: 720px;
 }
+
+/* ── account settings (KAN-27 / KAN-48) ────────────────────────────────── */
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px;
+  border-radius: var(--r-card);
+  background: var(--panel-bg);
+  max-width: 760px;
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.settings-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.settings-section p {
+  margin: 0;
+  line-height: 1.65;
+}
+.settings-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-facts li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.settings-facts li i {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-accent);
+}
+
+/* ── report details (KAN-44) ───────────────────────────────────────────── */
+
+.report-detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .report-detail {
+    /* The design board puts the PDF viewer here. Until KAN-44's viewer lands,
+       the metadata rail keeps the same position so the layout does not shift
+       when it arrives. */
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+.report-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.report-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: var(--r-card);
+  background: var(--panel-bg);
+}
+
+/* Visually distinct from the extracted values, because it is a different kind
+   of thing: one is what the laboratory printed, the other is a machine's
+   paraphrase. Blurring that line is the failure mode this product must avoid. */
+.result-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  margin: 0 0 6px;
+  border-left: 3px solid var(--color-accent-300);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+  background: var(--color-accent-100);
+}
+.result-analysis-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent-800);
+}
+.result-analysis p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-accent-900);
+}

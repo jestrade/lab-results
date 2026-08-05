@@ -3,7 +3,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { RedirectIfSignedIn, RequireAuth, RequireRole } from '@/auth/guards';
 import { AppLayout } from '@/layouts/AppLayout';
 import { PublicLayout } from '@/layouts/PublicLayout';
+import { AccountSettings } from '@/pages/app/AccountSettings';
 import { ComingSoon } from '@/pages/app/ComingSoon';
+import { ReportDetails } from '@/pages/app/ReportDetails';
 import { Dashboard } from '@/pages/app/Dashboard';
 import { NotFound } from '@/pages/app/NotFound';
 import { Reports } from '@/pages/app/Reports';
@@ -50,18 +52,7 @@ export function AppRoutes() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="upload" element={<Upload />} />
           <Route path="reports" element={<Reports />} />
-          <Route
-            path="reports/:reportId"
-            element={
-              <ComingSoon
-                kicker="Report"
-                title="Report details"
-                ticket="KAN-44"
-                icon="file-pdf"
-                description="The original PDF beside the results extracted from it."
-              />
-            }
-          />
+          <Route path="reports/:reportId" element={<ReportDetails />} />
           <Route path="variables" element={<Variables />} />
           <Route
             path="variables/:variableId"
@@ -99,18 +90,7 @@ export function AppRoutes() {
               />
             }
           />
-          <Route
-            path="settings"
-            element={
-              <ComingSoon
-                kicker="Account"
-                title="Account settings"
-                ticket="KAN-27 / KAN-48"
-                icon="gear"
-                description="Change your password, export your data, or delete your account."
-              />
-            }
-          />
+          <Route path="settings" element={<AccountSettings />} />
 
           <Route element={<RequireRole role="admin" />}>
             <Route

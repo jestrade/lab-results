@@ -115,9 +115,22 @@ export function subscribeToConsents(
  * sign-up never passes through the registration form at all, so it reaches the
  * upload page having agreed to nothing about third-party AI.
  */
+export async function withdrawAiProcessingConsent(uid: string): Promise<void> {
+  // Cleared rather than deleted, so the field's absence still means "never
+  // given" and a withdrawal is a distinct, observable event in the document's
+  // history. Withdrawal has to be as easy as consent — the pipeline refuses to
+  // send anything the moment this is null.
+  await updateDoc(userDocRef(uid), {
+    'consents.aiProcessingAcceptedAt': null,
+    'consents.aiProcessingWithdrawnAt': serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function recordAiProcessingConsent(uid: string): Promise<void> {
   await updateDoc(userDocRef(uid), {
     'consents.aiProcessingAcceptedAt': serverTimestamp(),
+    'consents.aiProcessingWithdrawnAt': null,
     'consents.documentsVersion': DOCUMENTS_VERSION,
     updatedAt: serverTimestamp(),
   });

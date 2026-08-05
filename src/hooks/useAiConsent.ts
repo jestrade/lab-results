@@ -1,14 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/auth/useAuth';
-import { recordAiProcessingConsent, subscribeToConsents } from '@/services/profiles';
+import {
+  recordAiProcessingConsent,
+  subscribeToConsents,
+  withdrawAiProcessingConsent,
+} from '@/services/profiles';
 import type { UserConsents } from '@/domain/types';
 
 export interface AiConsentState {
   loading: boolean;
   /** True once the user has agreed to third-party AI processing. */
   granted: boolean;
+  /** When they agreed, so the settings page can show it rather than assert it. */
+  acceptedAt: Date | null;
   grant: () => Promise<void>;
+  withdraw: () => Promise<void>;
   saving: boolean;
   error: string | null;
 }
@@ -61,12 +68,32 @@ export function useAiConsent(): AiConsentState {
     }
   }, [user]);
 
+  const withdraw = useCallback(async () => {
+    if (!user) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await withdrawAiProcessingConsent(user.uid);
+    } catch {
+      setError('We could not save your choice. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [user]);
+
+  const accepted = consents?.aiProcessingAcceptedAt;
+
   return {
     loading,
     // Absent means not granted. Consent is something we must be able to point
     // at, never something inferred from silence.
-    granted: consents?.aiProcessingAcceptedAt != null,
+    granted: accepted != null,
+    acceptedAt:
+      accepted && typeof (accepted as { toDate?: unknown }).toDate === 'function'
+        ? (accepted as unknown as { toDate: () => Date }).toDate()
+        : null,
     grant,
+    withdraw,
     saving,
     error,
   };
