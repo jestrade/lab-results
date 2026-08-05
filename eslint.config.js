@@ -5,7 +5,10 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'playwright-report', 'test-results'] },
+  // `.claude/worktrees` holds full checkouts of this repo made for background
+  // agents. Linting them reports another branch's work in progress as errors
+  // in this one.
+  { ignores: ['dist', 'coverage', 'playwright-report', 'test-results', '.claude'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

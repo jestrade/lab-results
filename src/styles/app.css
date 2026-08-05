@@ -1374,3 +1374,58 @@ dialog.dialog {
   margin-top: 8px;
   font-size: 13px;
 }
+
+/* ── Profile (KAN-27 / KAN-48) ───────────────────────────────────────────── */
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.profile-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.profile-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-divider);
+}
+.profile-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.profile-meta-row > :first-child {
+  min-width: 150px;
+}
+
+/* A disabled input still has to be readable — it is showing the user their own
+   email address, not a control they are being denied. */
+.profile-form input:disabled {
+  opacity: 1;
+  color: var(--color-text-muted);
+  background: var(--color-neutral-100);
+  cursor: default;
+}
+.profile-form textarea.input {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  padding: 10px 12px;
+  width: 100%;
+}
+.profile-form select.input {
+  width: 100%;
+}

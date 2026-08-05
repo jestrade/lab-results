@@ -8,6 +8,7 @@ import { ComingSoon } from '@/pages/app/ComingSoon';
 import { ReportDetails } from '@/pages/app/ReportDetails';
 import { Dashboard } from '@/pages/app/Dashboard';
 import { NotFound } from '@/pages/app/NotFound';
+import { Profile } from '@/pages/app/Profile';
 import { Reports } from '@/pages/app/Reports';
 import { Trends } from '@/pages/app/Trends';
 import { Upload } from '@/pages/app/Upload';
@@ -68,18 +69,7 @@ export function AppRoutes() {
             }
           />
           <Route path="trends" element={<Trends />} />
-          <Route
-            path="profile"
-            element={
-              <ComingSoon
-                kicker="Account"
-                title="Profile"
-                ticket="KAN-27 / KAN-48"
-                icon="user"
-                description="Your name, email verification status and notification preferences."
-              />
-            }
-          />
+          <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<AccountSettings />} />
 
           <Route element={<RequireRole role="admin" />}>

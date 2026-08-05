@@ -68,9 +68,39 @@ export interface UserProfile {
   disabled: boolean;
   consents: UserConsents;
   preferences: UserPreferences;
+  /** Optional context the user chose to give. Absent until they fill it in. */
+  healthContext: HealthContext | null;
   createdAt: Timestamp;
   updatedAt: Timestamp | null;
   deletedAt: Timestamp | null;
+}
+
+export type BiologicalSex = 'female' | 'male' | 'intersex';
+export type PregnancyStatus = 'not_pregnant' | 'pregnant' | 'postpartum';
+
+/**
+ * Optional context about the person the results belong to (KAN-27, spec §51).
+ *
+ * Every field is nullable and stays null until the user supplies it. Nothing
+ * here is inferred, defaulted, or carried over from anywhere else — a guessed
+ * value in this record would be indistinguishable from one the user stated.
+ *
+ * Only attributes that are stable between blood draws live here. Fasting
+ * status is deliberately absent: it is a property of a single draw, not of a
+ * person, and a profile-level "fasting: yes" would silently attach itself to
+ * every future non-fasting report. It belongs on the upload form.
+ */
+export interface HealthContext {
+  /** ISO `YYYY-MM-DD`. Stored rather than an age, which goes stale in silence. */
+  dateOfBirth: string | null;
+  /** Asked because many reference ranges differ by sex, not for demographics. */
+  biologicalSex: BiologicalSex | null;
+  pregnancyStatus: PregnancyStatus | null;
+  /** Free text — one per line, as the user writes them. Never parsed. */
+  medications: string | null;
+  conditions: string | null;
+  ongoingSymptoms: string | null;
+  updatedAt: Timestamp | null;
 }
 
 export interface UserConsents {

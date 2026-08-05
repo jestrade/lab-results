@@ -10,6 +10,7 @@
  */
 
 import {
+  deleteField,
   doc,
   getDoc,
   onSnapshot,
@@ -22,7 +23,7 @@ import type { User } from 'firebase/auth';
 
 import { getDb } from '@/lib/firebase';
 import { DOCUMENTS_VERSION } from '@/domain/disclaimers';
-import type { UserConsents, UserProfile } from '@/domain/types';
+import type { HealthContext, UserConsents, UserProfile } from '@/domain/types';
 
 const USERS = 'users';
 
@@ -83,6 +84,68 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 export async function updateDisplayName(uid: string, displayName: string): Promise<void> {
   await updateDoc(userDocRef(uid), { displayName, updatedAt: serverTimestamp() });
+}
+
+/**
+ * Live view of the whole profile.
+ *
+ * Subscribed for the same reason consent is: the display name shown in the
+ * sidebar and the one on this form have to be the same value, and a profile
+ * edited in another tab should not leave a stale copy behind.
+ */
+export function subscribeToProfile(
+  uid: string,
+  onChange: (profile: UserProfile | null) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  return onSnapshot(
+    userDocRef(uid),
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        onChange(null);
+        return;
+      }
+      onChange({ ...(snapshot.data() as Omit<UserProfile, 'uid'>), uid } as UserProfile);
+    },
+    (error) => onError?.(error),
+  );
+}
+
+/**
+ * Writes the optional health context (KAN-27, spec §51).
+ *
+ * Nulls are written, not omitted. Omitting a cleared field would leave the old
+ * value in place, so "I removed my medication list" would silently mean "I
+ * kept it" — the one behaviour that must not happen to a record the user is
+ * trying to take back.
+ *
+ * Protected by exactly the rules that protect laboratory data: the `users/{uid}`
+ * update rule in `firestore.rules` lets only the owner write, and forbids the
+ * security-relevant fields entirely.
+ */
+export async function updateHealthContext(
+  uid: string,
+  context: Omit<HealthContext, 'updatedAt'>,
+): Promise<void> {
+  await updateDoc(userDocRef(uid), {
+    healthContext: { ...context, updatedAt: serverTimestamp() },
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Removes the health context entirely.
+ *
+ * `deleteField` rather than writing an object of nulls: a user who clears this
+ * is asking for the data to be gone, and a document that still carries the
+ * shape of a health record — with every value emptied — is not the same as one
+ * that never had it.
+ */
+export async function clearHealthContext(uid: string): Promise<void> {
+  await updateDoc(userDocRef(uid), {
+    healthContext: deleteField(),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 /**

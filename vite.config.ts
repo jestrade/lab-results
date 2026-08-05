@@ -45,7 +45,11 @@ export default defineConfig({
     // `functions/` is a separate package with its own toolchain and its own
     // vitest run — its sources are CommonJS and depend on a generated JSON
     // file that only its build produces.
-    exclude: ['e2e/**', 'node_modules/**', 'functions/**'],
+    // `.claude/worktrees/**` holds full checkouts of this repo made for
+    // background agents. Without excluding it, vitest runs every copy's tests
+    // alongside the real ones and reports failures from work in progress
+    // elsewhere as failures here.
+    exclude: ['e2e/**', 'node_modules/**', 'functions/**', '.claude/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
