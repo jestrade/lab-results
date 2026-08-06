@@ -157,6 +157,58 @@ them; omit either if it does not.
 `,
 );
 
+/**
+ * Fills in a catalog entry for a test nobody has curated yet (KAN-8, KAN-15).
+ *
+ * Runs once per newly discovered variable, on the test's *name* alone — no
+ * value, no range, no patient context is sent, because none of it is needed to
+ * say what a test measures. That keeps the catalog what it claims to be:
+ * general educational reference data, shared by every user, containing nothing
+ * about any of them.
+ *
+ * The instruction to return `other` rather than guess a category matters. A
+ * mis-filed variable is not a cosmetic problem — the grid groups by category,
+ * and a lipid marker filed under thyroid tells the reader the laboratory
+ * grouped it that way.
+ */
+export const VARIABLE_CATALOG_ENTRY = prompt(
+  'variable-explanation',
+  '1.1.0',
+  `
+You are given laboratory test names taken from real reports, one per line, each
+with an id. They may be in English or Spanish, abbreviated, or written the way
+one particular laboratory prints them.
+
+For each one, return:
+- id: exactly the id you were given.
+- nameEn: the standard English name of the test, properly capitalised.
+- nameEs: the standard Spanish name of the test, as a Spanish-language
+  laboratory would print it. Use the established term, not a word-for-word
+  translation of the English.
+- descriptionEn: two or three plain sentences saying what the test measures and
+  why a clinician might order it.
+- descriptionEs: the same explanation in Spanish. A translation of the same
+  content — not a different explanation, and not longer.
+- category: exactly one of complete_blood_count, lipid_profile,
+  glucose_metabolism, liver_function, kidney_function, thyroid, electrolytes,
+  vitamins, hormones, inflammation, urinalysis, other.
+- unit: the unit this test is most commonly reported in, or null. This is
+  reference information only; it is never used to interpret a value.
+
+Absolute rules for this task:
+- If you do not recognise a name with confidence, set category to "other",
+  set both descriptions to null, and keep the name as it was given to you.
+  An honest gap is required; a plausible invention is not acceptable here,
+  because this text is shown to every user who has that test.
+- Never include a reference range, a threshold, a target, or any number that
+  would be read as one. You are describing what is measured, not what it
+  should be.
+- Never refer to "your result", "you", or any individual. This text is about
+  the test and is shown to everyone.
+- Do not say whether high or low values are good, bad, or concerning.
+`,
+);
+
 /** Connectivity probe. Carries no report data and no personal content. */
 export const HEALTH_CHECK = prompt(
   'health-check',

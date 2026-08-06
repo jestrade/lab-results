@@ -1,6 +1,7 @@
 import { ButtonLink } from '@/components/Button';
 import { DisclaimerBanner } from '@/components/DisclaimerBanner';
 import { EmptyState } from '@/components/EmptyState';
+import { useT } from '@/i18n/useI18n';
 import { useAuth } from '@/auth/useAuth';
 
 /**
@@ -14,18 +15,19 @@ import { useAuth } from '@/auth/useAuth';
  */
 export function Dashboard() {
   const { user } = useAuth();
+  const t = useT();
   const name = user?.displayName?.split(' ')[0];
 
   return (
     <>
       <div className="page-head">
         <div>
-          <div className="kicker">Your laboratory history</div>
-          <h1>{name ? `Welcome, ${name}` : 'Dashboard'}</h1>
+          <div className="kicker">{t('dashboard.kicker')}</div>
+          <h1>{name ? t('dashboard.welcome', { name }) : t('nav.dashboard')}</h1>
         </div>
         <div className="spacer" />
         <ButtonLink to="/upload" variant="primary" icon="upload-simple">
-          Upload a report
+          {t('dashboard.uploadReport')}
         </ButtonLink>
       </div>
 
@@ -33,15 +35,14 @@ export function Dashboard() {
 
       <EmptyState
         icon="file-pdf"
-        title="No reports yet"
+        title={t('dashboard.emptyTitle')}
         action={
           <ButtonLink to="/upload" variant="primary" icon="upload-simple">
-            Upload your first report
+            {t('dashboard.uploadFirst')}
           </ButtonLink>
         }
       >
-        Upload a laboratory report and every test, value, unit and reference range on it will be
-        extracted and tracked over time.
+        {t('dashboard.emptyBody')}
       </EmptyState>
     </>
   );

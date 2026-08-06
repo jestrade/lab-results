@@ -21,6 +21,31 @@
   --color-accent-2: #e11d74;
   --color-divider: rgba(29, 27, 51, 0.1);
 
+  /* ── ink that sits on the accent ───────────────────────────────────────
+   *
+   * The label on a primary button, the active navigation item, the sign-in
+   * aside — everything painted *on* `--color-accent` rather than in it. It is
+   * a token rather than a literal `#fff` because the relationship inverts
+   * between themes: the light theme's accent is dark enough to carry white,
+   * while the dark theme's has to be light enough to read as a link on a dark
+   * ground, which leaves it far too light for white text. Same rule either
+   * way — "the ink that reads on the accent" — with a different answer.
+   */
+  --color-accent-ink: #ffffff;
+
+  /* ── large accent surfaces ─────────────────────────────────────────────
+   *
+   * The sign-in aside and the strong disclaimer band fill a large area with
+   * the accent, and that is a different problem from a button or a nav pill.
+   * In the light theme it is the same colour, so these tokens change nothing.
+   * In dark they have to diverge: the dark accent is light — it has to be, to
+   * read as a link on a dark ground — and half a screen of it is a glare
+   * source for exactly the reader who turned dark mode on. Small accent marks
+   * stay bright; large accent surfaces go deep.
+   */
+  --color-accent-surface: #6355c6;
+  --color-accent-surface-ink: #ffffff;
+
   --color-neutral-100: #f7f7fa;
   --color-neutral-200: #ededf3;
   --color-neutral-300: #dedee8;
@@ -109,6 +134,17 @@
   --status-unknown-bg: #ededf3;
   --status-unknown-ink: #5c5c74;
 
+  /* The card wash — a far weaker tint than the badge surface above, because it
+     covers a whole card rather than a pill and has body text sitting on it.
+     Only the three flagged states have one; `normal` and `unknown` deliberately
+     do not, so that a tinted card always means "look at this". */
+  --status-critical-wash: #fff5f6;
+  --status-high-wash: #fffbf2;
+  --status-low-wash: #f8f6ff;
+
+  /* Dimming behind a modal or the mobile sidebar. */
+  --scrim: rgba(29, 27, 51, 0.4);
+
   /* ── semantic: feedback surfaces ───────────────────────────────────── */
   --feedback-info-bg: #f0edff;
   --feedback-info-ink: #352c77;
@@ -142,6 +178,180 @@
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
+}
+
+/* ══ dark theme ═══════════════════════════════════════════════════════════
+ *
+ * Everything below re-points the same token names at a dark palette. No
+ * component participates: `broadsheet.css` and `app.css` never name a colour
+ * outside of `:root`, so re-pointing the tokens is the whole of the theme.
+ * That is the property to preserve — a component that hardcodes a hex is a
+ * component that will be wrong in one theme or the other.
+ *
+ * ── The ramps invert, they do not merely darken ──────────────────────────
+ *
+ * `--color-neutral-100` is the quietest wash in both themes and
+ * `--color-neutral-900` the loudest ink, so in dark the ramp runs from near-
+ * black up to near-white. The alternative — keeping the ramp's absolute
+ * lightness and asking components to pick a different step per theme — would
+ * push the theme back into the components, which is what this file exists to
+ * avoid. The accent ramp inverts for the same reason: `a:hover` reaches for
+ * `--color-accent-700` expecting "more emphatic than the resting link", which
+ * on a dark ground means lighter.
+ *
+ * ── Contrast ─────────────────────────────────────────────────────────────
+ *
+ * Every ink/surface pair below is measured by `src/styles/contrast.test.ts`
+ * against the same 4.5:1 AA bar as the light theme, and none of them clears it
+ * by less than 4.9:1. A dark theme is a common accommodation for light
+ * sensitivity, so shipping one that is *less* legible than the default would
+ * defeat the reason most readers turn it on.
+ */
+
+:root[data-theme='dark'] {
+  /* ── surface & ink ─────────────────────────────────────────────────── */
+  --color-bg: #131220;
+  --color-surface: #1c1a2b;
+  --color-text: #eeedf5;
+  --color-accent: #9b8bf0;
+  --color-accent-2: #ff5fa2;
+  --color-divider: rgba(238, 237, 245, 0.14);
+
+  --color-neutral-100: #24222f;
+  --color-neutral-200: #2c2a3b;
+  --color-neutral-300: #383650;
+  --color-neutral-400: #4b4866;
+  --color-neutral-500: #6b6788;
+  --color-neutral-600: #8b87a6;
+  --color-neutral-700: #a7a3bf;
+  --color-neutral-800: #c5c2d6;
+  --color-neutral-900: #e2e0ea;
+
+  --color-accent-100: #221d47;
+  --color-accent-200: #2c2559;
+  --color-accent-300: #3b3273;
+  --color-accent-400: #4f4394;
+  --color-accent-500: #6a5cbb;
+  --color-accent-600: #8878e0;
+  --color-accent-700: #b3a6ff;
+  --color-accent-800: #c9bfff;
+  --color-accent-900: #e2dbff;
+
+  /* ── shape & elevation ─────────────────────────────────────────────────
+   *
+   * Shadow is nearly invisible against a dark ground, so elevation is carried
+   * by a hairline border instead — the same job done by the means that works
+   * on this background. The shadows stay, deepened, for the soft grounding
+   * they still give large surfaces like modals.
+   */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.36);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.46);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.58);
+
+  --card-bg: #1c1a2b;
+  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --card-border: 1px solid rgba(238, 237, 245, 0.08);
+  --panel-bg: #232135;
+  --panel-border: 1px solid rgba(238, 237, 245, 0.08);
+
+  /* ── secondary ink ─────────────────────────────────────────────────────
+   *
+   * Measured against `--panel-bg`, the lightest of the three grounds these
+   * ever sit on, so they clear AA on all of them: 6.64:1 and 5.44:1. Same
+   * intent as the light theme's pair — quiet, but never below the bar.
+   */
+  --color-text-muted: #a9a6c0;
+  --color-text-faint: #9995b1;
+
+  /* ── semantic: result status ───────────────────────────────────────────
+   *
+   * Hue is preserved from the light theme — amber stays amber, red stays red —
+   * because the status colours are learned, and a reader who switches themes
+   * should not have to relearn which wash means "critical". What changes is
+   * which end of the pair carries the lightness.
+   */
+  --status-normal-bg: #262437;
+  --status-normal-ink: #d9d7e6;
+
+  --status-low-bg: #251f4d;
+  --status-low-ink: #c9bdff;
+
+  --status-high-bg: #3a2a0c;
+  --status-high-ink: #f6c877;
+
+  --status-critical-bg: #3d1620;
+  --status-critical-ink: #ffabb9;
+
+  --status-unknown-bg: #2c2a3b;
+  --status-unknown-ink: #b9b6cb;
+
+  /* Barely-there lifts off `--card-bg` rather than washes. On a dark ground a
+     tint has far less room before it stops reading as "a card" — these are
+     about two steps of lightness, which is enough to group the flagged cards
+     without turning the page into a patchwork. */
+  --status-critical-wash: #2a1a22;
+  --status-high-wash: #282018;
+  --status-low-wash: #221f33;
+
+  /* Deeper than the light theme's: the surfaces underneath are already dark,
+     so the same 40% would barely separate the modal from the page. */
+  --scrim: rgba(0, 0, 0, 0.62);
+
+  /* ── semantic: feedback surfaces ───────────────────────────────────── */
+  --feedback-info-bg: #221d47;
+  --feedback-info-ink: #cabfff;
+  --feedback-info-border: #4f4394;
+
+  --feedback-success-bg: #0f2f22;
+  --feedback-success-ink: #8fdcb6;
+  --feedback-success-border: #2c6a4c;
+
+  --feedback-warning-bg: #3a2a0c;
+  --feedback-warning-ink: #f6c877;
+  --feedback-warning-border: #7a5a1a;
+
+  --feedback-danger-bg: #3d1620;
+  --feedback-danger-ink: #ffabb9;
+  --feedback-danger-border: #85303f;
+
+  /* ── semantic: charts ──────────────────────────────────────────────────
+   *
+   * The line, band and axis are defined against accent and divider tokens, so
+   * they follow this block without being restated. Only the literal needs a
+   * dark value: #c81e3a is near-invisible on #131220.
+   */
+  --chart-point-critical: #ff6b81;
+
+  /* ── ink that sits on the accent ───────────────────────────────────── */
+  --color-accent-ink: #17142b;
+
+  /* Deep rather than bright — see the note on these tokens in `:root`. */
+  --color-accent-surface: #2c2559;
+  --color-accent-surface-ink: #e2dbff;
+}
+
+/* Before JavaScript has said anything.
+ *
+ * `bootTheme()` sets `data-theme` as the first statement of the entry module,
+ * which on a warm load lands before the first paint. On a cold or throttled
+ * one it may not, and the content security policy forbids the inline script
+ * that would normally close that gap (see `src/styles/csp.test.ts`). So the
+ * frames before boot follow the device instead of defaulting to a white page
+ * in the face of someone who set their machine to dark.
+ *
+ * Deliberately only the page ground and its ink: this is a flash guard, not a
+ * second copy of the palette. The moment `data-theme` is set — one frame later
+ * — the block above takes over in full, and this stops matching.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-bg: #131220;
+    --color-surface: #1c1a2b;
+    --color-text: #eeedf5;
+    --card-bg: #1c1a2b;
+    --panel-bg: #232135;
+  }
 }
 
 /* Component-class retuning the design board applies on top of Broadsheet.
@@ -201,11 +411,29 @@ i[class^='ph-'] {
   border-bottom-color: var(--color-divider);
 }
 
+/* Broadsheet mixes its backdrop from `--color-neutral-900`, which is the
+   darkest step of the ramp in the light theme and — because the ramp inverts —
+   the lightest in dark. Left alone it would drape a white veil over a dark
+   page. `--scrim` says what is actually meant, and is the same value the
+   mobile sidebar dims with, so the two cannot drift apart. */
+.dialog-backdrop {
+  background: var(--scrim);
+}
+
 /* Broadsheet's primary button paints its label with --color-bg, which on this
-   theme is the near-white page ground — correct there, but the accent is dark
-   enough here that pure white reads better and measures higher. */
+   theme is the near-white page ground — correct there, but not a relationship
+   that survives a theme swap. `--color-accent-ink` states the pairing the
+   button actually depends on: whatever reads on the accent. */
 .btn-primary {
-  color: #ffffff;
+  color: var(--color-accent-ink);
+}
+
+/* Same correction for the selected segment, which Broadsheet also paints with
+   `--color-bg`. It happens to survive the theme swap — the page ground darkens
+   as the accent lightens — but "the ink that reads on the accent" is the rule
+   being relied on, so it should be the token being named. */
+.seg-opt:has(input:checked) {
+  color: var(--color-accent-ink);
 }
 
 /* Motion is opt-out across the app. Anything that animates below respects

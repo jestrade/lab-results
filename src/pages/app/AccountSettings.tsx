@@ -4,8 +4,13 @@ import { Link } from 'react-router-dom';
 import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
+import { LanguagePicker } from '@/components/LanguagePicker';
 import { Modal } from '@/components/Modal';
 import { Tag } from '@/components/Tag';
+import { ThemePicker } from '@/components/ThemePicker';
+import { formatLongDate } from '@/i18n/dates';
+import { Trans } from '@/i18n/Trans';
+import { useI18n } from '@/i18n/useI18n';
 import { useAiConsent } from '@/hooks/useAiConsent';
 
 /**
@@ -20,9 +25,16 @@ import { useAiConsent } from '@/hooks/useAiConsent';
  * that cannot be withdrawn is not really consent — withdrawal is expected to be
  * as easy as giving it. So this page shows the current state, when it was
  * given, exactly what agreeing permits, and a way out.
+ *
+ * Language sits at the top (KAN-8), above AI processing, because it is the one
+ * setting that changes whether the rest of the page can be read at all.
+ * Appearance follows it for the weaker version of the same reason — it changes
+ * how comfortably it can be read — and both sit above the consent section,
+ * which is the longest thing on the page and would otherwise bury them.
  */
 export function AccountSettings() {
   const consent = useAiConsent();
+  const { t, locale } = useI18n();
   const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
 
   async function handleWithdraw() {
@@ -34,31 +46,43 @@ export function AccountSettings() {
     <>
       <div className="page-head">
         <div>
-          <div className="kicker">Account</div>
-          <h1>Account settings</h1>
+          <div className="kicker">{t('nav.account')}</div>
+          <h1>{t('nav.settings')}</h1>
         </div>
       </div>
 
+      <section className="settings-section" aria-labelledby="language">
+        <div className="settings-head">
+          <h2 id="language">{t('lang.heading')}</h2>
+        </div>
+        <LanguagePicker />
+      </section>
+
+      <section className="settings-section" aria-labelledby="appearance">
+        <div className="settings-head">
+          <h2 id="appearance">{t('theme.heading')}</h2>
+        </div>
+        <ThemePicker />
+      </section>
+
       <section className="settings-section" aria-labelledby="ai-processing">
         <div className="settings-head">
-          <h2 id="ai-processing">AI processing</h2>
+          <h2 id="ai-processing">{t('settings.aiHeading')}</h2>
           {consent.loading ? null : consent.granted ? (
             <Tag tone="accent">
               <Icon name="check-circle" size={13} />
-              <span style={{ marginLeft: 5 }}>Agreed</span>
+              <span style={{ marginLeft: 5 }}>{t('settings.agreed')}</span>
             </Tag>
           ) : (
             <Tag tone="neutral">
               <Icon name="prohibit" size={13} />
-              <span style={{ marginLeft: 5 }}>Not agreed</span>
+              <span style={{ marginLeft: 5 }}>{t('settings.notAgreed')}</span>
             </Tag>
           )}
         </div>
 
         <p className="muted">
-          To read a report we send its text to <strong>Google Gemini</strong>, a third-party AI
-          provider. Identifiers we can detect — email addresses, phone numbers, record numbers,
-          dates — are removed first.
+          <Trans id="settings.aiIntro" values={{ provider: <strong>Google Gemini</strong> }} />
         </p>
 
         {/* Stated plainly rather than buried. Consent given against a rosier
@@ -67,34 +91,37 @@ export function AccountSettings() {
           <li>
             <Icon name="warning" size={15} />
             <span>
-              This is <strong>not full anonymisation</strong>. Names written inside the document
-              cannot be reliably removed automatically.
+              <Trans
+                id="settings.aiFact.notAnonymised"
+                values={{
+                  emphasis: <strong>{t('settings.aiFact.notAnonymisedEmphasis')}</strong>,
+                }}
+              />
             </span>
           </li>
           <li>
             <Icon name="info" size={15} />
-            <span>
-              On the free tier, Google&rsquo;s terms permit submitted content to be used to improve
-              their products.
-            </span>
+            <span>{t('settings.aiFact.freeTier')}</span>
           </li>
           <li>
             <Icon name="file-pdf" size={15} />
-            <span>
-              The original PDF is never sent — only text extracted from it, after redaction.
-            </span>
+            <span>{t('settings.aiFact.noPdf')}</span>
           </li>
           <li>
             <Icon name="calculator" size={15} />
-            <span>
-              Whether a result is low, normal, high or critical is calculated from the range printed
-              on your report, not decided by the AI.
-            </span>
+            <span>{t('settings.aiFact.calculated')}</span>
           </li>
         </ul>
 
         <p className="muted" style={{ fontSize: 13 }}>
-          Full detail in the <Link to="/legal/ai-processing">AI Processing Disclosure</Link>.
+          <Trans
+            id="settings.fullDetail"
+            values={{
+              document: (
+                <Link to="/legal/ai-processing">{t('public.legal.aiProcessing')}</Link>
+              ),
+            }}
+          />
         </p>
 
         {consent.error ? (
@@ -107,33 +134,26 @@ export function AccountSettings() {
           <>
             {consent.acceptedAt ? (
               <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-                You agreed on{' '}
-                {new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(
-                  consent.acceptedAt,
-                )}
-                .
+                {t('settings.agreedOn', { date: formatLongDate(consent.acceptedAt, locale) })}
               </p>
             ) : null}
             <div>
               <Button variant="secondary" onClick={() => setConfirmingWithdraw(true)}>
-                Withdraw consent
+                {t('settings.withdraw')}
               </Button>
             </div>
           </>
         ) : (
           <>
-            <Alert tone="warning">
-              Reports cannot be processed until you agree. You can still upload nothing, and any
-              reports already processed are unaffected.
-            </Alert>
+            <Alert tone="warning">{t('settings.blocked')}</Alert>
             <div>
               <Button
                 variant="primary"
                 onClick={() => void consent.grant()}
                 loading={consent.saving}
-                loadingLabel="Saving…"
+                loadingLabel={t('common.saving')}
               >
-                I understand and agree
+                {t('settings.agree')}
               </Button>
             </div>
           </>
@@ -142,18 +162,23 @@ export function AccountSettings() {
 
       <section className="settings-section">
         <div className="settings-head">
-          <h2>Password, notifications, data export and account deletion</h2>
+          <h2>{t('settings.otherHeading')}</h2>
         </div>
         <p className="muted">
-          Not built yet — these are KAN-27 and KAN-48. Data export and account deletion are
-          required by the spec (§56, §57) and are tracked on KAN-23.
+          <Trans
+            id="settings.otherBody"
+            values={{
+              profileLink: <Link to="/profile">{t('settings.profileLink')}</Link>,
+              deleteLink: <Link to="/profile">{t('settings.deletingAccount')}</Link>,
+            }}
+          />
         </p>
       </section>
 
       <Modal
         open={confirmingWithdraw}
         onClose={() => (consent.saving ? undefined : setConfirmingWithdraw(false))}
-        title="Withdraw consent for AI processing?"
+        title={t('settings.withdrawTitle')}
         actions={
           <>
             <Button
@@ -161,26 +186,27 @@ export function AccountSettings() {
               onClick={() => setConfirmingWithdraw(false)}
               disabled={consent.saving}
             >
-              Keep it
+              {t('settings.keepIt')}
             </Button>
             <Button
               variant="primary"
               onClick={() => void handleWithdraw()}
               loading={consent.saving}
-              loadingLabel="Withdrawing…"
+              loadingLabel={t('settings.withdrawing')}
             >
-              Withdraw consent
+              {t('settings.withdraw')}
             </Button>
           </>
         }
       >
-        <p>
-          New reports will not be processed, and you will not be able to upload until you agree
-          again. Nothing is sent to the AI provider from the moment you withdraw.
-        </p>
+        <p>{t('settings.withdrawBody1')}</p>
         <p style={{ marginBottom: 0 }}>
-          Reports already processed keep their results. Withdrawing does not delete anything — use
-          account deletion for that.
+          <Trans
+            id="settings.withdrawBody2"
+            values={{
+              deleteLink: <Link to="/profile">{t('settings.deleteAccountLink')}</Link>,
+            }}
+          />
         </p>
       </Modal>
     </>

@@ -12,6 +12,7 @@ import { Profile } from '@/pages/app/Profile';
 import { Reports } from '@/pages/app/Reports';
 import { Trends } from '@/pages/app/Trends';
 import { Upload } from '@/pages/app/Upload';
+import { VariableDetails } from '@/pages/app/VariableDetails';
 import { Variables } from '@/pages/app/Variables';
 import { LegalPage } from '@/pages/legal/LegalPage';
 import { ForgotPassword } from '@/pages/public/ForgotPassword';
@@ -56,18 +57,7 @@ export function AppRoutes() {
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:reportId" element={<ReportDetails />} />
           <Route path="variables" element={<Variables />} />
-          <Route
-            path="variables/:variableId"
-            element={
-              <ComingSoon
-                kicker="Tracked over time"
-                title="Variable details"
-                ticket="KAN-14 / KAN-46"
-                icon="flask"
-                description="The full history of one test, with its trend chart, explanation and analysis."
-              />
-            }
-          />
+          <Route path="variables/:variableId" element={<VariableDetails />} />
           <Route path="trends" element={<Trends />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<AccountSettings />} />
@@ -77,11 +67,11 @@ export function AppRoutes() {
               path="admin"
               element={
                 <ComingSoon
-                  kicker="Administration"
-                  title="Admin overview"
+                  kickerKey="nav.administration"
+                  titleKey="nav.adminOverview"
                   ticket="KAN-18 / KAN-49"
                   icon="shield-check"
-                  description="System-wide metrics: users, reports, failures and average processing time."
+                  descriptionKey="comingSoon.adminOverviewBody"
                 />
               }
             />
@@ -89,11 +79,11 @@ export function AppRoutes() {
               path="admin/users"
               element={
                 <ComingSoon
-                  kicker="Administration"
-                  title="Users"
+                  kickerKey="nav.administration"
+                  titleKey="nav.adminUsers"
                   ticket="KAN-19 / KAN-50"
                   icon="users-three"
-                  description="Search accounts, review their activity, and disable or re-enable them."
+                  descriptionKey="comingSoon.adminUsersBody"
                 />
               }
             />
@@ -101,11 +91,11 @@ export function AppRoutes() {
               path="admin/jobs"
               element={
                 <ComingSoon
-                  kicker="Administration"
-                  title="Processing jobs"
+                  kickerKey="nav.administration"
+                  titleKey="nav.adminJobs"
                   ticket="KAN-20 / KAN-51"
                   icon="queue"
-                  description="Live and failed extraction jobs, with durations and retry controls."
+                  descriptionKey="comingSoon.adminJobsBody"
                 />
               }
             />

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Icon } from '@/components/Icon';
+import { LanguageSwitcher } from '@/components/LanguagePicker';
+import { useT } from '@/i18n/useI18n';
 
 export interface AuthAsidePoint {
   icon: string;
@@ -25,10 +27,12 @@ export interface AuthLayoutProps {
  * disappears on a phone. The form is the page.
  */
 export function AuthLayout({ heading, lede, points, children }: AuthLayoutProps) {
+  const t = useT();
+
   return (
     <div className="auth-split">
       <a className="skip-link" href="#main">
-        Skip to content
+        {t('common.skipToContent')}
       </a>
 
       <aside className="auth-aside">
@@ -56,13 +60,18 @@ export function AuthLayout({ heading, lede, points, children }: AuthLayoutProps)
             </div>
           ) : null}
         </div>
-        <p className="auth-aside-foot">
-          Informational and educational only. Not a medical device, and not a substitute for
-          consultation with a qualified healthcare professional.
-        </p>
+        <p className="auth-aside-foot">{t('authLayout.foot')}</p>
       </aside>
 
       <main className="auth-main" id="main">
+        {/* On the form side, not the violet panel: the panel is hidden below
+            `lg`, and a phone is exactly where someone is most likely to be
+            hunting for their language.
+
+            Positioned out of the centring flow rather than placed in it —
+            `.auth-main` centres a single child, and a second one would sit
+            beside the form rather than above it. */}
+        <LanguageSwitcher className="auth-lang" />
         {children}
       </main>
     </div>

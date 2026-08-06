@@ -1,20 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
 import { expectNoA11yViolations } from '@/test/axe';
 import type { Report } from '@/domain/types';
 import type * as RouterModule from 'react-router-dom';
 import type * as DetailsModule from '@/services/reportDetails';
+import type * as ReportsListModule from '@/services/reportsList';
 import type { ReportResult } from '@/services/reportDetails';
 import { ReportDetails } from './ReportDetails';
 
 const subscribeToReport = vi.hoisted(() => vi.fn());
 const subscribeToResults = vi.hoisted(() => vi.fn());
+const retryReport = vi.hoisted(() => vi.fn());
 
 vi.mock('@/services/reportDetails', async (importOriginal) => {
   const actual = await importOriginal<typeof DetailsModule>();
   return { ...actual, subscribeToReport, subscribeToResults };
+});
+vi.mock('@/services/reportsList', async (importOriginal) => {
+  // The real `retryErrorMessage` stays — deciding which server errors are fit
+  // to show a user is behaviour, not plumbing.
+  const actual = await importOriginal<typeof ReportsListModule>();
+  return { ...actual, retryReport };
 });
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof RouterModule>();
@@ -62,6 +71,7 @@ function makeResult(overrides: Partial<ReportResult> = {}): ReportResult {
     status: 'normal',
     confidence: 'high',
     sourcePage: null,
+    observedAt: stamp('2026-03-03T00:00:00Z'),
     analysis: null,
     ...overrides,
   };
@@ -214,6 +224,71 @@ describe('ReportDetails', () => {
     );
     emitResults([]);
     expect(await screen.findByText(/looks like a scanned report/i)).toBeInTheDocument();
+  });
+
+  it('offers to reprocess a report that failed for a passing reason', async () => {
+    const user = userEvent.setup();
+    retryReport.mockResolvedValue(undefined);
+    render();
+    emitReport(
+      makeReport({
+        status: 'failed',
+        warnings: [
+          { code: 'consent/ai-processing-missing', message: 'You have not agreed to AI processing.' },
+        ],
+      }),
+    );
+    emitResults([]);
+
+    await user.click(await screen.findByRole('button', { name: /try processing again/i }));
+    expect(retryReport).toHaveBeenCalledWith('r1');
+  });
+
+  it('stops offering once the attempts are spent, and says so', async () => {
+    render();
+    emitReport(
+      makeReport({
+        status: 'failed',
+        retryCount: 3,
+        warnings: [{ code: 'extraction/timeout', message: 'The model timed out.' }],
+      }),
+    );
+    emitResults([]);
+
+    await screen.findByText(/model timed out/i);
+    expect(screen.queryByRole('button', { name: /try processing again/i })).toBeNull();
+    // A button that has quietly disappeared is a bug report; a sentence
+    // explaining that the attempts are spent is an answer.
+    expect(screen.getByText(/retried 3 times without success/i)).toBeInTheDocument();
+  });
+
+  it('offers a way out of a report stuck mid-processing', async () => {
+    render();
+    // Its worker died long ago. The trigger does not retry itself, so without
+    // this the page says "still processing" for as long as anyone looks.
+    emitReport(
+      makeReport({
+        status: 'processing',
+        processingStartedAt: stamp('2026-03-05T00:00:00Z'),
+      }),
+    );
+    emitResults([]);
+
+    expect(await screen.findByRole('button', { name: /try processing again/i })).toBeInTheDocument();
+  });
+
+  it('leaves a report that is genuinely still working alone', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-03-05T00:01:00Z'));
+    render();
+    emitReport(
+      makeReport({ status: 'processing', processingStartedAt: stamp('2026-03-05T00:00:00Z') }),
+    );
+    emitResults([]);
+
+    await screen.findByText(/still processing/i);
+    // A minute in is not stuck, and a retry here would kill a live run.
+    expect(screen.queryByRole('button', { name: /try processing again/i })).toBeNull();
+    now.mockRestore();
   });
 
   it('has no serious accessibility violations', async () => {

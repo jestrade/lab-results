@@ -13,6 +13,8 @@
  */
 
 import quotas from '../../config/quotas.json';
+import { messageFor } from '@/i18n/catalogs';
+import { DEFAULT_LOCALE, type Locale } from './locales';
 
 export const QUOTAS = quotas;
 
@@ -116,25 +118,30 @@ export interface QuotaCheckInput {
  *
  * This is a courtesy, not a control. The rules are the control.
  */
-export function checkUploadAllowed({
-  fileSize,
-  usage,
-  systemStorageBytes,
-  uploadsDisabled = false,
-  now = new Date(),
-}: QuotaCheckInput): QuotaRejection | null {
+export function checkUploadAllowed(
+  {
+    fileSize,
+    usage,
+    systemStorageBytes,
+    uploadsDisabled = false,
+    now = new Date(),
+  }: QuotaCheckInput,
+  locale: Locale = DEFAULT_LOCALE,
+): QuotaRejection | null {
   if (uploadsDisabled) {
     return {
       reason: 'uploads-disabled',
-      message:
-        'Uploads are paused while we work on capacity. Your existing reports are unaffected. Please try again later.',
+      message: messageFor(locale, 'quotaError.uploadsDisabled'),
     };
   }
 
   if (fileSize > MAX_FILE_BYTES) {
     return {
       reason: 'file-too-large',
-      message: `That file is ${formatBytes(fileSize)}, over the ${formatBytes(MAX_FILE_BYTES)} limit for a single report. Nothing was uploaded.`,
+      message: messageFor(locale, 'quotaError.fileTooLarge', {
+        size: formatBytes(fileSize),
+        limit: formatBytes(MAX_FILE_BYTES),
+      }),
     };
   }
 
@@ -143,14 +150,20 @@ export function checkUploadAllowed({
     const free = Math.max(0, PER_USER_STORAGE_BYTES - used);
     return {
       reason: 'user-storage-full',
-      message: `This report needs ${formatBytes(fileSize)} but you have ${formatBytes(free)} left of your ${formatBytes(PER_USER_STORAGE_BYTES)}. Delete a report you no longer need, then try again. Nothing was uploaded.`,
+      message: messageFor(locale, 'quotaError.storageFull', {
+        needed: formatBytes(fileSize),
+        free: formatBytes(free),
+        allowance: formatBytes(PER_USER_STORAGE_BYTES),
+      }),
     };
   }
 
   if (uploadsUsedThisMonth(usage, now) >= PER_USER_UPLOADS_PER_MONTH) {
     return {
       reason: 'monthly-uploads-exhausted',
-      message: `You have used all ${PER_USER_UPLOADS_PER_MONTH} uploads for this month. Your allowance resets on the 1st. Nothing was uploaded.`,
+      message: messageFor(locale, 'quotaError.uploadsExhausted', {
+        limit: PER_USER_UPLOADS_PER_MONTH,
+      }),
     };
   }
 
@@ -158,8 +171,7 @@ export function checkUploadAllowed({
     return {
       reason: 'system-storage-full',
       // Deliberately does not blame the user or expose system-wide figures.
-      message:
-        'The service is at capacity and cannot accept new reports right now. Nothing was uploaded — please try again later or contact support.',
+      message: messageFor(locale, 'quotaError.systemFull'),
     };
   }
 

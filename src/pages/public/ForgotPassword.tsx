@@ -8,11 +8,14 @@ import { Button } from '@/components/Button';
 import { Field, TextInput } from '@/components/Field';
 import { Icon } from '@/components/Icon';
 import { AuthLayout } from '@/layouts/AuthLayout';
+import { Trans } from '@/i18n/Trans';
+import { useI18n } from '@/i18n/useI18n';
 
 const RESEND_SECONDS = 45;
 
 export function ForgotPassword() {
   const { sendPasswordReset } = useAuth();
+  const { t, locale } = useI18n();
 
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -57,7 +60,7 @@ export function ForgotPassword() {
         setSent(true);
         startCooldown();
       } else {
-        setError(toAuthErrorMessage(caught).message);
+        setError(toAuthErrorMessage(caught, locale).message);
       }
     } finally {
       setSubmitting(false);
@@ -71,15 +74,19 @@ export function ForgotPassword() {
 
   if (sent) {
     return (
-      <AuthLayout heading="Your laboratory results, finally in one place.">
+      <AuthLayout heading={t('signIn.asideHeading')}>
         <div className="auth-form">
-          <div className="kicker">Link sent</div>
+          <div className="kicker">{t('forgot.sentKicker')}</div>
           <Icon name="paper-plane-tilt" size={44} className="empty-state-icon" />
           <div>
-            <h2>Check your email</h2>
+            <h2>{t('forgot.sentHeading')}</h2>
             <p className="muted" style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.7 }}>
-              If an account exists for <strong style={{ color: 'var(--color-text)' }}>{email}</strong>, a
-              reset link is on its way. The link expires in one hour.
+              <Trans
+                id="forgot.sentBody"
+                values={{
+                  email: <strong style={{ color: 'var(--color-text)' }}>{email}</strong>,
+                }}
+              />
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -87,10 +94,12 @@ export function ForgotPassword() {
               variant="secondary"
               disabled={cooldown > 0}
               loading={submitting}
-              loadingLabel="Sending…"
+              loadingLabel={t('forgot.sending')}
               onClick={() => void sendLink()}
             >
-              {cooldown > 0 ? `Resend in 0:${String(cooldown).padStart(2, '0')}` : 'Resend link'}
+              {cooldown > 0
+                ? t('forgot.resendIn', { seconds: String(cooldown).padStart(2, '0') })
+                : t('forgot.resend')}
             </Button>
             <Button
               variant="ghost"
@@ -99,12 +108,12 @@ export function ForgotPassword() {
                 setEmail('');
               }}
             >
-              Use a different email
+              {t('forgot.differentEmail')}
             </Button>
           </div>
-          <p className="legal-note">We don&rsquo;t confirm whether an address is registered.</p>
+          <p className="legal-note">{t('forgot.noConfirm')}</p>
           <Link to="/sign-in" style={{ fontSize: 13 }}>
-            Back to sign in
+            {t('forgot.backToSignIn')}
           </Link>
         </div>
       </AuthLayout>
@@ -112,13 +121,13 @@ export function ForgotPassword() {
   }
 
   return (
-    <AuthLayout heading="Your laboratory results, finally in one place.">
+    <AuthLayout heading={t('signIn.asideHeading')}>
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <div className="kicker">Forgot password</div>
+        <div className="kicker">{t('forgot.kicker')}</div>
         <div>
-          <h2>Reset your password</h2>
+          <h2>{t('forgot.heading')}</h2>
           <p className="muted" style={{ margin: '6px 0 0', fontSize: 14 }}>
-            Enter the email you signed up with and we&rsquo;ll send a link to set a new password.
+            {t('forgot.lede')}
           </p>
         </div>
 
@@ -128,7 +137,7 @@ export function ForgotPassword() {
           </Alert>
         ) : null}
 
-        <Field label="Email address">
+        <Field label={t('signIn.email')}>
           {(props) => (
             <TextInput
               {...props}
@@ -136,7 +145,7 @@ export function ForgotPassword() {
               name="email"
               autoComplete="email"
               required
-              placeholder="you@example.com"
+              placeholder={t('register.emailPlaceholder')}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
@@ -148,14 +157,14 @@ export function ForgotPassword() {
           variant="primary"
           block
           loading={submitting}
-          loadingLabel="Sending…"
+          loadingLabel={t('forgot.sending')}
           style={{ height: 46 }}
         >
-          Send reset link
+          {t('forgot.sendLink')}
         </Button>
 
         <Link to="/sign-in" style={{ fontSize: 13 }}>
-          Back to sign in
+          {t('forgot.backToSignIn')}
         </Link>
       </form>
     </AuthLayout>

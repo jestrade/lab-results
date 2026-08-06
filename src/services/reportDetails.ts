@@ -18,10 +18,13 @@ import {
 } from 'firebase/firestore';
 
 import { getDb } from '@/lib/firebase';
+import { DEFAULT_LOCALE, type Locale } from '@/domain/locales';
+import { formatLongDate } from '@/i18n/dates';
 import type {
   ExtractionConfidence,
   ReferenceRange,
   Report,
+  ResultAnalysis,
   ResultStatus,
 } from '@/domain/types';
 
@@ -37,21 +40,17 @@ export interface ReportResult {
   status: ResultStatus;
   confidence: ExtractionConfidence;
   sourcePage: number | null;
+  /** When the sample was taken. Null on results written before it was stored. */
+  observedAt: Timestamp | null;
   analysis: ResultAnalysis | null;
 }
 
 /**
- * Provenance travels with the text, so the interface can label it honestly and
- * a later prompt change can find what the old one produced (KAN-17).
+ * Re-exported so this file stays the one import for "a result on a report".
+ * The shape itself is a stored field and lives with the rest of the model, in
+ * `domain/types.ts` — the variable page (KAN-46) reads the same field.
  */
-export interface ResultAnalysis {
-  text: string;
-  provider: string;
-  model: string;
-  promptVersion: string;
-  contentUsedForTraining: boolean;
-  generatedAt: string;
-}
+export type { ResultAnalysis };
 
 export function subscribeToReport(
   reportId: string,
@@ -82,12 +81,19 @@ export function subscribeToResults(
     // order the tests appeared in on the page — which is how the reader will
     // compare the screen against the paper in front of them.
     query(collection(getDb(), 'reports', reportId, 'results'), orderBy('__name__')),
-    (snapshot) => onChange(snapshot.docs.map((entry) => toResult(entry.id, entry.data()))),
+    (snapshot) => onChange(snapshot.docs.map((entry) => readResult(entry.id, entry.data()))),
     (error) => onError?.(error),
   );
 }
 
-function toResult(id: string, data: Record<string, unknown>): ReportResult {
+/**
+ * Reads one stored result document.
+ *
+ * Exported because the variable history (KAN-46) reads the same documents
+ * through a different query. Two readers would mean two sets of fallbacks for
+ * a half-written result, and two screens that could disagree about it.
+ */
+export function readResult(id: string, data: Record<string, unknown>): ReportResult {
   const analysis = data.analysis as Record<string, unknown> | undefined;
   return {
     id,
@@ -107,6 +113,7 @@ function toResult(id: string, data: Record<string, unknown>): ReportResult {
     status: (data.status as ResultStatus) ?? 'unknown',
     confidence: (data.confidence as ExtractionConfidence) ?? 'low',
     sourcePage: (data.sourcePage as number | null) ?? null,
+    observedAt: (data.observedAt as Timestamp | undefined) ?? null,
     analysis: analysis
       ? {
           text: String(analysis.text ?? ''),
@@ -120,8 +127,11 @@ function toResult(id: string, data: Record<string, unknown>): ReportResult {
   };
 }
 
-export function formatTimestamp(value: Timestamp | null | undefined): string {
+export function formatTimestamp(
+  value: Timestamp | null | undefined,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const date = value?.toDate?.();
   if (!date) return '—';
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(date);
+  return formatLongDate(date, locale);
 }

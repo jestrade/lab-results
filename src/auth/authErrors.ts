@@ -1,5 +1,9 @@
 import * as Sentry from '@sentry/react';
 
+import { DEFAULT_LOCALE, type Locale } from '@/domain/locales';
+import { messageFor } from '@/i18n/catalogs';
+import type { MessageKey } from '@/i18n/messages';
+
 /**
  * Firebase auth error codes → the messages the design board specifies (KAN-1).
  *
@@ -14,6 +18,11 @@ import * as Sentry from '@sentry/react';
  *
  * **Say what to do next.** Every message ends with an action the user can
  * actually take, rather than restating that something went wrong.
+ *
+ * The table maps a code to a message *key* and to an `action`. The action is a
+ * property of the failure rather than of the language — which recovery path to
+ * offer does not change when the reader does — so it stays here while the
+ * sentence lives in the catalogs.
  */
 
 export interface AuthErrorMessage {
@@ -33,113 +42,44 @@ export interface AuthErrorMessage {
   code?: string;
 }
 
-function generic(code: string | null): AuthErrorMessage {
+function generic(code: string | null, locale: Locale): AuthErrorMessage {
   return {
+    // The reference is appended rather than woven in: it is a support handle,
+    // identical in every language.
     message:
-      'Something went wrong while signing you in. Please try again, and contact support if it keeps happening.' +
-      (code ? ` (reference: ${code})` : ''),
+      messageFor(locale, 'authError.generic') +
+      (code ? ` ${messageFor(locale, 'authError.reference', { code })}` : ''),
     action: 'retry',
     ...(code ? { code } : {}),
   };
 }
 
-const MESSAGES: Record<string, AuthErrorMessage> = {
-  'auth/invalid-credential': {
-    message:
-      "That email and password don't match. Check them and try again, or reset your password.",
-    action: 'reset-password',
-  },
-  'auth/wrong-password': {
-    message:
-      "That email and password don't match. Check them and try again, or reset your password.",
-    action: 'reset-password',
-  },
-  'auth/user-not-found': {
-    message:
-      "That email and password don't match. Check them and try again, or reset your password.",
-    action: 'reset-password',
-  },
-  'auth/invalid-email': {
-    message: "That doesn't look like an email address. Check it and try again.",
-  },
-  'auth/user-disabled': {
-    message: 'This account has been disabled. Contact support if you think this is a mistake.',
-    action: 'contact-support',
-  },
-  'auth/email-already-in-use': {
-    message:
-      'An account already exists for this email address. Sign in instead, or reset your password if you have forgotten it.',
-    action: 'reset-password',
-  },
-  'auth/account-exists-with-different-credential': {
-    message:
-      "This email already has a password account. Sign in with your password once and we'll link your Google account to it.",
-    action: 'sign-in-with-password',
-  },
-  'auth/credential-already-in-use': {
-    message: 'That Google account is already linked to a different LabResults account.',
-  },
-  'auth/weak-password': {
-    message: 'That password is too easy to guess. Use at least 10 characters.',
-  },
-  'auth/too-many-requests': {
-    message:
-      'Too many attempts from this device. Wait a few minutes before trying again, or reset your password.',
-    action: 'reset-password',
-  },
-  'auth/network-request-failed': {
-    message: 'We could not reach the server. Check your connection and try again.',
-    action: 'retry',
-  },
-  'auth/popup-closed-by-user': {
-    message: 'The Google sign-in window closed before finishing. Try again when you are ready.',
-    action: 'retry',
-  },
-  'auth/cancelled-popup-request': {
-    message: 'The Google sign-in window closed before finishing. Try again when you are ready.',
-    action: 'retry',
-  },
-  'auth/popup-blocked': {
-    message:
-      'Your browser blocked the Google sign-in window. Allow pop-ups for this site, or sign in with your email and password.',
-  },
-  'auth/operation-not-allowed': {
-    message:
-      'That sign-in method is not enabled for this application. Please contact support.',
-    action: 'contact-support',
-  },
-  'auth/unauthorized-domain': {
-    message:
-      'Sign-in is not permitted from this address. Please contact support.',
-    action: 'contact-support',
-  },
-  'auth/web-storage-unsupported': {
-    message:
-      'Your browser is blocking the storage this sign-in needs. Allow cookies and site data for this site, or sign in with your email and password.',
-  },
-  'auth/internal-error': {
-    message:
-      'Sign-in could not be completed. Try again, or sign in with your email and password instead.',
-    action: 'retry',
-  },
-  'auth/timeout': {
-    message: 'Sign-in took too long to respond. Please try again.',
-    action: 'retry',
-  },
-  'auth/user-cancelled': {
-    message: 'Sign-in was cancelled before it finished. Try again when you are ready.',
-    action: 'retry',
-  },
-  'auth/requires-recent-login': {
-    message: 'For your security, sign in again before making this change.',
-  },
-  'auth/expired-action-code': {
-    message: 'That link has expired. Request a new one and use it within an hour.',
-  },
-  'auth/invalid-action-code': {
-    message:
-      'That link is no longer valid — it may already have been used. Request a new one.',
-  },
+type AuthErrorEntry = { key: MessageKey; action?: AuthErrorMessage['action'] };
+
+const MESSAGES: Record<string, AuthErrorEntry> = {
+  'auth/invalid-credential': { key: 'authError.invalidCredential', action: 'reset-password' },
+  'auth/wrong-password': { key: 'authError.invalidCredential', action: 'reset-password' },
+  'auth/user-not-found': { key: 'authError.invalidCredential', action: 'reset-password' },
+  'auth/invalid-email': { key: 'authError.invalidEmail' },
+  'auth/user-disabled': { key: 'authError.userDisabled', action: 'contact-support' },
+  'auth/email-already-in-use': { key: 'authError.emailInUse', action: 'reset-password' },
+  'auth/account-exists-with-different-credential': { key: 'authError.differentCredential', action: 'sign-in-with-password' },
+  'auth/credential-already-in-use': { key: 'authError.credentialInUse' },
+  'auth/weak-password': { key: 'authError.weakPassword' },
+  'auth/too-many-requests': { key: 'authError.tooManyRequests', action: 'reset-password' },
+  'auth/network-request-failed': { key: 'authError.network', action: 'retry' },
+  'auth/popup-closed-by-user': { key: 'authError.popupClosed', action: 'retry' },
+  'auth/cancelled-popup-request': { key: 'authError.popupClosed', action: 'retry' },
+  'auth/popup-blocked': { key: 'authError.popupBlocked' },
+  'auth/operation-not-allowed': { key: 'authError.notAllowed', action: 'contact-support' },
+  'auth/unauthorized-domain': { key: 'authError.unauthorizedDomain', action: 'contact-support' },
+  'auth/web-storage-unsupported': { key: 'authError.storageBlocked' },
+  'auth/internal-error': { key: 'authError.internal', action: 'retry' },
+  'auth/timeout': { key: 'authError.timeout', action: 'retry' },
+  'auth/user-cancelled': { key: 'authError.cancelled', action: 'retry' },
+  'auth/requires-recent-login': { key: 'authError.recentLogin' },
+  'auth/expired-action-code': { key: 'authError.expiredCode' },
+  'auth/invalid-action-code': { key: 'authError.invalidCode' },
 };
 
 function codeOf(error: unknown): string | null {
@@ -150,10 +90,18 @@ function codeOf(error: unknown): string | null {
   return null;
 }
 
-export function toAuthErrorMessage(error: unknown): AuthErrorMessage {
+export function toAuthErrorMessage(
+  error: unknown,
+  locale: Locale = DEFAULT_LOCALE,
+): AuthErrorMessage {
   const code = codeOf(error);
   const known = code ? MESSAGES[code] : undefined;
-  if (known) return known;
+  if (known) {
+    return {
+      message: messageFor(locale, known.key),
+      ...(known.action ? { action: known.action } : {}),
+    };
+  }
 
   // Unrecognised. Report it so it stops being invisible — an unmapped code is
   // usually a configuration problem, and configuration problems affect
@@ -162,7 +110,7 @@ export function toAuthErrorMessage(error: unknown): AuthErrorMessage {
     Sentry.captureMessage(`Unmapped auth error: ${code}`, 'warning');
     if (import.meta.env.DEV) console.error('Unmapped auth error code:', code, error);
   }
-  return generic(code);
+  return generic(code, locale);
 }
 
 export const __messagesForTests = MESSAGES;

@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fireEvent } from '@testing-library/react';
 
 import { expectNoA11yViolations } from '@/test/axe';
+import { renderWithProviders } from '@/test/renderWithProviders';
 import { FileDropzone } from './FileDropzone';
 
 function pdf(name = 'panel.pdf'): File {
@@ -24,7 +25,7 @@ describe('FileDropzone', () => {
   it('opens the file picker when activated from the keyboard', async () => {
     const onFileSelected = vi.fn();
     const user = userEvent.setup();
-    const { container } = render(<FileDropzone onFileSelected={onFileSelected} />);
+    const { container } = renderWithProviders(<FileDropzone onFileSelected={onFileSelected} />);
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     const click = vi.spyOn(input, 'click').mockImplementation(() => {});
@@ -40,7 +41,7 @@ describe('FileDropzone', () => {
 
   it('hands over a dropped file', () => {
     const onFileSelected = vi.fn();
-    const { container } = render(<FileDropzone onFileSelected={onFileSelected} />);
+    const { container } = renderWithProviders(<FileDropzone onFileSelected={onFileSelected} />);
     const zone = container.firstElementChild as HTMLElement;
 
     fireEvent.drop(zone, dropEvent([pdf()]));
@@ -50,7 +51,7 @@ describe('FileDropzone', () => {
 
   it('takes only the first file when several are dropped', () => {
     const onFileSelected = vi.fn();
-    const { container } = render(<FileDropzone onFileSelected={onFileSelected} />);
+    const { container } = renderWithProviders(<FileDropzone onFileSelected={onFileSelected} />);
     const zone = container.firstElementChild as HTMLElement;
 
     fireEvent.drop(zone, dropEvent([pdf('first.pdf'), pdf('second.pdf')]));
@@ -60,7 +61,7 @@ describe('FileDropzone', () => {
   });
 
   it('stays in the drag-over state while the pointer crosses child elements', () => {
-    const { container } = render(<FileDropzone onFileSelected={vi.fn()} />);
+    const { container } = renderWithProviders(<FileDropzone onFileSelected={vi.fn()} />);
     const zone = container.firstElementChild as HTMLElement;
     const button = screen.getByRole('button');
 
@@ -78,7 +79,7 @@ describe('FileDropzone', () => {
 
   it('ignores a drop while disabled', () => {
     const onFileSelected = vi.fn();
-    const { container } = render(
+    const { container } = renderWithProviders(
       <FileDropzone onFileSelected={onFileSelected} disabled disabledReason="Verify first." />,
     );
     fireEvent.drop(container.firstElementChild as HTMLElement, dropEvent([pdf()]));
@@ -86,14 +87,14 @@ describe('FileDropzone', () => {
   });
 
   it('explains why it is disabled', () => {
-    render(
+    renderWithProviders(
       <FileDropzone onFileSelected={vi.fn()} disabled disabledReason="Verify your email address first." />,
     );
     expect(screen.getByText('Verify your email address first.')).toBeInTheDocument();
   });
 
   it('has no serious accessibility violations', async () => {
-    const { container } = render(<FileDropzone onFileSelected={vi.fn()} />);
+    const { container } = renderWithProviders(<FileDropzone onFileSelected={vi.fn()} />);
     await expectNoA11yViolations(container);
   });
 });

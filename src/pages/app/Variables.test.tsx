@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
@@ -9,10 +9,16 @@ import type * as VariablesModule from '@/services/variables';
 import { Variables } from './Variables';
 
 const subscribeToVariableSeries = vi.hoisted(() => vi.fn());
+const clearVariableData = vi.hoisted(() => vi.fn());
+// The page joins each series to the catalog for its display name and group.
+// Stubbed empty so these tests exercise the fallback path: the names the trend
+// engine denormalised onto each series, which is what a user sees before the
+// catalog has anything to say about their variables.
+const fetchVariableCatalog = vi.hoisted(() => vi.fn(() => Promise.resolve(new Map())));
 
 vi.mock('@/services/variables', async (importOriginal) => {
   const actual = await importOriginal<typeof VariablesModule>();
-  return { ...actual, subscribeToVariableSeries };
+  return { ...actual, subscribeToVariableSeries, fetchVariableCatalog, clearVariableData };
 });
 
 function stamp(iso: string) {
@@ -71,6 +77,7 @@ describe('Variables', () => {
   beforeEach(() => {
     subscribeToVariableSeries.mockReset();
     subscribeToVariableSeries.mockReturnValue(() => {});
+    clearVariableData.mockReset();
   });
 
   it('subscribes for the signed-in user', () => {
@@ -218,6 +225,67 @@ describe('Variables', () => {
     renderPage();
     (subscribeToVariableSeries.mock.calls.at(-1)?.[2] as (e: Error) => void)(new Error('denied'));
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not load your variables/i);
+  });
+
+  describe('clearing the tracked data', () => {
+    it('offers the control only once there is something to remove', async () => {
+      renderPage();
+      emit([]);
+      await screen.findByText(/no variables tracked yet/i);
+      // An account with nothing tracked gets the empty state, not a button
+      // that would delete nothing.
+      expect(screen.queryByRole('button', { name: /clear variable data/i })).not.toBeInTheDocument();
+
+      emit([makeSeries()]);
+      expect(
+        await screen.findByRole('button', { name: /clear variable data/i }),
+      ).toBeInTheDocument();
+    });
+
+    it('asks before removing anything, and says what survives', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([potassium, makeSeries()]);
+
+      await user.click(await screen.findByRole('button', { name: /clear variable data/i }));
+
+      const dialog = screen.getByRole('dialog');
+      expect(within(dialog).getByText(/all 2 tracked variables/i)).toBeInTheDocument();
+      expect(within(dialog).getByText(/cannot be undone/i)).toBeInTheDocument();
+      // Someone agreeing to this should know their reports are still there.
+      expect(within(dialog).getByText(/reports and the results on each/i)).toBeInTheDocument();
+      // Deleting health data is never one misclick.
+      expect(clearVariableData).not.toHaveBeenCalled();
+    });
+
+    it('clears after confirmation and says how much went', async () => {
+      const user = userEvent.setup();
+      clearVariableData.mockResolvedValue({ cleared: 2 });
+      renderPage();
+      emit([potassium, makeSeries()]);
+
+      await user.click(await screen.findByRole('button', { name: /clear variable data/i }));
+      await user.click(screen.getByRole('button', { name: /clear everything/i }));
+
+      await waitFor(() => expect(clearVariableData).toHaveBeenCalledTimes(1));
+      // The grid empties from the subscription; the toast is what tells the
+      // user the silence is the feature working rather than a failed load.
+      expect(await screen.findByText(/2 variables cleared/i)).toBeInTheDocument();
+    });
+
+    it('keeps the data and says so when the call fails', async () => {
+      const user = userEvent.setup();
+      clearVariableData.mockRejectedValue(new Error('offline'));
+      renderPage();
+      emit([makeSeries()]);
+
+      await user.click(await screen.findByRole('button', { name: /clear variable data/i }));
+      await user.click(screen.getByRole('button', { name: /clear everything/i }));
+
+      expect(await screen.findByText(/could not be cleared/i)).toBeInTheDocument();
+      // The dialog stays open, so the retry is one click rather than three.
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
   });
 
   it('has no serious accessibility violations', async () => {

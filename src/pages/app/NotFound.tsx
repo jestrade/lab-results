@@ -1,19 +1,22 @@
 import { ButtonLink } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
+import { useT } from '@/i18n/useI18n';
 
 export function NotFound() {
+  const t = useT();
+
   return (
     <div style={{ padding: '64px 24px' }}>
       <EmptyState
         icon="compass"
-        title="That page does not exist"
+        title={t('notFound.title')}
         action={
           <ButtonLink to="/" variant="primary">
-            Back to the start
+            {t('notFound.back')}
           </ButtonLink>
         }
       >
-        The link may be out of date, or the page may have moved.
+        {t('notFound.body')}
       </EmptyState>
     </div>
   );

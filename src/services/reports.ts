@@ -15,6 +15,8 @@ import { getDb, getStorageClient } from '@/lib/firebase';
 // One number, one place (spec §79) — config/quotas.json also drives the
 // literal in storage.rules, and a drift test keeps the two in step.
 import { MAX_FILE_BYTES, formatBytes } from '@/domain/quotas';
+import { DEFAULT_LOCALE, type Locale } from '@/domain/locales';
+import { messageFor } from '@/i18n/catalogs';
 
 export { MAX_FILE_BYTES, formatBytes };
 
@@ -35,11 +37,11 @@ export interface FileRejection {
  * anything. `storage.rules` enforces the same two limits server-side, and that
  * is the check that counts.
  */
-export function validateFile(file: File): FileRejection | null {
+export function validateFile(file: File, locale: Locale = DEFAULT_LOCALE): FileRejection | null {
   if (file.size === 0) {
     return {
       reason: 'empty',
-      message: `${file.name} is empty. Nothing was uploaded.`,
+      message: messageFor(locale, 'fileError.empty', { file: file.name }),
     };
   }
   const looksLikePdf =
@@ -47,13 +49,17 @@ export function validateFile(file: File): FileRejection | null {
   if (!looksLikePdf) {
     return {
       reason: 'not-a-pdf',
-      message: `${file.name} isn't a PDF. Laboratory reports must be uploaded as a PDF file. Nothing was uploaded.`,
+      message: messageFor(locale, 'fileError.notPdf', { file: file.name }),
     };
   }
   if (file.size > MAX_FILE_BYTES) {
     return {
       reason: 'too-large',
-      message: `${file.name} is ${formatBytes(file.size)}, over the ${formatBytes(MAX_FILE_BYTES)} limit. Nothing was uploaded.`,
+      message: messageFor(locale, 'fileError.tooLarge', {
+        file: file.name,
+        size: formatBytes(file.size),
+        limit: formatBytes(MAX_FILE_BYTES),
+      }),
     };
   }
   return null;

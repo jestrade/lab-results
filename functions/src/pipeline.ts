@@ -24,7 +24,9 @@ import { analyseResult, needsAnalysis } from './analysis';
 import { classify, isOutOfRange, parseValue, type ReferenceRange } from './classification';
 import { PARTIAL_PROCESSING_NOTICE } from './copy';
 import { extractResults, NoTextLayerError, readPdfText } from './extraction';
-import { calculateTrend, mergePoints, variableKey } from './trends';
+import { calculateTrend, mergePoints } from './trends';
+import { resolveVariables, type ResolvedVariable } from './variables/catalog';
+import { enrichVariables } from './variables/enrichment';
 import { AiProviderError } from './ai/types';
 
 /** Bounded so one pathological report cannot spend the month's AI budget. */
@@ -106,7 +108,13 @@ export async function processReport(report: ReportRef): Promise<void> {
     return;
   }
 
-  await setStatus(report.id, { status: 'processing' });
+  // The instant matters as much as the status: a run that dies without writing
+  // an outcome leaves the report here forever, and `retry.ts` uses the age of
+  // this stamp to tell "still working" apart from "lost its worker".
+  await setStatus(report.id, {
+    status: 'processing',
+    processingStartedAt: FieldValue.serverTimestamp(),
+  });
 
   let text: string;
   try {
@@ -153,15 +161,25 @@ export async function processReport(report: ReportRef): Promise<void> {
     return;
   }
 
+  // ── identity: which catalog variable is each printed name? ──────────────
+  //
+  // Resolved in one pass over the whole report rather than per row, so that
+  // two spellings of one test on the same report ("Glucosa" and "Glucose")
+  // reach the same variable instead of racing to create two.
+  const { resolved, created } = await resolveVariables(
+    extraction.output.results.map((row) => row.rawName),
+  );
+
   // ── classification: arithmetic, in code, never the model ────────────────
   const classified = extraction.output.results.map((row, index) => {
     const range = rangeFrom(row);
     const value = parseValue(row.rawValue);
+    const variable = resolved.get(row.rawName)!;
     return {
       // Document id keeps report order for the details page; variableId is the
       // cross-report identity the trend engine groups on.
-      id: `${String(index).padStart(3, '0')}-${variableKey(row.rawName)}`,
-      variableId: variableKey(row.rawName),
+      id: `${String(index).padStart(3, '0')}-${variable.variableId}`,
+      variable,
       row,
       range,
       value,
@@ -180,10 +198,11 @@ export async function processReport(report: ReportRef): Promise<void> {
   const resultsRef = db.collection('reports').doc(report.id).collection('results');
   for (const entry of classified) {
     batch.set(resultsRef.doc(entry.id), {
-      // The canonical variable catalog (KAN-8) does not exist yet, so a
-      // normalised form of the printed name is the identity. When the catalog
-      // lands, alias resolution plugs in here — rawName is what it matches on.
-      variableId: entry.variableId,
+      // Identity comes from the catalog (KAN-8), which `resolveVariables`
+      // matched `rawName` against. `rawName` stays alongside it because the
+      // details page shows what the laboratory actually printed, and because
+      // it is the evidence for why this row was filed where it was.
+      variableId: entry.variable.variableId,
       rawName: entry.row.rawName,
       value: entry.value,
       rawValue: entry.row.rawValue,
@@ -205,6 +224,15 @@ export async function processReport(report: ReportRef): Promise<void> {
   // ── series: what makes /variables and /trends show anything ─────────────
   await updateSeries(report.ownerId, observedAt, classified);
 
+  // ── catalog: give the tests we had never seen a name and an explanation ──
+  //
+  // After the series, deliberately. The user's values are already stored and
+  // visible at this point, so a slow or failing provider costs them a card
+  // that reads "Ferritina" instead of "Ferritin" — never a missing result.
+  if (created.length > 0) {
+    await enrichVariables(created);
+  }
+
   // ── analysis: only where it adds something ──────────────────────────────
   const worthAnalysing = classified
     .filter((entry) => needsAnalysis(entry.status))
@@ -213,7 +241,10 @@ export async function processReport(report: ReportRef): Promise<void> {
   let analysed = 0;
   for (const entry of worthAnalysing) {
     const analysis = await analyseResult({
-      canonicalName: entry.row.rawName,
+      // The catalog's name, not the laboratory's abbreviation: "HDL" alone
+      // gives the model less to work with than "HDL cholesterol", and the
+      // catalog is where the unabbreviated name lives.
+      canonicalName: entry.variable.canonicalName,
       rawValue: entry.row.rawValue,
       ...(entry.row.unit ? { unit: entry.row.unit } : {}),
       rangeText: describeRange(entry.range),
@@ -280,7 +311,7 @@ async function updateSeries(
   ownerId: string,
   observedAt: Date,
   classified: {
-    variableId: string;
+    variable: ResolvedVariable;
     row: { rawName: string; unit?: string };
     range: ReferenceRange;
     value: number | null;
@@ -296,7 +327,7 @@ async function updateSeries(
         .collection('users')
         .doc(ownerId)
         .collection('variableSeries')
-        .doc(entry.variableId);
+        .doc(entry.variable.variableId);
 
       await db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
@@ -322,10 +353,17 @@ async function updateSeries(
         tx.set(
           ref,
           {
-            variableId: entry.variableId,
-            canonicalName: entry.row.rawName,
-            aliases: [],
-            category: 'other',
+            variableId: entry.variable.variableId,
+            // Copied from the catalog, not from the report. The card shows the
+            // standard name of the test in the reader's language; `rawName`
+            // stays on the result, where "what this laboratory called it"
+            // belongs. Both are kept because they answer different questions.
+            canonicalName: entry.variable.canonicalName,
+            names: entry.variable.names,
+            category: entry.variable.category,
+            // Searchable by whatever this user's own reports printed, which is
+            // the vocabulary they will actually type.
+            aliases: FieldValue.arrayUnion(entry.row.rawName),
             resultCount: points.length,
             trend,
             pointsRaw: points,

@@ -1,0 +1,62 @@
+{
+  "$comment": [
+    "SINGLE SOURCE OF TRUTH for the report reprocessing policy (KAN-7).",
+    "Imported by the web app (src/domain/retry.ts) and by the Cloud Functions",
+    "(functions/src/retry.ts, via the build-time copy retry.generated.json).",
+    "",
+    "Processing runs once, from a Storage trigger declared with retry:false —",
+    "a rate-limited model call, a cold provider or a trigger that fired before",
+    "the Firestore record existed leaves a report stranded with no way back.",
+    "The `retryReport` callable is that way back. It costs no upload operation",
+    "and no additional storage, so the only budget it spends is AI calls, and",
+    "maxRetriesPerReport is what bounds that.",
+    "",
+    "The server decides; the browser only uses these numbers to decide whether",
+    "to offer the button. functions/src/retry.ts is the authority."
+  ],
+
+  "maxRetriesPerReport": 3,
+  "$maxComment": [
+    "Retries only, on top of the automatic first run. Three is enough to ride",
+    "out a provider outage and few enough that a stuck report cannot quietly",
+    "reprocess a 24-result panel all afternoon."
+  ],
+
+  "cooldownSeconds": 60,
+  "$cooldownComment": [
+    "Measured from the start of the previous attempt, not its end, so a retry",
+    "that genuinely took three minutes is not made to wait afterwards. This is",
+    "not concurrency control — the claim transaction handles that — it is what",
+    "stops a failure that returns instantly from burning the whole allowance",
+    "in the time it takes to click three times."
+  ],
+
+  "staleAfterMinutes": 15,
+  "$staleComment": [
+    "How long a report may sit in an in-flight status before the user is",
+    "allowed to restart it. Comfortably above the trigger's 540-second",
+    "timeout, so a run that is merely slow is never interrupted; anything",
+    "still in flight after this has lost its worker and will never finish."
+  ],
+
+  "permanentFailureCodes": [
+    "extraction/no-text-layer",
+    "extraction/unreadable"
+  ],
+  "permanentFailurePrefixes": ["quota/"],
+  "$permanentComment": [
+    "Failures where the same bytes will fail the same way, so the button is",
+    "not offered and the callable refuses. A scanned page will still be a",
+    "scanned page; a damaged PDF will still be damaged. Anything over quota",
+    "had its object deleted by usage.ts, so there is nothing left to read.",
+    "",
+    "Notably absent: consent/ai-processing-missing. That one is the reason",
+    "this feature exists — the user agrees on the account page and the report",
+    "they already uploaded goes through, without spending a second upload.",
+    "",
+    "Also absent: partially_processed. Retrying it would delete results the",
+    "user can already see, in exchange for a re-read that may do worse. If",
+    "that becomes wanted, it needs to write the new results before dropping",
+    "the old ones, not reuse this path."
+  ]
+}

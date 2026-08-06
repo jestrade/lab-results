@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { calculateTrend, MIN_POINTS_FOR_TREND, variableKey, type TrendPoint } from './trends';
+import { calculateTrend, MIN_POINTS_FOR_TREND, type TrendPoint } from './trends';
 
 const DAY = 86_400_000;
 const series = (...values: number[]): TrendPoint[] =>
@@ -99,22 +99,5 @@ describe('calculateTrend', () => {
     for (const outcome of outcomes) {
       expect(['increasing', 'decreasing', 'stable', 'insufficient_data']).toContain(outcome);
     }
-  });
-});
-
-describe('variableKey', () => {
-  it('groups the same test name across reports', () => {
-    expect(variableKey('Hemoglobin')).toBe(variableKey('  hemoglobin  '));
-    expect(variableKey('White blood cells')).toBe('white-blood-cells');
-  });
-
-  it('ignores parenthetical qualifiers that vary between labs', () => {
-    expect(variableKey('Vitamin D (25-OH)')).toBe(variableKey('Vitamin D'));
-  });
-
-  it('does NOT merge aliases, which needs the catalog', () => {
-    // Merging "Hgb" into "Hemoglobin" by guesswork risks fusing two different
-    // tests into one series. Proper alias resolution is KAN-8.
-    expect(variableKey('Hgb')).not.toBe(variableKey('Hemoglobin'));
   });
 });

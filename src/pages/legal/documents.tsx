@@ -18,6 +18,7 @@
 import type { ReactNode } from 'react';
 
 import { MEDICAL_DISCLAIMER } from '@/domain/disclaimers';
+import type { MessageKey } from '@/i18n/messages';
 
 export interface LegalSection {
   id: string;
@@ -142,4 +143,24 @@ export const LEGAL_DOCUMENTS: LegalDocument[] = [
 
 export function findLegalDocument(slug: string): LegalDocument | undefined {
   return LEGAL_DOCUMENTS.find((document) => document.slug === slug);
+}
+
+/**
+ * The document's *name*, which is translated even though its body is not.
+ *
+ * A title is a label in the navigation, not a term of the agreement — a
+ * Spanish reader hunting for the privacy policy should find "Política de
+ * Privacidad" in the rail. The `title` field above stays as the English name
+ * of record; this is what the UI renders.
+ */
+const TITLE_KEYS: Record<string, MessageKey> = {
+  'medical-disclaimer': 'public.legal.medicalDisclaimer',
+  privacy: 'public.legal.privacy',
+  terms: 'public.legal.terms',
+  'ai-processing': 'public.legal.aiProcessing',
+  'data-retention': 'legal.doc.dataRetention',
+};
+
+export function legalTitleKey(slug: string): MessageKey {
+  return TITLE_KEYS[slug] ?? 'public.legal.medicalDisclaimer';
 }

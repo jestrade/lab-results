@@ -29,6 +29,7 @@ import {
 } from 'firebase/auth';
 
 import { getAuthClient, googleProvider } from '@/lib/firebase';
+import { resolveInitialLocale } from '@/i18n/resolve';
 import { setMonitoringUser } from '@/lib/sentry';
 import { ensureUserProfile, recordConsents } from '@/services/profiles';
 import type { UserRole } from '@/domain/types';
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const credential = await signInWithEmailAndPassword(getAuthClient(), email, password);
-    await ensureUserProfile(credential.user);
+    await ensureUserProfile(credential.user, resolveInitialLocale());
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // shown its own consent screen — but our AI-processing consent is ours to
     // collect, so the profile records what we know and the app asks for the
     // rest on first upload.
-    await ensureUserProfile(credential.user);
+    await ensureUserProfile(credential.user, resolveInitialLocale());
   }, []);
 
   const register = useCallback(
@@ -92,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (name.trim()) {
         await updateProfile(credential.user, { displayName: name.trim() });
       }
-      await ensureUserProfile(credential.user);
+      await ensureUserProfile(credential.user, resolveInitialLocale());
       await recordConsents(credential.user.uid, { acceptedTerms, acceptedAiProcessing });
       await sendEmailVerification(credential.user);
     },

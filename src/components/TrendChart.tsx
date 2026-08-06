@@ -1,7 +1,10 @@
 import { useId } from 'react';
 
 import type { ResultStatus, VariableSeries } from '@/domain/types';
-import { formatReferenceRange } from '@/domain/variables';
+import { formatReferenceRange, seriesName } from '@/domain/variables';
+import { intlTag } from '@/i18n/dates';
+import { useI18n } from '@/i18n/useI18n';
+import type { Locale } from '@/domain/locales';
 
 const STATUS_COLOUR: Record<ResultStatus, string> = {
   normal: 'var(--color-accent)',
@@ -33,6 +36,7 @@ export interface TrendChartProps {
  */
 export function TrendChart({ series, from, to, height = 180 }: TrendChartProps) {
   const titleId = useId();
+  const { t, locale } = useI18n();
   const width = 640;
   const pad = { top: 16, right: 16, bottom: 26, left: 44 };
 
@@ -41,7 +45,7 @@ export function TrendChart({ series, from, to, height = 180 }: TrendChartProps) 
     .filter((point) => point.at >= from && point.at <= to)
     .sort((a, b) => a.at - b.at);
 
-  const range = formatReferenceRange(series.referenceRange);
+  const range = formatReferenceRange(series.referenceRange, locale);
   const { low, high } = series.referenceRange;
 
   // The y-axis must cover both the values and the reference band, or a result
@@ -55,7 +59,7 @@ export function TrendChart({ series, from, to, height = 180 }: TrendChartProps) 
   if (points.length === 0 || candidates.length === 0) {
     return (
       <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-        No measurements in this period.
+        {t('chart.noMeasurements')}
       </p>
     );
   }
@@ -72,11 +76,19 @@ export function TrendChart({ series, from, to, height = 180 }: TrendChartProps) 
     pad.top + (1 - (value - yMin) / (yMax - yMin)) * (height - pad.top - pad.bottom);
 
   const unit = series.unit ? ` ${series.unit}` : '';
-  const summary =
-    `${series.canonicalName}: ${points.length} measurement${points.length === 1 ? '' : 's'} ` +
-    `from ${formatDate(points[0]!.at)} to ${formatDate(points[points.length - 1]!.at)}, ` +
-    `${points[0]!.value}${unit} to ${points[points.length - 1]!.value}${unit}. ` +
-    `Reference range ${range.text ?? 'not stated on the report'}.`;
+  // Named from the catalog, like the visible heading. A text alternative that
+  // calls the chart something other than what the page calls it leaves a
+  // screen-reader user unable to tell which chart they are on.
+  const name = seriesName(series, locale);
+  const summary = t(points.length === 1 ? 'chart.summaryOne' : 'chart.summaryMany', {
+    name,
+    count: points.length,
+    firstDate: formatDate(points[0]!.at, locale),
+    lastDate: formatDate(points[points.length - 1]!.at, locale),
+    firstValue: `${points[0]!.value}${unit}`,
+    lastValue: `${points[points.length - 1]!.value}${unit}`,
+    range: range.text ?? t('chart.rangeNotStated'),
+  });
 
   return (
     <figure style={{ margin: 0 }}>
@@ -173,30 +185,34 @@ export function TrendChart({ series, from, to, height = 180 }: TrendChartProps) 
         </text>
 
         <text x={pad.left} y={height - 8} fontSize="10" fill="var(--color-text-muted)">
-          {formatDate(from)}
+          {formatDate(from, locale)}
         </text>
         <text x={width - pad.right} y={height - 8} fontSize="10" textAnchor="end" fill="var(--color-text-muted)">
-          {formatDate(to)}
+          {formatDate(to, locale)}
         </text>
       </svg>
 
       {/* The equivalent, not a summary of it. */}
       <details className="chart-data">
-        <summary>Show the {points.length} measurements as a table</summary>
+        <summary>
+          {t(points.length === 1 ? 'chart.showTableOne' : 'chart.showTableMany', {
+            count: points.length,
+          })}
+        </summary>
         <table className="table">
-          <caption className="sr-only">{series.canonicalName} measurements</caption>
+          <caption className="sr-only">{t('chart.tableCaption', { name })}</caption>
           <thead>
             <tr>
-              <th scope="col">Date</th>
+              <th scope="col">{t('chart.date')}</th>
               <th scope="col" style={{ textAlign: 'right' }}>
-                Value
+                {t('chart.value')}
               </th>
             </tr>
           </thead>
           <tbody>
             {points.map((point) => (
               <tr key={point.at}>
-                <td>{formatDate(point.at)}</td>
+                <td>{formatDate(point.at, locale)}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {point.value}
                   {unit}
@@ -218,8 +234,8 @@ export function TrendChart({ series, from, to, height = 180 }: TrendChartProps) 
  * zone moves a 1 March report to 28 February for everyone west of UTC, which
  * on a month-granularity axis puts the point in the wrong month.
  */
-function formatDate(at: number): string {
-  return new Intl.DateTimeFormat(undefined, {
+function formatDate(at: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(intlTag(locale), {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',

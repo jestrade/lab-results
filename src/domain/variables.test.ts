@@ -11,10 +11,17 @@ import {
   groupByCategory,
   matchesQuery,
   MIN_POINTS_FOR_TREND,
+  seriesName,
   sparklinePath,
   summariseSeries,
+  withCatalog,
 } from './variables';
-import type { ReferenceRange, VariableCategory, VariableSeries } from './types';
+import type {
+  LabVariable,
+  ReferenceRange,
+  VariableCategory,
+  VariableSeries,
+} from './types';
 
 function stamp(iso: string) {
   return { toDate: () => new Date(iso), toMillis: () => new Date(iso).getTime() } as never;
@@ -218,6 +225,168 @@ describe('groupByCategory', () => {
 
   it('omits categories with nothing in them', () => {
     expect(groupByCategory([makeSeries()])).toHaveLength(1);
+  });
+
+  it('labels the groups in the reader’s language', () => {
+    const series = [makeSeries({ category: 'complete_blood_count' })];
+
+    expect(groupByCategory(series, 'en')[0]!.label).toBe('Complete blood count');
+    // The panel name a Spanish-language laboratory prints, not a word-for-word
+    // translation of the English phrase.
+    expect(groupByCategory(series, 'es')[0]!.label).toBe('Biometría hemática');
+  });
+
+  it('sorts by the name actually shown, not by the English one', () => {
+    // In Spanish the pair reverses: "Potasio" before "Sodio", but "Sodium"
+    // before... nothing — the point is the order follows what is on screen.
+    const groups = groupByCategory(
+      [
+        makeSeries({
+          variableId: 'na',
+          canonicalName: 'Sodium',
+          names: { en: 'Sodium', es: 'Sodio' },
+          category: 'electrolytes',
+        }),
+        makeSeries({
+          variableId: 'k',
+          canonicalName: 'Potassium',
+          names: { en: 'Potassium', es: 'Potasio' },
+          category: 'electrolytes',
+        }),
+      ],
+      'es',
+    );
+
+    expect(groups[0]!.series.map((entry) => entry.names!.es)).toEqual(['Potasio', 'Sodio']);
+  });
+});
+
+describe('withCatalog', () => {
+  function entry(overrides: Partial<LabVariable> = {}): LabVariable {
+    return {
+      id: 'uric-acid',
+      canonicalName: 'Uric Acid',
+      names: { en: 'Uric Acid', es: 'Ácido Úrico' },
+      descriptions: {},
+      aliases: ['Uric Acid', 'Ácido Úrico'],
+      category: 'kidney_function',
+      defaultUnit: 'mg/dL',
+      origin: 'catalog',
+      needsEnrichment: false,
+      createdAt: stamp('2026-08-05T00:00:00Z'),
+      ...overrides,
+    };
+  }
+
+  const catalog = new Map<string, LabVariable>([['uric-acid', entry()]]);
+
+  it('re-labels a series that still carries the laboratory’s own wording', () => {
+    // This is the real case: the series was written before the catalog
+    // existed, so its denormalised name is whatever the report printed.
+    const stale = makeSeries({
+      variableId: 'uric-acid',
+      canonicalName: 'Ácido úrico sérico',
+      names: { en: 'Ácido úrico sérico' },
+      category: 'other',
+    });
+
+    const [merged] = withCatalog([stale], catalog);
+
+    expect(merged!.canonicalName).toBe('Uric Acid');
+    expect(seriesName(merged!, 'es')).toBe('Ácido Úrico');
+    expect(merged!.category).toBe('kidney_function');
+  });
+
+  it('leaves the user’s own measurements untouched', () => {
+    // Only presentation comes from the catalog. Values, ranges and history are
+    // the user's and must survive the join byte for byte.
+    const original = makeSeries({ variableId: 'uric-acid', latestValue: 7.4, resultCount: 5 });
+    const [merged] = withCatalog([original], catalog);
+
+    expect(merged!.latestValue).toBe(7.4);
+    expect(merged!.resultCount).toBe(5);
+    expect(merged!.points).toEqual(original.points);
+    expect(merged!.referenceRange).toEqual(original.referenceRange);
+    expect(merged!.latestStatus).toBe(original.latestStatus);
+  });
+
+  it('keeps a series the catalog has never heard of', () => {
+    // A variable missing from the catalog is still a result the user owns.
+    // Dropping it would hide their own data.
+    const orphan = makeSeries({ variableId: 'not-in-catalog', canonicalName: 'Some Assay' });
+    const [merged] = withCatalog([orphan], catalog);
+
+    expect(merged!.canonicalName).toBe('Some Assay');
+    expect(merged).toEqual(orphan);
+  });
+
+  it('falls back to the series when the catalog could not be read', () => {
+    const original = makeSeries();
+    expect(withCatalog([original], null)).toEqual([original]);
+    expect(withCatalog([original], new Map())).toEqual([original]);
+  });
+
+  it('merges both alias lists so either vocabulary is searchable', () => {
+    const stale = makeSeries({
+      variableId: 'uric-acid',
+      canonicalName: 'Ácido úrico sérico',
+      aliases: ['Ácido úrico sérico'],
+    });
+
+    const [merged] = withCatalog([stale], catalog);
+
+    expect(matchesQuery(merged!, 'ácido úrico sérico')).toBe(true);
+    expect(matchesQuery(merged!, 'uric acid')).toBe(true);
+  });
+
+  it('groups a re-labelled series under its catalog category', () => {
+    const stale = makeSeries({
+      variableId: 'uric-acid',
+      canonicalName: 'Ácido úrico sérico',
+      category: 'other',
+    });
+
+    const groups = groupByCategory(withCatalog([stale], catalog), 'en');
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.category).toBe('kidney_function');
+    expect(groups[0]!.label).toBe('Kidney function');
+  });
+});
+
+describe('seriesName', () => {
+  it('returns the localised name when the catalog supplied one', () => {
+    const series = makeSeries({ names: { en: 'Hemoglobin', es: 'Hemoglobina' } });
+    expect(seriesName(series, 'es')).toBe('Hemoglobina');
+  });
+
+  it('falls back to the canonical name for a series written before the catalog', () => {
+    // These documents genuinely have no names map. Showing the laboratory's
+    // own wording beats showing nothing.
+    const series = makeSeries();
+    delete (series as { names?: unknown }).names;
+    expect(seriesName(series, 'es')).toBe('Hemoglobin');
+  });
+});
+
+describe('matchesQuery — across languages', () => {
+  it('finds a variable by its Spanish name while the interface is English', () => {
+    // A bilingual reader types whichever name comes to mind, and their own
+    // report is where the vocabulary comes from.
+    const series = makeSeries({ names: { en: 'Glucose', es: 'Glucosa' } });
+    expect(matchesQuery(series, 'glucosa')).toBe(true);
+    expect(matchesQuery(series, 'glucose')).toBe(true);
+  });
+
+  it('ignores accents in either the query or the stored name', () => {
+    const series = makeSeries({
+      canonicalName: 'Triglycerides',
+      names: { en: 'Triglycerides', es: 'Triglicéridos' },
+      aliases: [],
+    });
+
+    expect(matchesQuery(series, 'triglicéridos')).toBe(true);
+    expect(matchesQuery(series, 'trigliceridos')).toBe(true);
   });
 });
 

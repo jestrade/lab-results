@@ -8,6 +8,9 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+import type { Locale, Translated } from './locales';
+import type { ThemePreference } from './themes';
+
 /** Where a value sits against the reference range on its own report. */
 export type ResultStatus = 'low' | 'normal' | 'high' | 'critical' | 'unknown';
 
@@ -117,6 +120,26 @@ export interface UserPreferences {
   notifyOnProcessed: boolean;
   /** Email when a result is classified critical. */
   notifyOnCritical: boolean;
+  /**
+   * Chosen interface language (KAN-8).
+   *
+   * Optional because profiles created before the picker existed do not carry
+   * it, and because "never chose" and "chose English" are different states:
+   * the first still follows the browser, the second does not. Storing a
+   * default here would quietly override the browser preference of every
+   * existing account with English.
+   */
+  locale?: Locale;
+  /**
+   * Chosen colour theme.
+   *
+   * Optional for the same reason `locale` is: profiles created before the
+   * picker existed do not carry it, and "never chose" has to keep following
+   * the device. Note that `system` is a stored value here, not the absence of
+   * one — a reader can deliberately choose to follow their device after having
+   * chosen dark, and that is a different state from never having chosen.
+   */
+  theme?: ThemePreference;
 }
 
 /** `reports/{reportId}` */
@@ -141,6 +164,15 @@ export interface Report {
   warnings: ReportWarning[];
   uploadedAt: Timestamp;
   processedAt: Timestamp | null;
+  /**
+   * When the current processing attempt began (KAN-7). Optional because
+   * reports uploaded before reprocessing existed do not carry it — and on an
+   * in-flight status, its absence is itself the signal that the run is lost.
+   */
+  processingStartedAt?: Timestamp | null;
+  /** Reprocessing attempts spent. Capped by `config/retry.json`. */
+  retryCount?: number;
+  lastRetryAt?: Timestamp | null;
   /** Set when a later upload supersedes this one (KAN-31). */
   supersededBy: string | null;
   version: number;
@@ -169,6 +201,25 @@ export interface LabResult {
   sourcePage: number | null;
   /** When the sample was taken, falling back to the report date. */
   observedAt: Timestamp;
+  /** Commentary generated for this value, when any was (KAN-17). */
+  analysis?: ResultAnalysis | null;
+}
+
+/**
+ * AI commentary on a single result (KAN-17).
+ *
+ * Provenance travels with the text, so the interface can label it honestly and
+ * a later prompt change can find what the old one produced. It lives here
+ * rather than beside the page that first rendered it because two screens now
+ * show the same field — one report's results, and one variable's history.
+ */
+export interface ResultAnalysis {
+  text: string;
+  provider: string;
+  model: string;
+  promptVersion: string;
+  contentUsedForTraining: boolean;
+  generatedAt: string;
 }
 
 export interface ReferenceRange {
@@ -195,6 +246,20 @@ export interface ReferenceRange {
 export interface VariableSeries {
   variableId: string;
   canonicalName: string;
+  /**
+   * The catalog's localised names, copied at write time.
+   *
+   * Denormalised for the same reason the rest of this document is: the grid
+   * draws two dozen cards and must not read a catalog document per card. The
+   * cost is that a corrected translation reaches a user's series only when
+   * their next report is processed, which is acceptable for a display name.
+   *
+   * Optional because it genuinely is: series written before the catalog
+   * existed have no names map, and `seriesName` falls back to
+   * `canonicalName` for them rather than rendering an empty card. Typing it
+   * as required would be a claim about stored data that is not true.
+   */
+  names?: Translated;
   aliases: string[];
   category: VariableCategory;
   unit: string | null;
@@ -223,14 +288,52 @@ export interface VariablePoint {
   observedAt: Timestamp;
 }
 
-/** `variables/{variableId}` — the canonical catalog (KAN-8). */
+/**
+ * `variables/{variableId}` — the canonical catalog (KAN-8).
+ *
+ * ── Catalog documents are immutable once written ──────────────────────────
+ *
+ * Nothing in the running system edits an entry that already exists. The
+ * importer creates and skips, the pipeline creates and reuses, and the
+ * backfill only fills gaps. Curated names and explanations are reviewed
+ * content, and a report that spells a test slightly differently must not be
+ * able to rewrite them — a laboratory's abbreviation is evidence about *this
+ * report*, not a correction to the catalog.
+ *
+ * The consequence worth knowing: alias lists do not grow by themselves.
+ * Matching an unfamiliar spelling is `matching.ts`'s job, not the document's.
+ */
 export interface LabVariable {
   id: string;
+  /**
+   * English name. The fallback for every locale and the anchor the matcher
+   * compares against, which is why it is a plain string and not translated.
+   */
   canonicalName: string;
-  /** Names seen on real reports that resolve to this variable. */
+  /** Display name per locale. `en` mirrors `canonicalName`. */
+  names: Translated;
+  /**
+   * Plain-language explanation per locale, shown on the variable page
+   * (KAN-15). Absent until someone — or the enrichment pass — writes one.
+   */
+  descriptions: Partial<Record<Locale, string>>;
+  /**
+   * Names seen on real reports, in every language, that resolve here.
+   * Spanish and English synonyms share one list: a report is matched against
+   * all of them at once, because a bilingual laboratory prints both.
+   */
   aliases: string[];
   category: VariableCategory;
   defaultUnit: string | null;
-  /** Plain-language description shown on the variable page (KAN-15). */
-  description: string | null;
+  /**
+   * Where the entry came from. `catalog` is reviewed content from the
+   * curated source; `discovered` was created from a user's report and has
+   * had no human review — the UI labels its explanations accordingly.
+   */
+  origin: VariableOrigin;
+  /** False once names and descriptions have been filled in for every locale. */
+  needsEnrichment: boolean;
+  createdAt: Timestamp;
 }
+
+export type VariableOrigin = 'catalog' | 'discovered';

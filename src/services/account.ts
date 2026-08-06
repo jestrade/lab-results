@@ -10,10 +10,14 @@
 import {
   EmailAuthProvider,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   updatePassword,
   updateProfile,
   type User,
 } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
+
+import { getFunctionsClient, googleProvider } from '@/lib/firebase';
 
 /** Firebase's identifier for the email/password sign-in method. */
 const PASSWORD_PROVIDER = 'password';
@@ -68,4 +72,61 @@ export async function changePassword(
  */
 export async function syncAuthDisplayName(user: User, displayName: string): Promise<void> {
   await updateProfile(user, { displayName });
+}
+
+/**
+ * Proves the person at the keyboard is the account holder, whichever way they
+ * sign in.
+ *
+ * Google accounts go through the provider's own popup rather than a password
+ * field they do not have. Either way the effect is the same: the ID token's
+ * `auth_time` moves to now, which is what `deleteAccount` checks server-side.
+ */
+export async function reauthenticate(user: User, password?: string): Promise<void> {
+  if (!hasPasswordSignIn(user)) {
+    await reauthenticateWithPopup(user, googleProvider());
+    return;
+  }
+
+  if (!user.email) {
+    throw new Error('This account has no email address to re-authenticate with.');
+  }
+  if (!password) {
+    throw new Error('Enter your password to continue.');
+  }
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+}
+
+/**
+ * The word the user types to confirm deletion, and the one the callable
+ * demands. Exported so the form, its tests and the server all name the same
+ * string rather than three copies that can drift.
+ */
+export const DELETION_CONFIRMATION = 'DELETE';
+
+export interface DeletionSummary {
+  reports: number;
+  storageObjects: number;
+  auditEntries: number;
+}
+
+/**
+ * Deletes the account and everything belonging to it (KAN-23, spec §57).
+ *
+ * A callable rather than a client-side cascade, and not for convenience:
+ * `firestore.rules` denies the browser a delete on `users/{uid}` outright, the
+ * extracted results are Admin-SDK-only by design, and no client can remove its
+ * own Firebase Auth record along with the Storage objects in one atomic-ish
+ * unit. The whole workflow lives in functions/src/deleteAccount.ts.
+ *
+ * Call `reauthenticate` first. The server requires a session that proved itself
+ * in the last few minutes and answers `failed-precondition` if it did not.
+ */
+export async function deleteAccountAndData(): Promise<DeletionSummary> {
+  const call = httpsCallable<{ confirmation: string }, DeletionSummary>(
+    getFunctionsClient(),
+    'deleteAccount',
+  );
+  const { data } = await call({ confirmation: DELETION_CONFIRMATION });
+  return data;
 }

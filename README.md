@@ -27,6 +27,9 @@ npm install && npm run dev
   and the billing budget you must set up by hand
 - **[docs/ai.md](docs/ai.md)** — the AI provider layer, swapping models or
   vendors, and what redaction does and does not do
+- **[docs/variables.md](docs/variables.md)** — the laboratory-variable catalog:
+  how a printed test name is matched to it, why it never edits itself, and how
+  to import the maintained spreadsheet
 
 ## Layout
 
@@ -42,7 +45,12 @@ src/
   styles/       Broadsheet base, LabResults theme, app layout
 firestore.rules storage.rules   The real security boundary
 config/quotas.json              Every capacity limit, in one place
-functions/                      Cloud Functions: usage accounting, roles
+config/retry.json               When a failed report may be processed again
+config/variables.json           The laboratory-variable catalog, as imported
+                                from the maintained spreadsheet
+functions/                      Cloud Functions: the extraction pipeline, usage
+                                accounting, roles, account deletion, retries
+functions/scripts/              Catalog import and backfill (docs/variables.md)
 ```
 
 ## Two rules worth knowing before you write code

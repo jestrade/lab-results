@@ -15,6 +15,8 @@ const updateHealthContext = vi.hoisted(() => vi.fn());
 const clearHealthContext = vi.hoisted(() => vi.fn());
 const changePassword = vi.hoisted(() => vi.fn());
 const syncAuthDisplayName = vi.hoisted(() => vi.fn());
+const reauthenticate = vi.hoisted(() => vi.fn());
+const deleteAccountAndData = vi.hoisted(() => vi.fn());
 
 vi.mock('@/services/profiles', () => ({
   subscribeToProfile,
@@ -25,7 +27,13 @@ vi.mock('@/services/profiles', () => ({
 
 vi.mock('@/services/account', async (importOriginal) => {
   const actual = await importOriginal<typeof AccountModule>();
-  return { ...actual, changePassword, syncAuthDisplayName };
+  return {
+    ...actual,
+    changePassword,
+    syncAuthDisplayName,
+    reauthenticate,
+    deleteAccountAndData,
+  };
 });
 
 function stamp(iso: string) {
@@ -102,6 +110,10 @@ describe('Profile', () => {
     clearHealthContext.mockReset().mockResolvedValue(undefined);
     changePassword.mockReset().mockResolvedValue(undefined);
     syncAuthDisplayName.mockReset().mockResolvedValue(undefined);
+    reauthenticate.mockReset().mockResolvedValue(undefined);
+    deleteAccountAndData
+      .mockReset()
+      .mockResolvedValue({ reports: 3, storageObjects: 3, auditEntries: 0 });
   });
 
   it('saves a changed display name to both the profile and the auth record', async () => {
@@ -351,13 +363,120 @@ describe('Profile', () => {
     expect(screen.queryByRole('button', { name: /remove all of this/i })).not.toBeInTheDocument();
   });
 
-  it('does not claim data export and deletion exist', async () => {
+  it('does not claim a data export exists', async () => {
     renderPage();
     emit(makeProfile());
 
     // A "Download my data" button that opens nothing is worse than an honest
-    // absence, and both are spec requirements (§56, §57).
-    expect(await screen.findByText(/are not built yet/i)).toBeInTheDocument();
+    // absence (§56). Deletion, below, is real.
+    expect(await screen.findByText(/data export is not built yet/i)).toBeInTheDocument();
+  });
+
+  describe('account deletion', () => {
+    /** Opens the dialog and fills in everything a password account needs. */
+    async function openDeletion(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole('button', { name: /delete my account/i }));
+      return screen.getByRole('button', { name: /delete everything/i });
+    }
+
+    it('itemises what deletion removes rather than summarising it', async () => {
+      renderPage();
+      emit(makeProfile());
+
+      // "Your data will be removed" is a sentence someone can agree to without
+      // realising they are about to lose four years of blood work.
+      expect(await screen.findByRole('heading', { name: /delete your account/i })).toBeInTheDocument();
+      expect(screen.getByText(/every report you uploaded/i)).toBeInTheDocument();
+      expect(screen.getByText(/every value extracted from those reports/i)).toBeInTheDocument();
+      expect(screen.getByText(/tracked variables and their history/i)).toBeInTheDocument();
+    });
+
+    it('will not delete until the confirmation word is typed', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit(makeProfile());
+
+      const confirm = await openDeletion(user);
+      expect(confirm).toBeDisabled();
+
+      await user.type(screen.getByLabelText(/type delete to confirm/i), 'delete');
+      expect(confirm).toBeEnabled();
+      // Not yet pressed — opening the dialog must never be enough on its own.
+      expect(deleteAccountAndData).not.toHaveBeenCalled();
+    });
+
+    it('proves the password, deletes everything, then ends the session', async () => {
+      const user = userEvent.setup();
+      const signOutUser = vi.fn().mockResolvedValue(undefined);
+      renderPage(passwordUser({ signOutUser }));
+      emit(makeProfile());
+
+      const confirm = await openDeletion(user);
+      await user.type(screen.getByLabelText(/your password/i), 'my-password-1');
+      await user.type(screen.getByLabelText(/type delete to confirm/i), 'DELETE');
+      await user.click(confirm);
+
+      // Re-authentication first: it is what stops someone at an unlocked laptop
+      // destroying the owner's records, and it is what the callable checks.
+      expect(reauthenticate).toHaveBeenCalledWith(expect.anything(), 'my-password-1');
+      expect(deleteAccountAndData).toHaveBeenCalled();
+      expect(signOutUser).toHaveBeenCalled();
+      expect(
+        await screen.findByText(/your account and all of your data have been deleted/i),
+      ).toBeInTheDocument();
+    });
+
+    it('confirms a Google account through Google, not through a password it does not have', async () => {
+      const user = userEvent.setup();
+      renderPage(googleUser());
+      emit(makeProfile());
+
+      const confirm = await openDeletion(user);
+      expect(screen.queryByLabelText(/your password/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/a google window will open/i)).toBeInTheDocument();
+
+      await user.type(screen.getByLabelText(/type delete to confirm/i), 'DELETE');
+      await user.click(confirm);
+
+      expect(reauthenticate).toHaveBeenCalledWith(expect.anything(), undefined);
+      expect(deleteAccountAndData).toHaveBeenCalled();
+    });
+
+    it('does not delete anything when re-authentication fails', async () => {
+      const user = userEvent.setup();
+      const signOutUser = vi.fn();
+      reauthenticate.mockRejectedValue({ code: 'auth/wrong-password' });
+      renderPage(passwordUser({ signOutUser }));
+      emit(makeProfile());
+
+      const confirm = await openDeletion(user);
+      await user.type(screen.getByLabelText(/your password/i), 'wrong-password');
+      await user.type(screen.getByLabelText(/type delete to confirm/i), 'DELETE');
+      await user.click(confirm);
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+      expect(deleteAccountAndData).not.toHaveBeenCalled();
+      expect(signOutUser).not.toHaveBeenCalled();
+    });
+
+    it('says a failed deletion may have removed some data rather than claiming nothing happened', async () => {
+      const user = userEvent.setup();
+      const signOutUser = vi.fn();
+      deleteAccountAndData.mockRejectedValue({ code: 'functions/internal' });
+      renderPage(passwordUser({ signOutUser }));
+      emit(makeProfile());
+
+      const confirm = await openDeletion(user);
+      await user.type(screen.getByLabelText(/your password/i), 'my-password-1');
+      await user.type(screen.getByLabelText(/type delete to confirm/i), 'DELETE');
+      await user.click(confirm);
+
+      // Deletion is not transactional. Reporting a partial failure as "nothing
+      // was removed" would be the one lie this flow cannot afford.
+      expect(await screen.findByRole('alert')).toHaveTextContent(/may already have been removed/i);
+      // The session survives, so the user can run it again and finish the job.
+      expect(signOutUser).not.toHaveBeenCalled();
+    });
   });
 
   it('shows when the account was created', async () => {

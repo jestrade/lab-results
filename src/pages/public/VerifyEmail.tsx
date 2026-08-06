@@ -7,6 +7,8 @@ import { Alert } from '@/components/Alert';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { AuthLayout } from '@/layouts/AuthLayout';
+import { Trans } from '@/i18n/Trans';
+import { useI18n } from '@/i18n/useI18n';
 
 /**
  * Email verification gate (KAN-1).
@@ -19,6 +21,7 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 export function VerifyEmail() {
   const { user, isEmailVerified, resendVerification, refresh, signOutUser } = useAuth();
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
 
   const [sent, setSent] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -31,7 +34,7 @@ export function VerifyEmail() {
       await resendVerification();
       setSent(true);
     } catch (caught) {
-      setError(toAuthErrorMessage(caught).message);
+      setError(toAuthErrorMessage(caught, locale).message);
     }
   }
 
@@ -48,15 +51,19 @@ export function VerifyEmail() {
   }
 
   return (
-    <AuthLayout heading="One last step before your first upload.">
+    <AuthLayout heading={t('verify.asideHeading')}>
       <div className="auth-form">
-        <div className="kicker">Email verification</div>
+        <div className="kicker">{t('verify.kicker')}</div>
         <Icon name="seal-check" size={44} className="empty-state-icon" />
         <div>
-          <h2>Verify your email to upload</h2>
+          <h2>{t('verify.heading')}</h2>
           <p className="muted" style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.7 }}>
-            We sent a link to <strong style={{ color: 'var(--color-text)' }}>{user?.email}</strong>. You
-            can look around until then, but uploading a report needs a verified address.
+            <Trans
+              id="verify.body"
+              values={{
+                email: <strong style={{ color: 'var(--color-text)' }}>{user?.email}</strong>,
+              }}
+            />
           </p>
         </div>
 
@@ -65,37 +72,35 @@ export function VerifyEmail() {
             {error}
           </Alert>
         ) : null}
-        {sent ? <Alert tone="success">Verification email sent. It may take a minute to arrive.</Alert> : null}
+        {sent ? <Alert tone="success">{t('verify.sent')}</Alert> : null}
         {stillUnverified ? (
           <Alert tone="warning" live>
-            That address is still unverified. Open the link in the email, then try again.
+            {t('verify.stillUnverified')}
           </Alert>
         ) : null}
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Button variant="primary" onClick={handleResend}>
-            Resend verification email
+            {t('verify.resend')}
           </Button>
           <Button
             variant="secondary"
             onClick={handleContinue}
             loading={checking}
-            loadingLabel="Checking…"
+            loadingLabel={t('verify.checking')}
           >
-            I have verified — continue
+            {t('verify.continue')}
           </Button>
         </div>
 
-        <Alert tone="info">
-          Accounts created with Google are verified automatically — no email step.
-        </Alert>
+        <Alert tone="info">{t('verify.googleNote')}</Alert>
 
         <div style={{ display: 'flex', gap: 10 }}>
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            Look around first
+            {t('verify.lookAround')}
           </Button>
           <Button variant="ghost" onClick={() => void signOutUser()}>
-            Sign out
+            {t('common.signOut')}
           </Button>
         </div>
       </div>

@@ -9,10 +9,15 @@ import type * as VariablesModule from '@/services/variables';
 import { Trends } from './Trends';
 
 const subscribeToVariableSeries = vi.hoisted(() => vi.fn());
+// The page joins each series to the catalog for its display name and group.
+// Stubbed empty so these tests exercise the fallback path: the names the trend
+// engine denormalised onto each series, which is what a user sees before the
+// catalog has anything to say about their variables.
+const fetchVariableCatalog = vi.hoisted(() => vi.fn(() => Promise.resolve(new Map())));
 
 vi.mock('@/services/variables', async (importOriginal) => {
   const actual = await importOriginal<typeof VariablesModule>();
-  return { ...actual, subscribeToVariableSeries };
+  return { ...actual, subscribeToVariableSeries, fetchVariableCatalog };
 });
 
 function stamp(iso: string) {
@@ -231,5 +236,70 @@ describe('Trends', () => {
     emit([potassium, ldl, tsh]);
     await screen.findByRole('heading', { name: 'Potassium', level: 2 });
     await expectNoA11yViolations(container);
+  });
+
+  describe('the variable picker', () => {
+    it('groups the chips by panel instead of listing them flat', async () => {
+      renderPage();
+      emit([potassium, ldl, tsh]);
+
+      // Fifty chips in one run is a wall with no landmarks. The panel names
+      // are what make it navigable, and they are announced rather than being
+      // a purely visual grouping.
+      for (const panel of ['Electrolytes', 'Lipid profile', 'Thyroid']) {
+        expect(await screen.findByRole('group', { name: panel })).toBeInTheDocument();
+      }
+    });
+
+    it('puts each variable in its own panel’s group', async () => {
+      renderPage();
+      emit([potassium, ldl, tsh]);
+
+      const electrolytes = await screen.findByRole('group', { name: 'Electrolytes' });
+      expect(within(electrolytes).getByRole('button', { name: 'Potassium' })).toBeInTheDocument();
+      expect(within(electrolytes).queryByRole('button', { name: 'TSH' })).not.toBeInTheDocument();
+    });
+
+    it('orders the panels consistently rather than by arrival', async () => {
+      renderPage();
+      // Emitted thyroid-first; the fixed order must still win, so a test stays
+      // where the reader last saw it.
+      emit([tsh, ldl, potassium]);
+
+      await screen.findByRole('group', { name: 'Thyroid' });
+      const panels = screen
+        .getAllByRole('group')
+        .map((node) => node.getAttribute('aria-label'))
+        .filter((label): label is string => label !== null);
+
+      expect(panels).toEqual(['Lipid profile', 'Thyroid', 'Electrolytes']);
+    });
+
+    it('reports how many are selected and can clear them', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([potassium, ldl, tsh]);
+
+      // Two of the three, because TSH has only two points and the page opens
+      // on the variables that actually have enough history to show a direction.
+      expect(await screen.findByText(/2 of 3 selected/)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Clear' }));
+
+      expect(await screen.findByText(/0 of 3 selected/)).toBeInTheDocument();
+      expect(screen.getByText(/choose a variable/i)).toBeInTheDocument();
+    });
+
+    it('keeps a chip a real toggle rather than a styled label', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([potassium, ldl, tsh]);
+
+      const chip = await screen.findByRole('button', { name: 'Potassium' });
+      expect(chip).toHaveAttribute('aria-pressed', 'true');
+
+      await user.click(chip);
+      expect(chip).toHaveAttribute('aria-pressed', 'false');
+    });
   });
 });

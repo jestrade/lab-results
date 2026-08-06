@@ -16,6 +16,14 @@ import './styles/app.css';
 
 import { App } from './App';
 import { initMonitoring } from './lib/sentry';
+import { bootTheme } from './theme/resolve';
+
+// Before anything renders. Reads the remembered theme off `localStorage` and
+// puts it on <html>, so the first paint is already the colour the reader chose
+// rather than a white flash they watch turn dark. This lives here rather than
+// in an inline script in index.html because the content security policy allows
+// no inline script — see the note in `src/theme/resolve.ts`.
+bootTheme();
 
 initMonitoring();
 

@@ -9,8 +9,19 @@
  * a screen reader and on paper.
  *
  * The icon names are Phosphor duotone classes, matching the design board.
+ *
+ * ── Why the tables hold keys rather than words (KAN-8) ────────────────────
+ *
+ * The label and description are `MessageKey`s, resolved against the reader's
+ * locale by the accessors below. Keeping the words themselves in the catalog
+ * rather than here means the rule this file exists to enforce — that a status
+ * always carries text, not just a colour — holds in every language, and is
+ * checked by the compiler in every language.
  */
 
+import type { Locale } from './locales';
+import { messageFor } from '@/i18n/catalogs';
+import type { MessageKey } from '@/i18n/messages';
 import type {
   ExtractionConfidence,
   ReferenceRangeSource,
@@ -19,10 +30,18 @@ import type {
   TrendDirection,
 } from './types';
 
+/** The table entry: what to look up and what to draw. */
+export interface StatusEntry {
+  labelKey: MessageKey;
+  /** Phosphor icon class, e.g. `ph-check-circle`. Decorative; label carries it. */
+  icon: string;
+  descriptionKey: MessageKey;
+}
+
+/** The resolved form a component renders. */
 export interface StatusPresentation {
   /** Visible text. Never omitted — this is the non-colour carrier. */
   label: string;
-  /** Phosphor icon class, e.g. `ph-check-circle`. Decorative; label carries it. */
   icon: string;
   /**
    * Longer form announced to assistive tech and used in tooltips, where the
@@ -31,129 +50,147 @@ export interface StatusPresentation {
   description: string;
 }
 
-export const RESULT_STATUS: Record<ResultStatus, StatusPresentation> = {
+export const RESULT_STATUS: Record<ResultStatus, StatusEntry> = {
   normal: {
-    label: 'Normal',
+    labelKey: 'status.result.normal',
     icon: 'ph-check-circle',
-    description: 'Within the reference range printed on this report.',
+    descriptionKey: 'status.result.normal.description',
   },
   low: {
-    label: 'Low',
+    labelKey: 'status.result.low',
     icon: 'ph-arrow-down',
-    description: 'Below the reference range printed on this report.',
+    descriptionKey: 'status.result.low.description',
   },
   high: {
-    label: 'High',
+    labelKey: 'status.result.high',
     icon: 'ph-arrow-up',
-    description: 'Above the reference range printed on this report.',
+    descriptionKey: 'status.result.high.description',
   },
   critical: {
-    label: 'Critical',
+    labelKey: 'status.result.critical',
     icon: 'ph-warning-octagon',
-    description:
-      'Outside the critical thresholds stated by the laboratory. May require prompt medical attention.',
+    descriptionKey: 'status.result.critical.description',
   },
   unknown: {
-    label: 'Unknown',
+    labelKey: 'status.result.unknown',
     icon: 'ph-question',
-    description:
-      'No usable reference range was available on this report, so the value was not classified.',
+    descriptionKey: 'status.result.unknown.description',
   },
 };
 
 export const REPORT_STATUS: Record<
   ReportStatus,
-  StatusPresentation & { tone: 'neutral' | 'accent' | 'warning' | 'danger' }
+  StatusEntry & { tone: 'neutral' | 'accent' | 'warning' | 'danger' }
 > = {
   uploaded: {
-    label: 'Uploaded',
+    labelKey: 'status.report.uploaded',
     icon: 'ph-check',
     tone: 'neutral',
-    description: 'The file is stored and waiting to enter the processing queue.',
+    descriptionKey: 'status.report.uploaded.description',
   },
   queued: {
-    label: 'Queued',
+    labelKey: 'status.report.queued',
     icon: 'ph-hourglass',
     tone: 'neutral',
-    description: 'Waiting for a processing slot.',
+    descriptionKey: 'status.report.queued.description',
   },
   processing: {
-    label: 'Processing',
+    labelKey: 'status.report.processing',
     icon: 'ph-spinner-gap',
     tone: 'accent',
-    description: 'Results are being extracted from the report.',
+    descriptionKey: 'status.report.processing.description',
   },
   processed: {
-    label: 'Processed',
+    labelKey: 'status.report.processed',
     icon: 'ph-check-circle',
     tone: 'neutral',
-    description: 'All results were extracted successfully.',
+    descriptionKey: 'status.report.processed.description',
   },
   partially_processed: {
-    label: 'Partially processed',
+    labelKey: 'status.report.partiallyProcessed',
     icon: 'ph-warning',
     tone: 'warning',
-    description: 'Most results were extracted; some values could not be read reliably.',
+    descriptionKey: 'status.report.partiallyProcessed.description',
   },
   failed: {
-    label: 'Failed',
+    labelKey: 'status.report.failed',
     icon: 'ph-x-circle',
     tone: 'danger',
-    description: 'The report could not be processed.',
+    descriptionKey: 'status.report.failed.description',
   },
 };
 
-export const TREND: Record<TrendDirection, StatusPresentation> = {
+export const TREND: Record<TrendDirection, StatusEntry> = {
   increasing: {
-    label: 'Increasing',
+    labelKey: 'status.trend.increasing',
     icon: 'ph-trend-up',
-    description: 'The value has risen across recent reports.',
+    descriptionKey: 'status.trend.increasing.description',
   },
   decreasing: {
-    label: 'Decreasing',
+    labelKey: 'status.trend.decreasing',
     icon: 'ph-trend-down',
-    description: 'The value has fallen across recent reports.',
+    descriptionKey: 'status.trend.decreasing.description',
   },
   stable: {
-    label: 'Stable',
+    labelKey: 'status.trend.stable',
     icon: 'ph-arrows-left-right',
-    description: 'The value has not moved meaningfully across recent reports.',
+    descriptionKey: 'status.trend.stable.description',
   },
   insufficient_data: {
-    label: 'Insufficient data',
+    labelKey: 'status.trend.insufficient',
     icon: 'ph-minus',
-    description: 'There are not enough measurements yet to describe a direction.',
+    descriptionKey: 'status.trend.insufficient.description',
   },
 };
 
-export const CONFIDENCE: Record<ExtractionConfidence, StatusPresentation> = {
+export const CONFIDENCE: Record<ExtractionConfidence, StatusEntry> = {
   high: {
-    label: 'High confidence',
+    labelKey: 'status.confidence.high',
     icon: 'ph-seal-check',
-    description: 'This value was read clearly from the report.',
+    descriptionKey: 'status.confidence.high.description',
   },
   medium: {
-    label: 'Medium confidence',
+    labelKey: 'status.confidence.medium',
     icon: 'ph-seal-question',
-    description: 'This value was read with some uncertainty. Check it against the report.',
+    descriptionKey: 'status.confidence.medium.description',
   },
   low: {
-    label: 'Low confidence',
+    labelKey: 'status.confidence.low',
     icon: 'ph-warning',
-    description:
-      'This value could not be read reliably. Check it against the original report before relying on it.',
+    descriptionKey: 'status.confidence.low.description',
   },
 };
+
+/** Resolves any table entry into the words a component renders. */
+export function present(entry: StatusEntry, locale: Locale): StatusPresentation {
+  return {
+    label: messageFor(locale, entry.labelKey),
+    icon: entry.icon,
+    description: messageFor(locale, entry.descriptionKey),
+  };
+}
 
 /**
  * How a reference range must be labelled. The spec is strict here: a general
  * range may never be presented as if the laboratory had printed it.
+ *
+ * `laboratory` maps to null rather than to a key: a range the laboratory
+ * printed carries no qualifier, and inventing one ("laboratory reference")
+ * would put words next to the only range that needs none.
  */
-export const RANGE_SOURCE_LABEL: Record<ReferenceRangeSource, string | null> = {
+export const RANGE_SOURCE_KEY: Record<ReferenceRangeSource, MessageKey | null> = {
   laboratory: null,
-  general: 'general reference, not lab-specific',
-  unavailable: 'reference range unavailable',
+  general: 'range.general',
+  unavailable: 'range.unavailable',
 };
+
+export function rangeSourceLabel(
+  source: ReferenceRangeSource,
+  locale: Locale,
+): string | null {
+  const key = RANGE_SOURCE_KEY[source];
+  return key ? messageFor(locale, key) : null;
+}
 
 /** Statuses that mean "this value is not inside its range". */
 export const OUT_OF_RANGE_STATUSES: readonly ResultStatus[] = ['low', 'high', 'critical'];

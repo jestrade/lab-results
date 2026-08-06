@@ -12,10 +12,8 @@ import { PasswordInput } from '@/components/PasswordInput';
 import { PasswordStrength } from '@/components/PasswordStrength';
 import { validatePassword } from '@/components/password';
 import { AuthLayout } from '@/layouts/AuthLayout';
-
-const ASIDE_LEDE =
-  'Your reports and the values extracted from them are visible only to you. Files are stored ' +
-  'privately and processed on our servers — the original PDF never gets a public link.';
+import { Trans } from '@/i18n/Trans';
+import { useI18n } from '@/i18n/useI18n';
 
 interface FieldErrors {
   name?: string;
@@ -27,6 +25,7 @@ interface FieldErrors {
 export function Register() {
   const { register, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -41,15 +40,15 @@ export function Register() {
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!name.trim()) next.name = 'Enter the name you would like us to use.';
-    if (!email.includes('@')) next.email = 'Enter a valid email address.';
-    const passwordProblem = validatePassword(password);
+    if (!name.trim()) next.name = t('register.nameRequired');
+    if (!email.includes('@')) next.email = t('register.emailInvalid');
+    const passwordProblem = validatePassword(password, locale);
     if (passwordProblem) next.password = passwordProblem;
     // Both consents are required, and they are asked separately on purpose:
     // agreeing to the terms is not the same as agreeing to have your report
     // text sent to a third-party AI provider.
     if (!acceptedTerms || !acceptedAi) {
-      next.consent = 'Both confirmations are required before an account can be created.';
+      next.consent = t('register.consentRequired');
     }
     return next;
   }
@@ -73,7 +72,7 @@ export function Register() {
       });
       navigate('/verify-email', { replace: true });
     } catch (caught) {
-      setFormError(toAuthErrorMessage(caught));
+      setFormError(toAuthErrorMessage(caught, locale));
     } finally {
       setSubmitting(false);
     }
@@ -86,25 +85,32 @@ export function Register() {
       await signInWithGoogle();
       navigate('/dashboard', { replace: true });
     } catch (caught) {
-      setFormError(toAuthErrorMessage(caught));
+      setFormError(toAuthErrorMessage(caught, locale));
     } finally {
       setGooglePending(false);
     }
   }
 
   return (
-    <AuthLayout heading="One account. Every panel you have ever had." lede={ASIDE_LEDE}>
+    <AuthLayout heading={t('register.asideHeading')} lede={t('register.asideLede')}>
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <div>
-          <h2>Create your account</h2>
+          <h2>{t('register.heading')}</h2>
           <p className="muted" style={{ margin: '6px 0 0', fontSize: 14 }}>
-            Already have one? <Link to="/sign-in">Sign in</Link>
+            <Trans
+              id="register.haveOne"
+              values={{ link: <Link to="/sign-in">{t('common.signIn')}</Link> }}
+            />
           </p>
         </div>
 
-        <GoogleButton onClick={handleGoogle} label="Sign up with Google" loading={googlePending} />
+        <GoogleButton
+          onClick={handleGoogle}
+          label={t('register.signUpWithGoogle')}
+          loading={googlePending}
+        />
 
-        <div className="divider-text">or use your email</div>
+        <div className="divider-text">{t('register.orEmail')}</div>
 
         {formError ? (
           <Alert tone="danger" live>
@@ -112,34 +118,34 @@ export function Register() {
           </Alert>
         ) : null}
 
-        <Field label="Full name" error={errors.name}>
+        <Field label={t('register.fullName')} error={errors.name}>
           {(props) => (
             <TextInput
               {...props}
               name="name"
               autoComplete="name"
-              placeholder="Miriam Okonkwo"
+              placeholder={t('register.namePlaceholder')}
               value={name}
               onChange={(event) => setName(event.target.value)}
             />
           )}
         </Field>
 
-        <Field label="Email address" error={errors.email}>
+        <Field label={t('signIn.email')} error={errors.email}>
           {(props) => (
             <TextInput
               {...props}
               type="email"
               name="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder={t('register.emailPlaceholder')}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
           )}
         </Field>
 
-        <Field label="Password" error={errors.password}>
+        <Field label={t('signIn.password')} error={errors.password}>
           {(props) => (
             <>
               <PasswordInput
@@ -158,15 +164,25 @@ export function Register() {
           checked={acceptedTerms}
           onChange={(event) => setAcceptedTerms(event.target.checked)}
         >
-          I have read the <Link to="/legal/terms">Terms</Link>,{' '}
-          <Link to="/legal/privacy">Privacy Policy</Link> and{' '}
-          <Link to="/legal/medical-disclaimer">Medical Disclaimer</Link>, and I understand this
-          service does not provide medical advice.
+          <Trans
+            id="register.acceptTerms"
+            values={{
+              terms: <Link to="/legal/terms">{t('register.termsLink')}</Link>,
+              privacy: <Link to="/legal/privacy">{t('public.legal.privacy')}</Link>,
+              disclaimer: (
+                <Link to="/legal/medical-disclaimer">{t('public.legal.medicalDisclaimer')}</Link>
+              ),
+            }}
+          />
         </Checkbox>
 
         <Checkbox checked={acceptedAi} onChange={(event) => setAcceptedAi(event.target.checked)}>
-          I consent to my report contents being processed by a third-party AI provider to extract
-          and explain results. <Link to="/legal/ai-processing">What is sent</Link>
+          <Trans
+            id="register.acceptAi"
+            values={{
+              link: <Link to="/legal/ai-processing">{t('register.whatIsSent')}</Link>,
+            }}
+          />
         </Checkbox>
 
         {errors.consent ? (
@@ -190,15 +206,13 @@ export function Register() {
           variant="primary"
           block
           loading={submitting}
-          loadingLabel="Creating your account…"
+          loadingLabel={t('register.creating')}
           style={{ height: 48, fontSize: 15 }}
         >
-          Create account
+          {t('register.createAccount')}
         </Button>
 
-        <p className="legal-note">
-          We&rsquo;ll send a verification link to your email before your first upload.
-        </p>
+        <p className="legal-note">{t('register.verificationNote')}</p>
       </form>
     </AuthLayout>
   );

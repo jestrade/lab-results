@@ -77,8 +77,11 @@ service cloud.firestore {
              'uid', 'email', 'role', 'disabled', 'createdAt', 'deletedAt',
            ]));
 
-      // Account deletion is a server-side workflow (KAN-23): it has to remove
-      // Storage objects and subcollections too, which a client delete cannot.
+      // Account deletion is a server-side workflow (KAN-23): the `deleteAccount`
+      // callable in functions/src/deleteAccount.ts. Denied here because a client
+      // delete cannot touch the variableSeries subcollection, the extracted
+      // results, the Storage objects or the Auth record — it would leave the
+      // health data behind and only remove the document that points at it.
       allow delete: if false;
 
       // Per-variable aggregated history (populated by the trend engine,
@@ -119,6 +122,9 @@ service cloud.firestore {
         && createdWithout([
              'resultCount', 'outOfRangeCount', 'processedAt', 'warnings',
              'laboratoryName', 'reportDate',
+             // A report that arrives claiming it has been retried -5 times
+             // would hand its owner an unlimited reprocessing budget.
+             'retryCount', 'lastRetryAt', 'processingStartedAt',
            ]);
 
       // Nothing the pipeline owns may be rewritten from the browser. What is
@@ -128,6 +134,10 @@ service cloud.firestore {
              'ownerId', 'storagePath', 'fileSize', 'contentHash', 'status',
              'uploadedAt', 'processedAt', 'resultCount', 'outOfRangeCount',
              'warnings', 'pageCount', 'supersededBy', 'version',
+             // The retry budget (KAN-7). Kept out of reach for the same reason
+             // as the usage counters: a limit the client can reset is not a
+             // limit, and each reprocessing spends AI calls.
+             'retryCount', 'lastRetryAt', 'processingStartedAt',
            ]));
 
       allow delete: if isSignedIn()

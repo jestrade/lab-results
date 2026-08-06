@@ -14,6 +14,7 @@
 
 import { useCallback, useRef, useState, type DragEvent } from 'react';
 
+import { useT } from '@/i18n/useI18n';
 import { Icon } from './Icon';
 
 export interface FileDropzoneProps {
@@ -33,6 +34,7 @@ export function FileDropzone({
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
   const [dragging, setDragging] = useState(false);
+  const t = useT();
 
   const reset = useCallback(() => {
     dragDepth.current = 0;
@@ -88,18 +90,16 @@ export function FileDropzone({
         {dragging ? (
           <>
             <Icon name="download-simple" size={56} />
-            <span className="dropzone-title">Release to upload</span>
+            <span className="dropzone-title">{t('dropzone.release')}</span>
           </>
         ) : (
           <>
             <Icon name="file-pdf" size={56} />
             <span className="dropzone-title">
-              {disabled ? 'Uploading is not available yet' : 'Drag your laboratory PDF here'}
+              {t(disabled ? 'dropzone.unavailable' : 'dropzone.prompt')}
             </span>
             <span className="muted" style={{ fontSize: 13 }}>
-              {disabled
-                ? disabledReason
-                : 'or choose a file from your computer — PDF only, up to 25 MB'}
+              {disabled ? disabledReason : t('dropzone.hint')}
             </span>
           </>
         )}

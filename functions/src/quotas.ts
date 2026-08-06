@@ -2,7 +2,7 @@
  * Server-side view of the capacity limits (spec §79).
  *
  * `quotas.generated.json` is a build-time copy of `config/quotas.json` at the
- * repo root — see the `sync:quotas` script. The copy exists only because this
+ * repo root — see the `sync:config` script. The copy exists only because this
  * package compiles with its own `rootDir`; the root file is the source of
  * truth and the generated one is gitignored, so the two cannot disagree.
  */

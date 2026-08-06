@@ -9,6 +9,7 @@ test-results
 .env.*
 !.env.example
 .DS_Store
+google_service_account_key.json
 
 # TypeScript incremental build cache
 *.tsbuildinfo

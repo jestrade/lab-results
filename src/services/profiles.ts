@@ -23,6 +23,8 @@ import type { User } from 'firebase/auth';
 
 import { getDb } from '@/lib/firebase';
 import { DOCUMENTS_VERSION } from '@/domain/disclaimers';
+import { isLocale, type Locale } from '@/domain/locales';
+import { isThemePreference, type ThemePreference } from '@/domain/themes';
 import type { HealthContext, UserConsents, UserProfile } from '@/domain/types';
 
 const USERS = 'users';
@@ -35,8 +37,12 @@ export function userDocRef(uid: string) {
  * Creates the profile document if this is the first time we have seen the
  * account. Safe to call on every sign-in: an existing profile is left alone,
  * so a returning user's preferences and consent history are never reset.
+ *
+ * `locale` is the language the account was created in, so the choice made on
+ * the registration page follows the user to their next device instead of
+ * having to be made again there.
  */
-export async function ensureUserProfile(user: User): Promise<void> {
+export async function ensureUserProfile(user: User, locale?: Locale): Promise<void> {
   const ref = userDocRef(user.uid);
   const existing = await getDoc(ref);
   if (existing.exists()) return;
@@ -53,8 +59,48 @@ export async function ensureUserProfile(user: User): Promise<void> {
     preferences: {
       notifyOnProcessed: true,
       notifyOnCritical: true,
+      ...(locale ? { locale } : {}),
     },
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Stores the chosen interface language (KAN-8).
+ *
+ * Written as a dotted field path rather than a whole `preferences` object, so
+ * that changing the language cannot wipe the notification settings that live
+ * beside it — a `updateDoc({ preferences: { locale } })` would replace the map.
+ *
+ * Permitted by the same `users/{uid}` update rule as the display name:
+ * `preferences` is not in the forbidden list, and the owner check applies.
+ */
+export async function updateLocalePreference(uid: string, locale: Locale): Promise<void> {
+  await updateDoc(userDocRef(uid), {
+    'preferences.locale': locale,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Stores the chosen colour theme.
+ *
+ * A dotted field path for the same reason the language is: writing a whole
+ * `preferences` object would replace the map and take the notification
+ * settings and the locale with it.
+ *
+ * Stores the *preference*, so `system` is written as `system` rather than as
+ * whichever theme the device happened to be showing when the choice was made.
+ * Resolving before storing would mean a reader who chose "follow my device" on
+ * a laptop in daylight arrives at their phone that evening locked to light.
+ */
+export async function updateThemePreference(
+  uid: string,
+  theme: ThemePreference,
+): Promise<void> {
+  await updateDoc(userDocRef(uid), {
+    'preferences.theme': theme,
     updatedAt: serverTimestamp(),
   });
 }
@@ -165,6 +211,61 @@ export function subscribeToConsents(
     (snapshot) => {
       const data = snapshot.data();
       onChange((data?.consents as UserConsents | undefined) ?? null);
+    },
+    (error) => onError?.(error),
+  );
+}
+
+/**
+ * Live view of the stored language preference (KAN-8).
+ *
+ * Subscribed rather than fetched for the same reason consent is: the choice
+ * belongs to the account, not to the tab it was made in. Changing the language
+ * on a phone should reach the desktop session that is already open, and a
+ * second tab left in English after the user switched is the kind of
+ * inconsistency that reads as the setting not having saved.
+ *
+ * Emits `null` when the profile has no stored preference — an account created
+ * before the picker existed, which must keep following the browser rather than
+ * be forced to English.
+ */
+export function subscribeToLocalePreference(
+  uid: string,
+  onChange: (locale: Locale | null) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  return onSnapshot(
+    userDocRef(uid),
+    (snapshot) => {
+      const preferences = snapshot.data()?.preferences as { locale?: unknown } | undefined;
+      onChange(isLocale(preferences?.locale) ? preferences.locale : null);
+    },
+    (error) => onError?.(error),
+  );
+}
+
+/**
+ * Live view of the stored theme preference.
+ *
+ * Subscribed for the same reason the language is: the choice belongs to the
+ * account, not to the tab it was made in. A second tab left in light after the
+ * reader switched to dark is exactly the kind of inconsistency that reads as
+ * the setting not having saved.
+ *
+ * Emits `null` when the profile has no stored preference — an account created
+ * before the picker existed, which must keep following the device rather than
+ * be forced to light.
+ */
+export function subscribeToThemePreference(
+  uid: string,
+  onChange: (theme: ThemePreference | null) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  return onSnapshot(
+    userDocRef(uid),
+    (snapshot) => {
+      const preferences = snapshot.data()?.preferences as { theme?: unknown } | undefined;
+      onChange(isThemePreference(preferences?.theme) ? preferences.theme : null);
     },
     (error) => onError?.(error),
   );

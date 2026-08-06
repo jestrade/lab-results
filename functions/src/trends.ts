@@ -145,26 +145,6 @@ function theilSenSlope(points: TrendPoint[]): number | null {
   return slopes.length % 2 === 0 ? (slopes[middle - 1]! + slopes[middle]!) / 2 : slopes[middle]!;
 }
 
-/**
- * Stable identity for a test across reports.
- *
- * Name-based, and therefore only as good as the laboratory's consistency:
- * "Hemoglobin" from two Quest panels matches, "Hgb" from a third laboratory
- * does not. Proper alias resolution needs the canonical variable catalog
- * (KAN-8); until it exists this groups the common case honestly rather than
- * guessing at synonyms and merging two different tests into one series.
- */
-export function variableKey(rawName: string): string {
-  return rawName
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/\(.*?\)/g, ' ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-}
-
 /** One stored measurement in a variable's history. */
 export interface SeriesPoint {
   value: number;

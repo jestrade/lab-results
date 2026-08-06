@@ -11,11 +11,12 @@ import { Reports } from './Reports';
 const subscribeToReports = vi.hoisted(() => vi.fn());
 const deleteReport = vi.hoisted(() => vi.fn());
 const getReportDownloadUrl = vi.hoisted(() => vi.fn());
+const retryReport = vi.hoisted(() => vi.fn());
 
 vi.mock('@/services/reportsList', async (importOriginal) => {
   // Keep the real formatters and predicates — those are behaviour under test.
   const actual = await importOriginal<typeof ReportsListModule>();
-  return { ...actual, subscribeToReports, deleteReport, getReportDownloadUrl };
+  return { ...actual, subscribeToReports, deleteReport, getReportDownloadUrl, retryReport };
 });
 
 function stamp(iso: string) {
@@ -63,6 +64,7 @@ describe('Reports', () => {
     subscribeToReports.mockReturnValue(() => {});
     deleteReport.mockReset();
     getReportDownloadUrl.mockReset();
+    retryReport.mockReset();
   });
 
   it('subscribes for the signed-in user only', () => {
@@ -166,6 +168,90 @@ describe('Reports', () => {
       '/reports/a',
     );
     expect(within(workingRow).queryByRole('link', { name: /view details/i })).toBeNull();
+  });
+
+  it('offers a retry only where a second attempt could work', async () => {
+    renderPage();
+    emit([
+      makeReport({
+        id: 'a',
+        originalFileName: 'timeout.pdf',
+        status: 'failed',
+        warnings: [{ code: 'extraction/timeout', message: 'The model timed out.' }],
+      }),
+      makeReport({
+        id: 'b',
+        originalFileName: 'scan.pdf',
+        status: 'failed',
+        warnings: [{ code: 'extraction/no-text-layer', message: 'This looks like a scan.' }],
+      }),
+      makeReport({ id: 'c', originalFileName: 'done.pdf', status: 'processed' }),
+    ]);
+
+    const transient = (await screen.findByText('timeout.pdf')).closest('tr')!;
+    expect(within(transient).getByRole('button', { name: /retry processing/i })).toBeInTheDocument();
+
+    // Re-reading a scan produces the same scan; offering a button that cannot
+    // help is worse than not offering one.
+    const scanned = screen.getByText('scan.pdf').closest('tr')!;
+    expect(within(scanned).queryByRole('button', { name: /retry processing/i })).toBeNull();
+
+    const done = screen.getByText('done.pdf').closest('tr')!;
+    expect(within(done).queryByRole('button', { name: /retry processing/i })).toBeNull();
+  });
+
+  it('reprocesses the stored file rather than asking for another upload', async () => {
+    const user = userEvent.setup();
+    retryReport.mockResolvedValue('processed');
+    renderPage();
+    emit([
+      makeReport({
+        status: 'failed',
+        warnings: [{ code: 'consent/ai-processing-missing', message: 'You have not agreed.' }],
+      }),
+    ]);
+
+    await user.click(await screen.findByRole('button', { name: /retry processing/i }));
+
+    await waitFor(() => expect(retryReport).toHaveBeenCalledWith('r1'));
+    expect(await screen.findByText(/processing finished/i)).toBeInTheDocument();
+  });
+
+  it('does not call a second failure a success', async () => {
+    const user = userEvent.setup();
+    retryReport.mockResolvedValue('failed');
+    renderPage();
+    emit([
+      makeReport({
+        status: 'failed',
+        warnings: [{ code: 'extraction/timeout', message: 'The model timed out.' }],
+      }),
+    ]);
+
+    await user.click(await screen.findByRole('button', { name: /retry processing/i }));
+
+    expect(await screen.findByText(/could not be processed this time either/i)).toBeInTheDocument();
+  });
+
+  it('shows the server’s reason when it refuses to retry', async () => {
+    const user = userEvent.setup();
+    retryReport.mockRejectedValue({
+      code: 'functions/resource-exhausted',
+      message: 'This report has already been retried 3 times.',
+    });
+    renderPage();
+    emit([
+      makeReport({
+        status: 'failed',
+        warnings: [{ code: 'extraction/timeout', message: 'The model timed out.' }],
+      }),
+    ]);
+
+    await user.click(await screen.findByRole('button', { name: /retry processing/i }));
+
+    // The server phrased that sentence for the user; passing it through beats
+    // replacing it with a generic failure.
+    expect(await screen.findByText(/already been retried 3 times/i)).toBeInTheDocument();
   });
 
   it('confirms before deleting, and says what will be lost', async () => {

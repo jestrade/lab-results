@@ -19,7 +19,7 @@
   z-index: 100;
   padding: 12px 18px;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-accent-ink);
   border-radius: 0 0 var(--r-card) 0;
   font-weight: 600;
 }
@@ -201,7 +201,7 @@
   height: 40px;
   border-radius: var(--r-pill);
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-accent-ink);
   display: grid;
   place-items: center;
   font-family: var(--font-heading);
@@ -226,8 +226,8 @@
 .auth-aside {
   width: 560px;
   flex: none;
-  background: var(--color-accent);
-  color: #fff;
+  background: var(--color-accent-surface);
+  color: var(--color-accent-surface-ink);
   padding: 56px 52px;
   display: none;
   flex-direction: column;
@@ -241,12 +241,12 @@
 .auth-aside h1 {
   font-size: 46px;
   margin: 0;
-  color: #fff;
+  color: var(--color-accent-surface-ink);
   line-height: 1.1;
   text-wrap: pretty;
 }
 .auth-aside .brand {
-  color: #fff;
+  color: var(--color-accent-surface-ink);
   font-size: 22px;
 }
 .auth-aside-points {
@@ -332,6 +332,18 @@
   margin-top: 2px;
 }
 
+/* The caption above a *group* of controls — a radio group, where Broadsheet's
+   `.field > label` cannot be used: a <label> may only point at one control, and
+   pointing it at one of three radios would announce that radio twice and the
+   group not at all. Declarations mirror `.field > label` so that a grouped
+   setting and a plain one read identically down a settings page. */
+.field > .field-caption {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+
 .password-meter {
   display: flex;
   gap: 4px;
@@ -388,12 +400,12 @@
 }
 .legal-nav-link[aria-current='page'] {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-accent-ink);
   font-weight: 600;
 }
 .legal-nav-link[aria-current='page']:hover {
   background: var(--color-accent-600);
-  color: #fff;
+  color: var(--color-accent-ink);
 }
 .legal-doc {
   max-width: 720px;
@@ -464,7 +476,7 @@
     position: fixed;
     inset: 0;
     z-index: 30;
-    background: rgba(29, 27, 51, 0.4);
+    background: var(--scrim);
     border: 0;
   }
 }
@@ -511,13 +523,13 @@
   text-decoration: none;
 }
 .app-nav-link[aria-current='page'] {
-  color: #fff;
+  color: var(--color-accent-ink);
   background: var(--color-accent);
   font-weight: 600;
 }
 .app-nav-link[aria-current='page']:hover {
   background: var(--color-accent-600);
-  color: #fff;
+  color: var(--color-accent-ink);
 }
 
 .app-main {
@@ -678,8 +690,8 @@
 .disclaimer-strong {
   margin: 0 56px 56px;
   padding: 26px 28px;
-  background: var(--color-accent);
-  color: #fff;
+  background: var(--color-accent-surface);
+  color: var(--color-accent-surface-ink);
   border-radius: var(--r-card);
   display: flex;
   gap: 18px;
@@ -1075,7 +1087,7 @@
 .chip[aria-pressed='true'] {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-accent-ink);
 }
 
 .variable-card {
@@ -1097,13 +1109,13 @@
 /* A wash of the status colour, echoing the design board. It is reinforcement
    only — the badge inside already names the status in words. */
 .variable-card[data-flagged][data-status='critical'] {
-  background: #fff5f6;
+  background: var(--status-critical-wash);
 }
 .variable-card[data-flagged][data-status='high'] {
-  background: #fffbf2;
+  background: var(--status-high-wash);
 }
 .variable-card[data-flagged][data-status='low'] {
-  background: #f8f6ff;
+  background: var(--status-low-wash);
 }
 
 .variable-card-head {
@@ -1164,7 +1176,7 @@ dialog.dialog:not([open]) {
    `.dialog-backdrop` div Broadsheet ships — without this there is no dimming
    at all, and the dialog appears to float on live content. */
 dialog.dialog::backdrop {
-  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+  background: var(--scrim);
 }
 
 dialog.dialog {
@@ -1249,6 +1261,29 @@ dialog.dialog {
   color: var(--color-accent);
 }
 
+/* ── danger zone: account deletion (KAN-23) ────────────────────────────────
+   Set apart by a rule and a tinted heading rather than by a red panel. The
+   section is read by everyone who visits the page, and a block of alarm
+   colour would shout at all of them; what actually needs weight is the
+   consequence, which the dialog states in words. */
+
+.danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--feedback-danger-border);
+}
+.danger-zone h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--feedback-danger-ink);
+}
+.danger-facts li i {
+  color: var(--feedback-danger-ink);
+}
+
 /* ── report details (KAN-44) ───────────────────────────────────────────── */
 
 .report-detail {
@@ -1325,6 +1360,68 @@ dialog.dialog {
   margin-bottom: 8px;
 }
 
+/* The variable picker holds every test the user has a history for — around
+   fifty on a full panel. Flat, that is a wall of chips with no landmarks, so
+   it is broken into the same category groups the /variables grid uses, in the
+   same fixed order, so a test sits where the reader last saw it.
+
+   Columns matter as much as the grouping: chips are short and the card is
+   wide, so one column would leave most of each row empty while the list ran
+   off the screen. */
+/* Stacked full-width rather than laid out in columns.
+
+   Columns were the first attempt and looked worse: group sizes here are wildly
+   uneven — one lipid marker beside forty uncategorised ones — and a grid row is
+   as tall as its tallest cell, so single-chip groups reserved the height of the
+   largest and left the card mostly empty. Full width lets every group's chips
+   wrap to fill the space they actually need. */
+.trend-variable-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* A long history should scroll the picker, not push the charts off-screen —
+     the charts are what the page is for. */
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.trend-variable-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.trend-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.trend-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.trend-group-count,
+.trend-selected-count {
+  font-size: 11px;
+}
+.trend-variables-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.trend-variables-head .kicker-quiet {
+  margin-bottom: 0;
+}
+
+/* The picker takes the free width of the controls row; the period chips
+   beside it need only their own. */
+.trend-controls > div:first-child {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
 .trend-note {
   margin: 0;
   font-size: 13px;
@@ -1373,6 +1470,172 @@ dialog.dialog {
 .chart-data .table {
   margin-top: 8px;
   font-size: 13px;
+}
+
+/* ── Variable details (KAN-14 / KAN-46) ──────────────────────────────────── */
+
+/* The one measured fact the page opens with, beside the facts that qualify it.
+   Value on the left at display size, qualifiers on the right at reading size:
+   the number is what the reader came for, and the range beside it is what
+   makes the number mean anything. */
+.variable-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 40px;
+  padding: 20px 22px;
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}
+.variable-hero-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+.variable-hero-number {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 42px;
+  line-height: 1;
+}
+.variable-hero-unit {
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+.variable-hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 32px;
+  margin: 0;
+}
+
+/* The chart in words. Sized as body copy rather than as a caption because it
+   is the equivalent of the plot, not a footnote to it. */
+.variable-change {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 68ch;
+}
+
+.variable-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Anchors the tooltip, which is positioned as a percentage of this box — the
+   same box the SVG fills, so the percentages land on the point they describe. */
+.variable-chart-plot {
+  position: relative;
+}
+.variable-chart-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Points are operable, so they take a real focus ring. `outline` on an SVG
+   group is unreliable across engines; a drawn ring is not. */
+.variable-chart-point {
+  cursor: pointer;
+  outline: none;
+}
+.variable-chart-point:focus-visible circle:last-of-type {
+  stroke: var(--color-accent-800);
+  stroke-width: 3;
+}
+
+/* Sits above the point it describes, and out of the way of the pointer that
+   opened it — a tooltip under the cursor flickers as the mouse chases it. */
+.variable-chart-tip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 14px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 168px;
+  max-width: 260px;
+  padding: 10px 12px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--color-divider);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-md);
+  z-index: 2;
+}
+.variable-chart-tip[data-pinned] {
+  border-color: var(--color-accent-400);
+}
+.variable-chart-tip-date {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.variable-chart-tip-value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1;
+}
+.variable-chart-tip-unit {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.variable-chart-tip-link {
+  font-size: 12px;
+}
+
+/* Results that were never numbers. A list rather than a plot, because there is
+   no axis "Negative" belongs on — see `splitMeasurements`. */
+.variable-qualitative {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.variable-qualitative li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-divider);
+}
+.variable-qualitative-date {
+  min-width: 108px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.variable-qualitative-value {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Reference content and machine commentary, side by side on a wide screen and
+   stacked on a narrow one. Equal columns on purpose: neither is the other's
+   caption. */
+.variable-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .variable-panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ── Profile (KAN-27 / KAN-48) ───────────────────────────────────────────── */
@@ -1428,4 +1691,47 @@ dialog.dialog {
 }
 .profile-form select.input {
   width: 100%;
+}
+
+/* ── language switcher (KAN-8) ─────────────────────────────────────────── */
+
+/* The compact switcher in the headers. Sized to disappear into the chrome:
+   someone who already reads the interface should not have a language control
+   competing with the navigation, while someone who cannot read it is scanning
+   for exactly this and finds it by the glyph. */
+.lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+}
+/* Transparent chrome, but a real `<select>` underneath. The focus ring comes
+   from the global `:focus-visible` rule and is deliberately not overridden —
+   this control is reached by keyboard by the people least able to hunt for it
+   visually. */
+.lang-switcher select {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.lang-switcher select:hover {
+  border-color: color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+
+/* The auth screen centres a single child, so the switcher is taken out of that
+   flow rather than added to it — as a flex sibling it would sit beside the
+   form instead of above it. */
+.auth-main {
+  position: relative;
+}
+.auth-lang {
+  position: absolute;
+  top: 18px;
+  right: 20px;
 }

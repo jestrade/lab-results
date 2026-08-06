@@ -1,3 +1,4 @@
+import { useT } from '@/i18n/useI18n';
 import type { CSSProperties } from 'react';
 
 export interface SkeletonProps {
@@ -35,8 +36,10 @@ export function SkeletonText({ lines = 3 }: { lines?: number }) {
 }
 
 export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
+  const t = useT();
+
   return (
-    <div role="status" aria-label="Loading results">
+    <div role="status" aria-label={t('skeleton.loadingResults')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {Array.from({ length: rows }, (_, rowIndex) => (
           <div key={rowIndex} style={{ display: 'flex', gap: 16 }}>

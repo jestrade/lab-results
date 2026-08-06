@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import * as Sentry from '@sentry/react';
 
+import { translateStatic } from '@/i18n/resolve';
 import { MissingConfigError } from '@/lib/env';
 
 interface Props {
@@ -21,6 +22,12 @@ interface State {
  *
  * `MissingConfigError` is the one exception: it is a developer mistake, not a
  * runtime fault, and printing it is the fastest way to fix a bad `.env`.
+ *
+ * Translated through `translateStatic` rather than the language context: this
+ * boundary catches failures in the tree that *contains* the provider, so by
+ * the time it renders there may be no context left to read. It resolves the
+ * locale from storage and the browser directly, which is the same answer in
+ * every case except an account preference that has not been applied yet.
  */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
@@ -43,19 +50,19 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <main style={{ maxWidth: 560, margin: '18vh auto', padding: '0 24px' }}>
         <h1 style={{ fontSize: 32 }}>
-          {isConfig ? 'The app is not configured' : 'Something went wrong'}
+          {translateStatic(isConfig ? 'error.notConfigured' : 'common.somethingWentWrong')}
         </h1>
         <p className="muted">
-          {isConfig
-            ? error.message
-            : 'The page could not be displayed. The problem has been reported. Reloading usually helps — if it does not, contact support.'}
+          {/* A configuration error prints its own message, untranslated: it is
+              addressed to whoever is deploying the app, not to a reader. */}
+          {isConfig ? error.message : translateStatic('error.pageFailed')}
         </p>
         <button
           type="button"
           className="btn btn-primary"
           onClick={() => window.location.reload()}
         >
-          Reload the page
+          {translateStatic('common.reload')}
         </button>
       </main>
     );

@@ -3,7 +3,15 @@
  *
  * Pure functions, kept apart from the meter that renders them so they can be
  * imported by forms and tested without a DOM.
+ *
+ * The *score* is language-independent — it counts characters and character
+ * classes — so `scorePassword` takes no locale. Only the advice attached to
+ * each band, and the validation message, are words.
  */
+
+import { DEFAULT_LOCALE, type Locale } from '@/domain/locales';
+import { messageFor } from '@/i18n/catalogs';
+import type { MessageKey } from '@/i18n/messages';
 
 export const MIN_PASSWORD_LENGTH = 10;
 
@@ -25,17 +33,21 @@ export function scorePassword(password: string): PasswordScore {
 }
 
 /** The hard minimum. The score above is advisory; this one blocks submission. */
-export function validatePassword(password: string): string | null {
+export function validatePassword(password: string, locale: Locale = DEFAULT_LOCALE): string | null {
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+    return messageFor(locale, 'password.tooShort', { min: MIN_PASSWORD_LENGTH });
   }
   return null;
 }
 
-export const PASSWORD_ADVICE: Record<PasswordScore, string> = {
-  0: `At least ${MIN_PASSWORD_LENGTH} characters.`,
-  1: `Too short. Use at least ${MIN_PASSWORD_LENGTH} characters.`,
-  2: `At least ${MIN_PASSWORD_LENGTH} characters. Add a number or symbol to strengthen it.`,
-  3: 'Good. Add a symbol to strengthen it further.',
-  4: 'Strong.',
+const ADVICE_KEY: Record<PasswordScore, MessageKey> = {
+  0: 'password.advice0',
+  1: 'password.advice1',
+  2: 'password.advice2',
+  3: 'password.advice3',
+  4: 'password.advice4',
 };
+
+export function passwordAdvice(score: PasswordScore, locale: Locale = DEFAULT_LOCALE): string {
+  return messageFor(locale, ADVICE_KEY[score], { min: MIN_PASSWORD_LENGTH });
+}

@@ -18,6 +18,10 @@
 
 import * as Sentry from '@sentry/react';
 
+import { DEFAULT_LOCALE, type Locale } from '@/domain/locales';
+import { messageFor } from '@/i18n/catalogs';
+import type { MessageKey } from '@/i18n/messages';
+
 export interface StorageErrorMessage {
   message: string;
   /** Whether retrying the identical upload could plausibly succeed. */
@@ -26,42 +30,43 @@ export interface StorageErrorMessage {
   code?: string;
 }
 
-const MESSAGES: Record<string, StorageErrorMessage> = {
+/**
+ * The mapping is from a Storage code to a *message key* plus whether retrying
+ * is worth the user's time. The retryable flag is a property of the failure,
+ * not of the language, so it stays here; only the sentence moves.
+ */
+const MESSAGES: Record<string, { key: MessageKey; retryable: boolean }> = {
   'storage/unauthorized': {
     // Deliberately does not blame the user or their file. By the time a
     // request reaches Storage the client has already checked size, type and
     // quota, so a refusal here is almost always a configuration problem on our
     // side — and telling the user to "try a different file" would waste their
     // time on something that cannot help.
-    message:
-      'The server refused this upload. This is usually a configuration problem on our side rather than anything wrong with your file — please contact support and quote the reference below. Nothing was stored.',
+    key: 'storageError.unauthorized',
     retryable: false,
   },
   'storage/quota-exceeded': {
-    message:
-      'There is no storage space available for this report. Delete a report you no longer need and try again. Nothing was stored.',
+    key: 'storageError.quotaExceeded',
     retryable: false,
   },
   'storage/unauthenticated': {
-    message: 'Your session has expired. Sign in again and retry the upload.',
+    key: 'storageError.unauthenticated',
     retryable: false,
   },
   'storage/retry-limit-exceeded': {
-    message:
-      'The upload kept timing out. Check your connection and try again — nothing was stored.',
+    key: 'storageError.retryLimit',
     retryable: true,
   },
   'storage/canceled': {
-    message: 'Upload cancelled. Nothing was stored.',
+    key: 'storageError.canceled',
     retryable: true,
   },
   'storage/invalid-checksum': {
-    message:
-      'The file changed while it was uploading. Try again without editing it — nothing was stored.',
+    key: 'storageError.invalidChecksum',
     retryable: true,
   },
   'storage/server-file-wrong-size': {
-    message: 'The upload did not arrive intact. Please try again — nothing was stored.',
+    key: 'storageError.wrongSize',
     retryable: true,
   },
 };
@@ -74,15 +79,28 @@ function codeOf(error: unknown): string | null {
   return null;
 }
 
-export function toStorageErrorMessage(error: unknown): StorageErrorMessage {
-  // Our own cancellation, thrown before any Storage code exists.
+export function toStorageErrorMessage(
+  error: unknown,
+  locale: Locale = DEFAULT_LOCALE,
+): StorageErrorMessage {
+  // Our own cancellation, thrown before any Storage code exists. The sentinel
+  // is matched against the English literal the uploader throws, not against a
+  // translated string — it is an internal marker, and making it depend on the
+  // reader's language would break cancellation in Spanish.
   if (error instanceof Error && error.message === 'Upload cancelled') {
-    return MESSAGES['storage/canceled']!;
+    const cancelled = MESSAGES['storage/canceled']!;
+    return { message: messageFor(locale, cancelled.key), retryable: cancelled.retryable };
   }
 
   const code = codeOf(error);
   const known = code ? MESSAGES[code] : undefined;
-  if (known) return code ? { ...known, code } : known;
+  if (known) {
+    return {
+      message: messageFor(locale, known.key),
+      retryable: known.retryable,
+      ...(code ? { code } : {}),
+    };
+  }
 
   if (code) {
     // An unmapped storage code is usually configuration, which means it is
@@ -92,9 +110,12 @@ export function toStorageErrorMessage(error: unknown): StorageErrorMessage {
   }
 
   return {
+    // The reference is appended rather than interpolated into the sentence:
+    // it is a support handle, not prose, and it reads the same in every
+    // language.
     message:
-      'The upload did not finish. Please try again, and contact support if it keeps happening. Nothing was stored.' +
-      (code ? ` (reference: ${code})` : ''),
+      messageFor(locale, 'storageError.unknown') +
+      (code ? ` ${messageFor(locale, 'storageError.reference', { code })}` : ''),
     retryable: true,
     ...(code ? { code } : {}),
   };

@@ -7,9 +7,9 @@
     "node": "22"
   },
   "scripts": {
-    "sync:quotas": "node -e \"require('fs').copyFileSync('../config/quotas.json','src/quotas.generated.json')\"",
-    "build": "npm run sync:quotas && tsc",
-    "watch": "npm run sync:quotas && tsc --watch",
+    "sync:config": "node -e \"for (const n of ['quotas','retry']) require('fs').copyFileSync('../config/' + n + '.json', 'src/' + n + '.generated.json')\"",
+    "build": "npm run sync:config && tsc",
+    "watch": "npm run sync:config && tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "lint": "tsc --noEmit",
     "test": "vitest run"

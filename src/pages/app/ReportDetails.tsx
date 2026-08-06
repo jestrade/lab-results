@@ -10,12 +10,19 @@ import { Icon } from '@/components/Icon';
 import { SkeletonTable } from '@/components/Skeleton';
 import { ConfidenceTag, ReportStatusBadge, ResultStatusBadge } from '@/components/StatusBadge';
 import { useToast } from '@/components/useToast';
-import { CRITICAL_RESULT_NOTICE, PARTIAL_PROCESSING_NOTICE } from '@/domain/disclaimers';
+import {
+  CRITICAL_RESULT_NOTICE_BY_LOCALE,
+  PARTIAL_PROCESSING_NOTICE_BY_LOCALE,
+} from '@/domain/disclaimers';
 import { isOutOfRange } from '@/domain/status';
+import { canRetryReport, retryHint } from '@/domain/retry';
 import { formatReferenceRange } from '@/domain/variables';
 import type { Report } from '@/domain/types';
 import { formatBytes } from '@/domain/quotas';
-import { getReportDownloadUrl } from '@/services/reportsList';
+import type { Locale } from '@/domain/locales';
+import { useI18n } from '@/i18n/useI18n';
+import type { I18nContextValue } from '@/i18n/I18nContext';
+import { getReportDownloadUrl, retryErrorMessage, retryReport } from '@/services/reportsList';
 import {
   formatTimestamp,
   subscribeToReport,
@@ -36,24 +43,26 @@ export function ReportDetails() {
   const { reportId } = useParams<{ reportId: string }>();
   const { user } = useAuth();
   const { push } = useToast();
+  const { t, locale } = useI18n();
 
   const [report, setReport] = useState<Report | null | undefined>(undefined);
   const [results, setResults] = useState<ReportResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (!reportId || !user) return;
     const stopReport = subscribeToReport(reportId, setReport, () =>
-      setError('We could not load this report. It may have been deleted.'),
+      setError(t('detail.loadFailed')),
     );
     const stopResults = subscribeToResults(reportId, setResults, () =>
-      setError('We could not load the results for this report.'),
+      setError(t('detail.resultsLoadFailed')),
     );
     return () => {
       stopReport();
       stopResults();
     };
-  }, [reportId, user]);
+  }, [reportId, user, t]);
 
   const summary = useMemo(() => {
     const list = results ?? [];
@@ -71,7 +80,22 @@ export function ReportDetails() {
       const url = await getReportDownloadUrl(report);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch {
-      push('That file could not be opened.', 'danger');
+      push(t('detail.openFailed'), 'danger');
+    }
+  }
+
+  async function handleRetry() {
+    if (!report) return;
+    setRetrying(true);
+    try {
+      await retryReport(report.id);
+      // Nothing is pushed on success: this page is subscribed to the report and
+      // its results, so the alert, the badge and the table all change under the
+      // reader on their own. A toast saying so would be the third telling.
+    } catch (caught) {
+      push(retryErrorMessage(caught, locale), 'danger');
+    } finally {
+      setRetrying(false);
     }
   }
 
@@ -89,14 +113,14 @@ export function ReportDetails() {
     return (
       <EmptyState
         icon="file-x"
-        title="That report does not exist"
+        title={t('detail.missingTitle')}
         action={
           <ButtonLink to="/reports" variant="primary">
-            Back to reports
+            {t('detail.backToReports')}
           </ButtonLink>
         }
       >
-        It may have been deleted, or the link may be wrong.
+        {t('detail.missingBody')}
       </EmptyState>
     );
   }
@@ -104,18 +128,30 @@ export function ReportDetails() {
   const processing = report.status === 'processing' || report.status === 'queued' ||
     report.status === 'uploaded';
 
+  const retryButton = canRetryReport(report) ? (
+    <Button
+      variant="secondary"
+      icon="arrow-clockwise"
+      loading={retrying}
+      loadingLabel={t('detail.reprocessing')}
+      onClick={() => void handleRetry()}
+    >
+      {t('detail.tryAgain')}
+    </Button>
+  ) : null;
+
   return (
     <>
       <div className="page-head">
         <div>
           <div className="kicker">
             <ButtonLink to="/reports" variant="ghost">
-              <Icon name="arrow-left" size={13} /> Reports
+              <Icon name="arrow-left" size={13} /> {t('nav.reports')}
             </ButtonLink>
           </div>
           <h1>
             {report.reportDate
-              ? `Report of ${formatTimestamp(report.reportDate)}`
+              ? t('detail.reportOf', { date: formatTimestamp(report.reportDate, locale) })
               : report.originalFileName}
           </h1>
         </div>
@@ -123,7 +159,7 @@ export function ReportDetails() {
         <ReportStatusBadge status={report.status} />
         {report.status !== 'failed' ? (
           <Button variant="secondary" icon="download-simple" onClick={() => void handleOpenPdf()}>
-            Download original
+            {t('detail.downloadOriginal')}
           </Button>
         ) : null}
       </div>
@@ -134,40 +170,61 @@ export function ReportDetails() {
         <Alert
           tone="danger"
           live
-          title={`${summary.critical.length} result${summary.critical.length === 1 ? '' : 's'} outside the critical range`}
+          title={t(
+            summary.critical.length === 1 ? 'detail.criticalOne' : 'detail.criticalMany',
+            { count: summary.critical.length },
+          )}
         >
-          {CRITICAL_RESULT_NOTICE}
+          {CRITICAL_RESULT_NOTICE_BY_LOCALE[locale]}
         </Alert>
       ) : null}
 
       {report.status === 'partially_processed' ? (
-        <Alert tone="warning" title="Some values could not be read">
-          {PARTIAL_PROCESSING_NOTICE}
+        <Alert tone="warning" title={t('detail.partialTitle')}>
+          {PARTIAL_PROCESSING_NOTICE_BY_LOCALE[locale]}
         </Alert>
       ) : null}
 
       {report.status === 'failed' ? (
-        <Alert tone="danger" title="This report could not be processed">
-          {report.warnings[0]?.message ??
-            'Something went wrong while processing this report. Try uploading it again.'}
+        <Alert tone="danger" title={t('detail.failedTitle')} actions={retryButton}>
+          {/* The warning is the pipeline's own words and stays English; our
+              fallback, which is what most failures show, does not. */}
+          {report.warnings[0]?.message ?? t('detail.failedFallback')}
+          {/* Why there is no button, when there is no button. */}
+          {retryHint(report) ? ` ${retryHint(report)}` : null}
         </Alert>
       ) : null}
 
       {processing ? (
-        <Alert tone="info" title="Still processing">
-          Results appear here as soon as extraction finishes. You can leave this page.
+        // The retry sits here too, and only appears once the run is old enough
+        // to be presumed dead (domain/retry.ts). A report whose worker died
+        // shows this same reassuring notice forever otherwise, and re-uploading
+        // the file is the only escape the user could find on their own.
+        <Alert tone="info" title={t('detail.processingTitle')} actions={retryButton}>
+          {t('detail.processingBody')}
         </Alert>
       ) : null}
 
       <div className="report-detail">
         <section className="report-results">
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0, fontSize: 22 }}>Extracted results</h2>
+            <h2 style={{ margin: 0, fontSize: 22 }}>{t('detail.extractedResults')}</h2>
             {results ? (
               <span className="muted" style={{ fontSize: 13 }}>
-                {summary.total} result{summary.total === 1 ? '' : 's'}
-                {summary.outOfRange > 0 ? ` · ${summary.outOfRange} outside range` : ''}
-                {summary.lowConfidence > 0 ? ` · ${summary.lowConfidence} low confidence` : ''}
+                {/* Joined in code rather than baking the separator into the
+                    messages: a translator should never have to preserve a
+                    leading " · " to keep the line from running together. */}
+                {[
+                  t(summary.total === 1 ? 'detail.summaryOne' : 'detail.summaryMany', {
+                    count: summary.total,
+                  }),
+                  ...(summary.outOfRange > 0
+                    ? [t('detail.summaryOutOfRange', { count: summary.outOfRange })]
+                    : []),
+                  ...(summary.lowConfidence > 0
+                    ? [t('detail.summaryLowConfidence', { count: summary.lowConfidence })]
+                    : []),
+                ].join(' · ')}
               </span>
             ) : null}
           </div>
@@ -175,31 +232,29 @@ export function ReportDetails() {
           {results === null ? (
             <SkeletonTable rows={5} columns={5} />
           ) : results.length === 0 ? (
-            <EmptyState icon="flask" title="No results yet">
-              {processing
-                ? 'Extraction is still running.'
-                : 'Nothing was extracted from this report.'}
+            <EmptyState icon="flask" title={t('detail.noResultsTitle')}>
+              {t(processing ? 'detail.stillExtracting' : 'detail.nothingExtracted')}
             </EmptyState>
           ) : (
             <div className="table-scroll">
               <table className="table">
                 <caption className="sr-only">
-                  Results extracted from {report.originalFileName}
+                  {t('detail.tableCaption', { file: report.originalFileName })}
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col">Test</th>
+                    <th scope="col">{t('detail.col.test')}</th>
                     <th scope="col" style={{ textAlign: 'right' }}>
-                      Value
+                      {t('detail.col.value')}
                     </th>
-                    <th scope="col">Unit</th>
-                    <th scope="col">Reference range</th>
-                    <th scope="col">Status</th>
+                    <th scope="col">{t('detail.col.unit')}</th>
+                    <th scope="col">{t('detail.col.range')}</th>
+                    <th scope="col">{t('detail.col.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((result) => (
-                    <ResultRow key={result.id} result={result} />
+                    <ResultRow key={result.id} result={result} locale={locale} t={t} />
                   ))}
                 </tbody>
               </table>
@@ -209,19 +264,30 @@ export function ReportDetails() {
           <DisclaimerBanner />
         </section>
 
-        <aside className="report-meta" aria-label="Report metadata">
-          <h2 style={{ fontSize: 18, margin: 0 }}>Report metadata</h2>
-          <Meta label="Laboratory" value={report.laboratoryName ?? 'Not stated on this report'} />
-          <Meta label="Report date" value={formatTimestamp(report.reportDate)} />
-          <Meta label="Uploaded" value={formatTimestamp(report.uploadedAt)} />
-          <Meta label="Processed" value={formatTimestamp(report.processedAt)} />
+        <aside className="report-meta" aria-label={t('detail.metaLabel')}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t('detail.metaLabel')}</h2>
           <Meta
-            label="File"
-            value={`${report.originalFileName} · ${formatBytes(report.fileSize)}`}
+            label={t('detail.meta.laboratory')}
+            value={report.laboratoryName ?? t('detail.meta.notStated')}
+          />
+          <Meta
+            label={t('detail.meta.reportDate')}
+            value={formatTimestamp(report.reportDate, locale)}
+          />
+          <Meta label={t('detail.meta.uploaded')} value={formatTimestamp(report.uploadedAt, locale)} />
+          <Meta
+            label={t('detail.meta.processed')}
+            value={formatTimestamp(report.processedAt, locale)}
+          />
+          <Meta
+            label={t('detail.meta.file')}
+            value={t('detail.meta.fileValue', {
+              name: report.originalFileName,
+              size: formatBytes(report.fileSize),
+            })}
           />
           <p className="muted" style={{ fontSize: 12, margin: 0, lineHeight: 1.6 }}>
-            <Icon name="lock-key" size={13} /> The original file is served through an authenticated
-            link. It is never given a public URL.
+            <Icon name="lock-key" size={13} /> {t('detail.meta.privateLink')}
           </p>
         </aside>
       </div>
@@ -238,8 +304,21 @@ function Meta({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ResultRow({ result }: { result: ReportResult }) {
-  const range = formatReferenceRange(result.referenceRange);
+/**
+ * The locale and `t` are passed down rather than read from context again: this
+ * renders once per extracted value, and a table of forty results should not
+ * mean forty context subscriptions.
+ */
+function ResultRow({
+  result,
+  locale,
+  t,
+}: {
+  result: ReportResult;
+  locale: Locale;
+  t: I18nContextValue['t'];
+}) {
+  const range = formatReferenceRange(result.referenceRange, locale);
 
   return (
     <>
@@ -254,7 +333,7 @@ function ResultRow({ result }: { result: ReportResult }) {
         </td>
         <td className="muted">{result.unit ?? '—'}</td>
         <td>
-          {range.text ?? <span className="muted">Not stated</span>}
+          {range.text ?? <span className="muted">{t('detail.notStated')}</span>}
           {range.note ? (
             <div className="faint" style={{ fontSize: 11 }}>
               {range.note}
@@ -274,11 +353,17 @@ function ResultRow({ result }: { result: ReportResult }) {
             <div className="result-analysis">
               <div className="result-analysis-head">
                 <Icon name="sparkle" size={14} />
-                AI-generated · not medical advice
+                {t('detail.aiGenerated')}
               </div>
+              {/* The analysis prose itself is generated server-side, in
+                  English. Translating it is a pipeline change, not a UI one —
+                  see the note in `functions/src/ai/prompts.ts`. */}
               <p>{result.analysis.text}</p>
               <div className="faint" style={{ fontSize: 11 }}>
-                {result.analysis.model} · prompt {result.analysis.promptVersion}
+                {t('detail.promptVersion', {
+                  model: result.analysis.model,
+                  version: result.analysis.promptVersion,
+                })}
               </div>
             </div>
           </td>

@@ -1,4 +1,5 @@
 import { formatBytes, type QuotaState } from '@/domain/quotas';
+import { useT } from '@/i18n/useI18n';
 import { Icon } from './Icon';
 
 export interface QuotaMeterProps {
@@ -23,6 +24,7 @@ export interface QuotaMeterProps {
 export function QuotaMeter({ label, state, detail, compact = false }: QuotaMeterProps) {
   const tone = state.isFull ? 'danger' : state.isWarning ? 'warning' : 'normal';
   const percent = Math.round(state.fraction * 100);
+  const t = useT();
 
   return (
     <div className="quota-meter" data-tone={tone} data-compact={compact || undefined}>
@@ -34,7 +36,10 @@ export function QuotaMeter({ label, state, detail, compact = false }: QuotaMeter
           {label}
         </span>
         <span className="quota-meter-value">
-          {formatBytes(state.usedBytes)} of {formatBytes(state.limitBytes)}
+          {t('quota.ofTotal', {
+            used: formatBytes(state.usedBytes),
+            total: formatBytes(state.limitBytes),
+          })}
         </span>
       </div>
 
@@ -46,7 +51,7 @@ export function QuotaMeter({ label, state, detail, compact = false }: QuotaMeter
         low={state.limitBytes * 0.8}
         high={state.limitBytes * 0.95}
         optimum={0}
-        aria-label={`${label}: ${percent}% used`}
+        aria-label={t('quota.used', { label, percent })}
       >
         {percent}%
       </meter>
@@ -54,8 +59,8 @@ export function QuotaMeter({ label, state, detail, compact = false }: QuotaMeter
       <div className="quota-meter-detail">
         {detail ??
           (state.isFull
-            ? 'Full. Delete a report you no longer need to free space.'
-            : `${formatBytes(state.remainingBytes)} remaining`)}
+            ? t('quota.full')
+            : t('quota.remaining', { amount: formatBytes(state.remainingBytes) }))}
       </div>
     </div>
   );

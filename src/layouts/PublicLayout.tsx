@@ -1,38 +1,50 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
 import { ButtonLink } from '@/components/Button';
+import { LanguageSwitcher } from '@/components/LanguagePicker';
+import { useT } from '@/i18n/useI18n';
+import type { MessageKey } from '@/i18n/messages';
 
-const LEGAL_LINKS = [
-  { to: '/legal/privacy', label: 'Privacy Policy' },
-  { to: '/legal/terms', label: 'Terms of Service' },
-  { to: '/legal/medical-disclaimer', label: 'Medical Disclaimer' },
-  { to: '/legal/ai-processing', label: 'AI Processing Disclosure' },
-  { to: '/legal/data-retention', label: 'Data Retention' },
+const LEGAL_LINKS: { to: string; label: MessageKey }[] = [
+  { to: '/legal/privacy', label: 'public.legal.privacy' },
+  { to: '/legal/terms', label: 'public.legal.terms' },
+  { to: '/legal/medical-disclaimer', label: 'public.legal.medicalDisclaimer' },
+  { to: '/legal/ai-processing', label: 'public.legal.aiProcessing' },
+  { to: '/legal/data-retention', label: 'public.legal.dataRetention' },
 ];
 
+/**
+ * The switcher sits in the public header, not only on the account page. The
+ * reader who most needs it is the one who has not signed in yet — sending them
+ * to a settings screen behind a sign-in form they cannot read would be a
+ * language control that only helps people who no longer need it.
+ */
 export function PublicLayout() {
+  const t = useT();
+
   return (
     <>
       <a className="skip-link" href="#main">
-        Skip to content
+        {t('common.skipToContent')}
       </a>
 
       <header>
-        <nav className="public-nav" aria-label="Main">
+        <nav className="public-nav" aria-label={t('nav.main')}>
           <Link to="/" className="brand">
             LabResults
           </Link>
           <div className="public-nav-links">
-            <NavLink to="/#how-it-works">How it works</NavLink>
-            <NavLink to="/legal/privacy">Privacy</NavLink>
-            <NavLink to="/legal/medical-disclaimer">Disclaimer</NavLink>
+            <NavLink to="/#how-it-works">{t('public.howItWorks')}</NavLink>
+            <NavLink to="/legal/privacy">{t('public.privacy')}</NavLink>
+            <NavLink to="/legal/medical-disclaimer">{t('public.disclaimer')}</NavLink>
           </div>
           <div className="spacer" />
+          <LanguageSwitcher />
           <ButtonLink to="/sign-in" variant="ghost">
-            Sign in
+            {t('common.signIn')}
           </ButtonLink>
           <ButtonLink to="/register" variant="primary">
-            Create free account
+            {t('common.createAccount')}
           </ButtonLink>
         </nav>
       </header>
@@ -48,7 +60,7 @@ export function PublicLayout() {
         <div className="spacer" />
         {LEGAL_LINKS.map((link) => (
           <Link key={link.to} to={link.to}>
-            {link.label}
+            {t(link.label)}
           </Link>
         ))}
       </footer>

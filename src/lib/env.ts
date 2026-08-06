@@ -60,6 +60,13 @@ function flag(value: unknown): boolean {
 }
 
 export const useEmulators = flag(import.meta.env.VITE_USE_FIREBASE_EMULATORS);
+/**
+ * Must match `FUNCTIONS_REGION` in functions/src/region.ts. A callable invoked
+ * against the wrong region fails as a CORS error in the browser console, which
+ * points nowhere near the actual mistake — hence one default in both places.
+ */
+export const functionsRegion =
+  (import.meta.env.VITE_FUNCTIONS_REGION as string | undefined) || 'us-east1';
 export const sentryDsn = (import.meta.env.VITE_SENTRY_DSN as string | undefined) ?? '';
 export const sentryEnvironment =
   (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) ?? 'development';

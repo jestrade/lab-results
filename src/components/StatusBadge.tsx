@@ -10,10 +10,12 @@
 
 import {
   CONFIDENCE,
+  present,
   REPORT_STATUS,
   RESULT_STATUS,
   TREND,
 } from '@/domain/status';
+import { useLocale } from '@/hooks/useLocale';
 import type {
   ExtractionConfidence,
   ReportStatus,
@@ -29,7 +31,8 @@ export interface ResultStatusBadgeProps {
 }
 
 export function ResultStatusBadge({ status, describe = false }: ResultStatusBadgeProps) {
-  const presentation = RESULT_STATUS[status];
+  const locale = useLocale();
+  const presentation = present(RESULT_STATUS[status], locale);
   return (
     <span
       className="status-pill"
@@ -51,13 +54,15 @@ const REPORT_TONE_STATUS: Record<string, ResultStatus> = {
 };
 
 export function ReportStatusBadge({ status }: { status: ReportStatus }) {
-  const presentation = REPORT_STATUS[status];
+  const locale = useLocale();
+  const { tone } = REPORT_STATUS[status];
+  const presentation = present(REPORT_STATUS[status], locale);
   return (
     <span
       className="status-pill"
       // Report tones reuse the result palette rather than introducing a second
       // colour system for the same four meanings.
-      data-status={REPORT_TONE_STATUS[presentation.tone]}
+      data-status={REPORT_TONE_STATUS[tone]}
       title={presentation.description}
     >
       <Icon name={presentation.icon} size={13} spin={status === 'processing'} />
@@ -67,7 +72,8 @@ export function ReportStatusBadge({ status }: { status: ReportStatus }) {
 }
 
 export function ConfidenceTag({ confidence }: { confidence: ExtractionConfidence }) {
-  const presentation = CONFIDENCE[confidence];
+  const locale = useLocale();
+  const presentation = present(CONFIDENCE[confidence], locale);
   // High confidence is the expected case; badging it everywhere would add
   // noise and make the low-confidence flag harder to spot.
   if (confidence === 'high') return null;
@@ -84,7 +90,8 @@ export function ConfidenceTag({ confidence }: { confidence: ExtractionConfidence
 }
 
 export function TrendBadge({ trend }: { trend: TrendDirection }) {
-  const presentation = TREND[trend];
+  const locale = useLocale();
+  const presentation = present(TREND[trend], locale);
   return (
     <span className="status-pill" data-status="unknown" title={presentation.description}>
       <Icon name={presentation.icon} size={13} />

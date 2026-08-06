@@ -2,15 +2,24 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/auth/useAuth';
 import { Alert } from '@/components/Alert';
-import { ButtonLink } from '@/components/Button';
+import { Button, ButtonLink } from '@/components/Button';
 import { DisclaimerBanner } from '@/components/DisclaimerBanner';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { ResultStatusBadge, TrendBadge } from '@/components/StatusBadge';
 import { TrendChart } from '@/components/TrendChart';
-import type { VariableSeries } from '@/domain/types';
-import { MIN_POINTS_FOR_TREND, summariseSeries } from '@/domain/variables';
-import { subscribeToVariableSeries } from '@/services/variables';
+import type { LabVariable, VariableSeries } from '@/domain/types';
+import {
+  groupByCategory,
+  MIN_POINTS_FOR_TREND,
+  seriesName,
+  summariseSeries,
+  timeWindow,
+  withCatalog,
+} from '@/domain/variables';
+import { useI18n } from '@/i18n/useI18n';
+import type { MessageKey } from '@/i18n/messages';
+import { fetchVariableCatalog, subscribeToVariableSeries } from '@/services/variables';
 
 /**
  * Trend analysis (KAN-47).
@@ -32,10 +41,10 @@ import { subscribeToVariableSeries } from '@/services/variables';
 
 type Period = '12m' | '3y' | 'all';
 
-const PERIODS: { id: Period; label: string; months: number | null }[] = [
-  { id: '12m', label: 'Last 12 months', months: 12 },
-  { id: '3y', label: 'Last 3 years', months: 36 },
-  { id: 'all', label: 'All time', months: null },
+const PERIODS: { id: Period; label: MessageKey; months: number | null }[] = [
+  { id: '12m', label: 'trends.period.12m', months: 12 },
+  { id: '3y', label: 'trends.period.3y', months: 36 },
+  { id: 'all', label: 'trends.period.all', months: null },
 ];
 
 /** Charts shown before the user picks — enough to be useful, few enough to scan. */
@@ -43,11 +52,33 @@ const PRESELECT_LIMIT = 3;
 
 export function Trends() {
   const { user } = useAuth();
+  const { t, locale } = useI18n();
 
   const [series, setSeries] = useState<VariableSeries[] | null>(null);
+  const [catalog, setCatalog] = useState<Map<string, LabVariable> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [period, setPeriod] = useState<Period>('3y');
+
+  // The catalog supplies the names and the groupings. Its absence is not an
+  // error worth showing: the series carry a usable fallback name, so a failed
+  // fetch costs the reader tidier labels, not the page.
+  useEffect(() => {
+    let live = true;
+    fetchVariableCatalog()
+      .then((entries) => {
+        // An empty catalog and no catalog produce identical output — both
+        // fall back to the names on each series — so storing one would be a
+        // render that changes nothing.
+        if (live && entries.size > 0) setCatalog(entries);
+      })
+      .catch(() => {
+        // Already null. The picker falls back to the denormalised names.
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -67,31 +98,35 @@ export function Trends() {
                 .map((entry) => entry.variableId),
         );
       },
-      () => setError('We could not load your variables. Check your connection and try again.'),
+      () => setError(t('variables.loadFailed')),
     );
-  }, [user]);
+  }, [user, t]);
 
-  const all = useMemo(() => series ?? [], [series]);
+  /**
+   * The user's series, named and categorised from the catalog.
+   *
+   * The list is still driven by what this user has results for — a chart of a
+   * variable they have never been tested for would be an empty frame — but
+   * every label on it now comes from the catalog rather than from whatever
+   * their laboratory printed.
+   */
+  const all = useMemo(() => withCatalog(series ?? [], catalog), [series, catalog]);
+
+  /** Chips grouped into panels, in the same fixed order as /variables. */
+  const groups = useMemo(() => groupByCategory(all, locale), [all, locale]);
 
   // One window for every chart on the page — the whole point of stacking them.
-  const { from, to } = useMemo(() => {
-    const now = Date.now();
-    const months = PERIODS.find((option) => option.id === period)?.months ?? null;
-
-    const observed = all.flatMap((entry) =>
-      entry.points.map((point) => point.observedAt.toDate().getTime()),
-    );
-    const earliest = observed.length > 0 ? Math.min(...observed) : now;
-    const latest = observed.length > 0 ? Math.max(...observed) : now;
-
-    if (months === null) return { from: earliest, to: latest };
-
-    const cutoff = new Date(latest);
-    cutoff.setMonth(cutoff.getMonth() - months);
-    // Never start after the earliest measurement: a window wider than the
-    // history should show the history, not an empty stretch of axis.
-    return { from: Math.max(earliest, cutoff.getTime()), to: latest };
-  }, [all, period]);
+  // Shared with the variable page (KAN-46), so "last 12 months" cannot come to
+  // mean two different stretches of time on the two screens.
+  const { from, to } = useMemo(
+    () =>
+      timeWindow(
+        all.flatMap((entry) => entry.points.map((point) => point.observedAt.toDate().getTime())),
+        PERIODS.find((option) => option.id === period)?.months ?? null,
+        Date.now(),
+      ),
+    [all, period],
+  );
 
   const chosen = all.filter((entry) => selected.includes(entry.variableId));
 
@@ -107,8 +142,8 @@ export function Trends() {
     <>
       <div className="page-head">
         <div>
-          <div className="kicker">Compare variables</div>
-          <h1>Trend analysis</h1>
+          <div className="kicker">{t('trends.kicker')}</div>
+          <h1>{t('nav.trends')}</h1>
         </div>
       </div>
 
@@ -123,45 +158,72 @@ export function Trends() {
       ) : all.length === 0 ? (
         <EmptyState
           icon="chart-line"
-          title="Nothing to chart yet"
+          title={t('trends.emptyTitle')}
           action={
             <ButtonLink to="/upload" variant="primary" icon="upload-simple">
-              Upload a report
+              {t('dashboard.uploadReport')}
             </ButtonLink>
           }
         >
-          Once a report has been processed, every test on it can be charted here. A direction needs
-          at least {MIN_POINTS_FOR_TREND} measurements of the same test.
+          {t('trends.emptyBody', { min: MIN_POINTS_FOR_TREND })}
         </EmptyState>
       ) : (
         <>
           <div className="trend-controls">
             <div>
-              <div className="kicker-quiet" id="trend-variables-label">
-                Variables
+              <div className="trend-variables-head">
+                <div className="kicker-quiet" id="trend-variables-label">
+                  {t('trends.variables')}
+                </div>
+                <span className="muted trend-selected-count" aria-live="polite">
+                  {t('trends.selectedCount', { selected: selected.length, total: all.length })}
+                </span>
+                {selected.length > 0 ? (
+                  <Button variant="ghost" onClick={() => setSelected([])}>
+                    {t('trends.clear')}
+                  </Button>
+                ) : null}
               </div>
-              <div
-                role="group"
-                aria-labelledby="trend-variables-label"
-                className="variable-chips"
-              >
-                {all.map((entry) => (
-                  <button
-                    key={entry.variableId}
-                    type="button"
-                    className="chip"
-                    aria-pressed={selected.includes(entry.variableId)}
-                    onClick={() => toggle(entry.variableId)}
-                  >
-                    {entry.canonicalName}
-                  </button>
+
+              {/* Grouped by panel rather than listed flat. Fifty-odd chips in
+                  one run is a wall of text with no landmarks — under "Complete
+                  blood count" and "Urinalysis" the same chips become
+                  navigable, and the order matches the /variables page so a
+                  test sits where the reader last saw it. Each group is its own
+                  labelled group for assistive technology, so the panel name is
+                  announced rather than being a visual grouping only. */}
+              <div className="trend-variable-groups" aria-labelledby="trend-variables-label">
+                {groups.map((group) => (
+                  <div key={group.category} className="trend-variable-group">
+                    <div className="trend-group-head">
+                      <span className="trend-group-label">{group.label}</span>
+                      <span className="muted trend-group-count">{group.series.length}</span>
+                    </div>
+                    <div
+                      role="group"
+                      aria-label={group.label}
+                      className="variable-chips"
+                    >
+                      {group.series.map((entry) => (
+                        <button
+                          key={entry.variableId}
+                          type="button"
+                          className="chip"
+                          aria-pressed={selected.includes(entry.variableId)}
+                          onClick={() => toggle(entry.variableId)}
+                        >
+                          {seriesName(entry, locale)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
 
             <div>
               <div className="kicker-quiet" id="trend-period-label">
-                Period
+                {t('trends.period')}
               </div>
               <div role="group" aria-labelledby="trend-period-label" className="variable-chips">
                 {PERIODS.map((option) => (
@@ -172,7 +234,7 @@ export function Trends() {
                     aria-pressed={period === option.id}
                     onClick={() => setPeriod(option.id)}
                   >
-                    {option.label}
+                    {t(option.label)}
                   </button>
                 ))}
               </div>
@@ -180,31 +242,28 @@ export function Trends() {
           </div>
 
           {chosen.length === 0 ? (
-            <EmptyState icon="chart-line" title="Choose a variable">
-              Pick one or more tests above to chart them over time.
+            <EmptyState icon="chart-line" title={t('trends.chooseTitle')}>
+              {t('trends.chooseBody')}
             </EmptyState>
           ) : (
             <>
-              <p className="muted trend-note">
-                Each chart keeps its own scale and its own reference range, so the values stay the
-                ones printed on your reports. They share a time axis, so you can read them against
-                each other.
-              </p>
+              <p className="muted trend-note">{t('trends.note')}</p>
 
               {chosen.map((entry) => (
                 <section key={entry.variableId} className="trend-card">
                   <div className="trend-card-head">
-                    <h2>{entry.canonicalName}</h2>
+                    <h2>{seriesName(entry, locale)}</h2>
                     <ResultStatusBadge status={entry.latestStatus} />
                     <TrendBadge trend={entry.trend} />
                   </div>
-                  <p className="muted trend-card-meta">{summariseSeries(entry)}</p>
+                  <p className="muted trend-card-meta">{summariseSeries(entry, locale)}</p>
 
                   {entry.points.length < MIN_POINTS_FOR_TREND ? (
                     <Alert tone="info">
-                      {entry.points.length} measurement{entry.points.length === 1 ? '' : 's'} so
-                      far. A direction needs at least {MIN_POINTS_FOR_TREND}, so none is shown —
-                      the measurements themselves are still plotted.
+                      {t(
+                        entry.points.length === 1 ? 'trends.tooFewOne' : 'trends.tooFewMany',
+                        { count: entry.points.length, min: MIN_POINTS_FOR_TREND },
+                      )}
                     </Alert>
                   ) : null}
 

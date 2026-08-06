@@ -13,14 +13,16 @@ import {
   type Auth,
 } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
+import { connectFunctionsEmulator, getFunctions, type Functions } from 'firebase/functions';
 import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
 
-import { readFirebaseEnv, useEmulators } from './env';
+import { functionsRegion, readFirebaseEnv, useEmulators } from './env';
 
 let app: FirebaseApp | undefined;
 let authInstance: Auth | undefined;
 let firestoreInstance: Firestore | undefined;
 let storageInstance: FirebaseStorage | undefined;
+let functionsInstance: Functions | undefined;
 
 export function getFirebaseApp(): FirebaseApp {
   if (app) return app;
@@ -49,6 +51,18 @@ export function getStorageClient(): FirebaseStorage {
   storageInstance = getStorage(getFirebaseApp());
   if (useEmulators) connectStorageEmulator(storageInstance, '127.0.0.1', 9199);
   return storageInstance;
+}
+
+/**
+ * Callable Cloud Functions. The region is not optional here: `getFunctions`
+ * defaults to us-central1, and this project's functions live beside their
+ * Storage bucket in us-east1 (functions/src/region.ts).
+ */
+export function getFunctionsClient(): Functions {
+  if (functionsInstance) return functionsInstance;
+  functionsInstance = getFunctions(getFirebaseApp(), functionsRegion);
+  if (useEmulators) connectFunctionsEmulator(functionsInstance, '127.0.0.1', 5001);
+  return functionsInstance;
 }
 
 export function googleProvider(): GoogleAuthProvider {

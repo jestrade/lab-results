@@ -10,8 +10,12 @@ import { Modal } from '@/components/Modal';
 import { SkeletonTable } from '@/components/Skeleton';
 import { ReportStatusBadge } from '@/components/StatusBadge';
 import { useToast } from '@/components/useToast';
-import { REPORT_STATUS } from '@/domain/status';
+import { present, REPORT_STATUS } from '@/domain/status';
+import { Trans } from '@/i18n/Trans';
+import { useI18n } from '@/i18n/useI18n';
+import type { MessageKey } from '@/i18n/messages';
 import { formatBytes } from '@/domain/quotas';
+import { canRetryReport } from '@/domain/retry';
 import type { Report, ReportStatus } from '@/domain/types';
 import {
   deleteReport,
@@ -20,6 +24,8 @@ import {
   getReportDownloadUrl,
   hasResults,
   reportSubtitle,
+  retryErrorMessage,
+  retryReport,
   subscribeToReports,
 } from '@/services/reportsList';
 
@@ -34,23 +40,31 @@ import {
 
 type Filter = 'all' | ReportStatus;
 
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'processed', label: 'Processed' },
-  { id: 'processing', label: 'Processing' },
-  { id: 'partially_processed', label: 'Partially processed' },
-  { id: 'failed', label: 'Failed' },
+/**
+ * The filter labels reuse the report-status keys, so a status is worded
+ * identically in the filter and in the badge it filters for. "All" has no
+ * status to borrow from and gets its own.
+ */
+const FILTERS: { id: Filter; label: MessageKey }[] = [
+  { id: 'all', label: 'reports.filter.all' },
+  { id: 'processed', label: 'status.report.processed' },
+  { id: 'processing', label: 'status.report.processing' },
+  { id: 'partially_processed', label: 'status.report.partiallyProcessed' },
+  { id: 'failed', label: 'status.report.failed' },
 ];
 
 export function Reports() {
   const { user } = useAuth();
   const { push } = useToast();
+  const { t, locale } = useI18n();
 
   const [reports, setReports] = useState<Report[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [pendingDelete, setPendingDelete] = useState<Report | null>(null);
   const [deleting, setDeleting] = useState(false);
+  /** Id of the report being reprocessed — one at a time, and only its own row spins. */
+  const [retrying, setRetrying] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -60,9 +74,9 @@ export function Reports() {
         setReports(next);
         setError(null);
       },
-      () => setError('We could not load your reports. Check your connection and try again.'),
+      () => setError(t('reports.loadFailed')),
     );
-  }, [user]);
+  }, [user, t]);
 
   const visible = useMemo(() => {
     if (!reports) return [];
@@ -93,7 +107,31 @@ export function Reports() {
       const url = await getReportDownloadUrl(report);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch {
-      push('That file could not be opened. It may still be uploading.', 'danger');
+      push(t('reports.openFailed'), 'danger');
+    }
+  }
+
+  /**
+   * The call resolves only when reprocessing has finished, which is tens of
+   * seconds for a full panel. The subscription is what actually reports the
+   * outcome — this handler's job is to keep the button honest while it runs
+   * and to say something if the server refuses outright.
+   */
+  async function handleRetry(report: Report) {
+    setRetrying(report.id);
+    try {
+      const status = await retryReport(report.id);
+      if (status === 'failed') {
+        // The row already carries the new reason; what the toast adds is that
+        // the attempt is over, since the button stopped spinning either way.
+        push(t('reports.retryFailedAgain'), 'danger');
+      } else {
+        push(t('reports.retrySucceeded'), 'success');
+      }
+    } catch (error) {
+      push(retryErrorMessage(error, locale), 'danger');
+    } finally {
+      setRetrying(null);
     }
   }
 
@@ -104,13 +142,10 @@ export function Reports() {
       await deleteReport(pendingDelete);
       // The subscription removes the row; saying so closes the loop, and the
       // freed-space note connects the action to the quota meter on Upload.
-      push(
-        `Report deleted. ${formatBytes(pendingDelete.fileSize)} of your storage freed.`,
-        'success',
-      );
+      push(t('reports.deleted', { size: formatBytes(pendingDelete.fileSize) }), 'success');
       setPendingDelete(null);
     } catch {
-      push('That report could not be deleted. Please try again.', 'danger');
+      push(t('reports.deleteFailed'), 'danger');
     } finally {
       setDeleting(false);
     }
@@ -119,17 +154,17 @@ export function Reports() {
   const columns: Column<Report>[] = [
     {
       key: 'reportDate',
-      header: 'Report date',
+      header: t('reports.col.reportDate'),
       width: '130px',
       sortValue: (report) => effectiveDate(report)?.getTime() ?? 0,
       render: (report) => (
         <>
-          {formatDate(effectiveDate(report))}
+          {formatDate(effectiveDate(report), locale)}
           {!report.reportDate ? (
             // Being explicit beats showing the upload date as if the laboratory
             // had printed it.
             <div className="faint" style={{ fontSize: 11 }}>
-              upload date
+              {t('reports.uploadDateNote')}
             </div>
           ) : null}
         </>
@@ -137,17 +172,17 @@ export function Reports() {
     },
     {
       key: 'uploadedAt',
-      header: 'Uploaded',
+      header: t('reports.col.uploaded'),
       width: '120px',
       sortValue: (report) => report.uploadedAt?.toMillis?.() ?? 0,
-      render: (report) => formatDate(report.uploadedAt?.toDate?.() ?? null),
+      render: (report) => formatDate(report.uploadedAt?.toDate?.() ?? null, locale),
     },
     {
       key: 'file',
-      header: 'Original file',
+      header: t('reports.col.file'),
       sortValue: (report) => report.originalFileName.toLowerCase(),
       render: (report) => {
-        const subtitle = reportSubtitle(report);
+        const subtitle = reportSubtitle(report, locale);
         return (
           <>
             <div style={{ fontSize: 13 }}>{report.userLabel || report.originalFileName}</div>
@@ -170,14 +205,16 @@ export function Reports() {
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('reports.col.status'),
       width: '180px',
-      sortValue: (report) => REPORT_STATUS[report.status].label,
+      // Sorted by the label the reader can see, so the order matches the
+      // column rather than an English word behind it.
+      sortValue: (report) => present(REPORT_STATUS[report.status], locale).label,
       render: (report) => <ReportStatusBadge status={report.status} />,
     },
     {
       key: 'results',
-      header: 'Results',
+      header: t('reports.col.results'),
       width: '90px',
       align: 'right',
       sortValue: (report) => report.resultCount ?? -1,
@@ -185,7 +222,7 @@ export function Reports() {
     },
     {
       key: 'outOfRange',
-      header: 'Out of range',
+      header: t('reports.col.outOfRange'),
       width: '110px',
       align: 'right',
       sortValue: (report) => report.outOfRangeCount ?? -1,
@@ -193,38 +230,52 @@ export function Reports() {
     },
     {
       key: 'actions',
-      header: <span className="sr-only">Actions</span>,
-      width: '210px',
+      header: <span className="sr-only">{t('reports.col.actions')}</span>,
+      width: '280px',
       render: (report) => (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           {/* Every row shows the same three words, so each control names its
               own report through aria-label. The visible text stays the first
               part of that name, which keeps voice control working (WCAG 2.5.3)
               and avoids repeating the filename as visible text. */}
+          {canRetryReport(report) ? (
+            <Button
+              variant="ghost"
+              icon="arrow-clockwise"
+              loading={retrying === report.id}
+              loadingLabel={t('reports.retrying')}
+              // Reprocessing reads the PDF that is already stored, so it costs
+              // the user nothing from their monthly upload allowance.
+              onClick={() => void handleRetry(report)}
+              aria-label={t('reports.retryLabel', { file: report.originalFileName })}
+            >
+              {t('reports.retry')}
+            </Button>
+          ) : null}
           {hasResults(report) ? (
             <ButtonLink
               to={`/reports/${report.id}`}
               variant="ghost"
-              aria-label={`View details for ${report.originalFileName}`}
+              aria-label={t('reports.viewDetailsLabel', { file: report.originalFileName })}
             >
-              View details
+              {t('reports.viewDetails')}
             </ButtonLink>
           ) : null}
           {report.status !== 'failed' ? (
             <Button
               variant="ghost"
               onClick={() => void handleOpenPdf(report)}
-              aria-label={`Open the original PDF for ${report.originalFileName}`}
+              aria-label={t('reports.originalPdfLabel', { file: report.originalFileName })}
             >
-              Original PDF
+              {t('reports.originalPdf')}
             </Button>
           ) : null}
           <Button
             variant="ghost"
             onClick={() => setPendingDelete(report)}
-            aria-label={`Delete ${report.originalFileName}`}
+            aria-label={t('reports.deleteLabel', { file: report.originalFileName })}
           >
-            Delete
+            {t('reports.delete')}
           </Button>
         </div>
       ),
@@ -237,16 +288,21 @@ export function Reports() {
         <div>
           <div className="kicker">
             {reports === null
-              ? 'Loading'
-              : `${totals.reports} report${totals.reports === 1 ? '' : 's'}${
-                  totals.results > 0 ? ` · ${totals.results} results` : ''
-                }`}
+              ? t('reports.loading')
+              : [
+                  t(totals.reports === 1 ? 'reports.countOne' : 'reports.countMany', {
+                    count: totals.reports,
+                  }),
+                  ...(totals.results > 0
+                    ? [t('reports.resultsCount', { count: totals.results })]
+                    : []),
+                ].join(' · ')}
           </div>
-          <h1>Reports</h1>
+          <h1>{t('nav.reports')}</h1>
         </div>
         <div className="spacer" />
         <ButtonLink to="/upload" variant="primary" icon="upload-simple">
-          Upload a report
+          {t('dashboard.uploadReport')}
         </ButtonLink>
       </div>
 
@@ -261,20 +317,19 @@ export function Reports() {
       ) : reports.length === 0 ? (
         <EmptyState
           icon="tray"
-          title="No reports yet"
+          title={t('reports.emptyTitle')}
           action={
             <ButtonLink to="/upload" variant="primary" icon="upload-simple">
-              Upload your first report
+              {t('reports.uploadFirst')}
             </ButtonLink>
           }
         >
-          Upload your first laboratory PDF and we&rsquo;ll extract the results, match reference
-          ranges and start tracking each value over time.
+          {t('reports.emptyBody')}
         </EmptyState>
       ) : (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-            <div className="seg" role="group" aria-label="Filter reports by status">
+            <div className="seg" role="group" aria-label={t('reports.filterLabel')}>
               {FILTERS.map((option) => (
                 <label key={option.id} className="seg-opt">
                   <input
@@ -283,21 +338,32 @@ export function Reports() {
                     checked={filter === option.id}
                     onChange={() => setFilter(option.id)}
                   />
-                  {option.label}
+                  {t(option.label)}
                 </label>
               ))}
             </div>
           </div>
 
           <DataTable
-            caption={`Your laboratory reports${filter === 'all' ? '' : `, filtered to ${filter.replace('_', ' ')}`}`}
+            caption={
+              filter === 'all'
+                ? t('reports.caption')
+                : t('reports.captionFiltered', {
+                    // The filter's own translated label, not the raw status id
+                    // with its underscore swapped for a space.
+                    status: t(
+                      FILTERS.find((option) => option.id === filter)?.label ??
+                        'reports.filter.all',
+                    ),
+                  })
+            }
             columns={columns}
             rows={visible}
             rowKey={(report) => report.id}
             initialSort={{ key: 'reportDate', direction: 'descending' }}
             empty={
-              <EmptyState icon="funnel" title="Nothing matches this filter">
-                No reports have that status right now.
+              <EmptyState icon="funnel" title={t('reports.noMatchTitle')}>
+                {t('reports.noMatchBody')}
               </EmptyState>
             }
           />
@@ -307,31 +373,34 @@ export function Reports() {
       <Modal
         open={pendingDelete !== null}
         onClose={() => (deleting ? undefined : setPendingDelete(null))}
-        title="Delete this report?"
+        title={t('reports.deleteTitle')}
         actions={
           <>
             <Button variant="secondary" onClick={() => setPendingDelete(null)} disabled={deleting}>
-              Keep it
+              {t('settings.keepIt')}
             </Button>
             <Button
               variant="primary"
               onClick={() => void handleConfirmDelete()}
               loading={deleting}
-              loadingLabel="Deleting…"
+              loadingLabel={t('reports.deleting')}
             >
-              Delete permanently
+              {t('reports.deletePermanently')}
             </Button>
           </>
         }
       >
         <p>
-          <strong>{pendingDelete?.originalFileName}</strong> and every result extracted from it
-          will be removed. This cannot be undone, and the values it contributed will disappear from
-          your trends.
+          <Trans
+            id="reports.deleteBody"
+            values={{ file: <strong>{pendingDelete?.originalFileName}</strong> }}
+          />
         </p>
         <p style={{ marginBottom: 0 }}>
           <Icon name="hard-drives" size={14} />{' '}
-          {pendingDelete ? formatBytes(pendingDelete.fileSize) : ''} of your storage will be freed.
+          {t('reports.deleteFreed', {
+            size: pendingDelete ? formatBytes(pendingDelete.fileSize) : '',
+          })}
         </p>
       </Modal>
     </>

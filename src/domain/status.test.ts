@@ -1,30 +1,38 @@
 import { describe, expect, it } from 'vitest';
 
-import { CONFIDENCE, isOutOfRange, REPORT_STATUS, RESULT_STATUS, TREND } from './status';
+import { CONFIDENCE, isOutOfRange, present, REPORT_STATUS, RESULT_STATUS, TREND } from './status';
+import { LOCALES } from './locales';
 import type { ReportStatus, ResultStatus } from './types';
 
 /**
  * These tests enforce the rule that makes the status system accessible: every
  * status must carry a text label as well as an icon, so nothing depends on
  * colour or on the glyph alone (spec §60, KAN-25, KAN-53).
+ *
+ * Since the labels moved into the message catalogs (KAN-8) the rule is checked
+ * in every locale rather than only in English — a Spanish reader looking at a
+ * greyscale screen is exactly as dependent on the text as an English one.
  */
 describe('status presentation', () => {
   const tables = { RESULT_STATUS, REPORT_STATUS, TREND, CONFIDENCE };
 
   for (const [name, table] of Object.entries(tables)) {
     describe(name, () => {
-      it('gives every status a non-empty text label', () => {
-        for (const [key, presentation] of Object.entries(table)) {
-          expect(presentation.label, `${name}.${key}`).toBeTruthy();
-        }
-      });
+      for (const locale of LOCALES) {
+        it(`gives every status a non-empty text label in ${locale}`, () => {
+          for (const [key, entry] of Object.entries(table)) {
+            expect(present(entry, locale).label, `${name}.${key}`).toBeTruthy();
+          }
+        });
 
-      it('gives every status an icon and a longer description', () => {
-        for (const [key, presentation] of Object.entries(table)) {
-          expect(presentation.icon, `${name}.${key}`).toMatch(/^ph-/);
-          expect(presentation.description.length, `${name}.${key}`).toBeGreaterThan(10);
-        }
-      });
+        it(`gives every status an icon and a longer description in ${locale}`, () => {
+          for (const [key, entry] of Object.entries(table)) {
+            const presentation = present(entry, locale);
+            expect(presentation.icon, `${name}.${key}`).toMatch(/^ph-/);
+            expect(presentation.description.length, `${name}.${key}`).toBeGreaterThan(10);
+          }
+        });
+      }
     });
   }
 
@@ -45,12 +53,22 @@ describe('status presentation', () => {
     expect(Object.keys(REPORT_STATUS).sort()).toEqual([...expected].sort());
   });
 
-  it('describes the trend without judging it', () => {
-    // The spec forbids implying that a direction is good or bad.
+  it('describes the trend without judging it, in every language', () => {
+    // The spec forbids implying that a direction is good or bad. A translation
+    // is just as capable of smuggling a judgement in — "mejorando" for
+    // "increasing" would read as clinical approval nobody gave.
     const forbidden = /\b(good|bad|better|worse|improv|deteriorat|healthy|concerning)/i;
-    for (const presentation of Object.values(TREND)) {
-      expect(presentation.label).not.toMatch(forbidden);
-      expect(presentation.description).not.toMatch(forbidden);
+    const forbiddenEs =
+      /\b(bueno|buena|malo|mala|mejor|peor|mejora|empeora|sano|sana|preocupante)/i;
+
+    for (const entry of Object.values(TREND)) {
+      for (const locale of LOCALES) {
+        const presentation = present(entry, locale);
+        for (const text of [presentation.label, presentation.description]) {
+          expect(text).not.toMatch(forbidden);
+          expect(text).not.toMatch(forbiddenEs);
+        }
+      }
     }
   });
 });

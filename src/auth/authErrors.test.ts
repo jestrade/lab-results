@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
+import { LOCALES } from '@/domain/locales';
+import { CATALOGS } from '@/i18n/catalogs';
 import { __messagesForTests, toAuthErrorMessage } from './authErrors';
 
 describe('toAuthErrorMessage', () => {
-  it('does not reveal whether an account exists', () => {
+  it.each(LOCALES)('does not reveal whether an account exists (%s)', (locale) => {
     // The whole point: a wrong password and an unknown address must be
     // indistinguishable, or the sign-in form becomes an account-enumeration
-    // oracle.
-    const wrongPassword = toAuthErrorMessage({ code: 'auth/wrong-password' });
-    const noSuchUser = toAuthErrorMessage({ code: 'auth/user-not-found' });
-    const invalid = toAuthErrorMessage({ code: 'auth/invalid-credential' });
+    // oracle. Checked per locale, because a translation that worded one of the
+    // three differently would reopen the oracle in that language.
+    const wrongPassword = toAuthErrorMessage({ code: 'auth/wrong-password' }, locale);
+    const noSuchUser = toAuthErrorMessage({ code: 'auth/user-not-found' }, locale);
+    const invalid = toAuthErrorMessage({ code: 'auth/invalid-credential' }, locale);
 
     expect(wrongPassword.message).toBe(noSuchUser.message);
     expect(invalid.message).toBe(noSuchUser.message);
@@ -68,11 +71,23 @@ describe('toAuthErrorMessage', () => {
     expect(toAuthErrorMessage('a string').message).toContain('Something went wrong');
   });
 
-  it('never leaks a raw Firebase code in a MAPPED message', () => {
+  it('never leaks a raw Firebase code in a MAPPED message, in any language', () => {
     // Mapped messages are written for people. Only the unmapped fallback
     // carries a code, and there it is the whole point.
-    for (const message of Object.values(__messagesForTests)) {
-      expect(message.message).not.toMatch(/auth\//);
+    for (const entry of Object.values(__messagesForTests)) {
+      for (const locale of LOCALES) {
+        expect(CATALOGS[locale][entry.key]).not.toMatch(/auth\//);
+      }
     }
+  });
+
+  it('translates the mapped messages', () => {
+    // Not an assertion about the wording, just that the Spanish path is
+    // actually wired up rather than falling through to English.
+    const es = toAuthErrorMessage({ code: 'auth/invalid-credential' }, 'es');
+    const en = toAuthErrorMessage({ code: 'auth/invalid-credential' }, 'en');
+    expect(es.message).not.toBe(en.message);
+    // The recovery path is a property of the failure, not of the language.
+    expect(es.action).toBe(en.action);
   });
 });

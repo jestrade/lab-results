@@ -1,5 +1,6 @@
 import { useState, type InputHTMLAttributes } from 'react';
 
+import { useT } from '@/i18n/useI18n';
 import { Icon } from './Icon';
 
 export type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
@@ -13,6 +14,7 @@ export type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'ty
  */
 export function PasswordInput({ className, ...rest }: PasswordInputProps) {
   const [revealed, setRevealed] = useState(false);
+  const t = useT();
 
   return (
     <div style={{ position: 'relative' }}>
@@ -40,7 +42,7 @@ export function PasswordInput({ className, ...rest }: PasswordInputProps) {
         }}
       >
         <Icon name={revealed ? 'eye-slash' : 'eye'} size={18} />
-        <span className="sr-only">{revealed ? 'Hide password' : 'Show password'}</span>
+        <span className="sr-only">{t(revealed ? 'password.hide' : 'password.show')}</span>
       </button>
     </div>
   );
