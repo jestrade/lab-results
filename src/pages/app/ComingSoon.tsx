@@ -48,7 +48,7 @@ export function ComingSoon({
         title={t('comingSoon.title')}
         action={
           <ButtonLink to="/upload" variant="secondary" icon="upload-simple">
-            {t('dashboard.uploadReport')}
+            {t('common.uploadReport')}
           </ButtonLink>
         }
       >

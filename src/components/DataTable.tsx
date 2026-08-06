@@ -21,6 +21,25 @@ export interface Column<Row> {
   width?: string;
 }
 
+/**
+ * Row selection, when the caller wants it (KAN-43).
+ *
+ * The selected set is owned by the caller rather than held here. What is
+ * selected outlives a sort and has to survive the rows themselves changing —
+ * this table is fed by a live subscription — and it is the caller that has to
+ * act on the selection, so it is the caller that should hold it.
+ */
+export interface Selection<Row> {
+  selected: ReadonlySet<string>;
+  onToggle: (key: string, selected: boolean) => void;
+  /** Called with every key currently rendered, so "all" means "all of these". */
+  onToggleAll: (keys: string[], selected: boolean) => void;
+  /** Accessible name for a row's checkbox. Every one names its own row. */
+  rowLabel: (row: Row) => string;
+  /** Accessible name for the header checkbox. */
+  allLabel: string;
+}
+
 export interface DataTableProps<Row> {
   /** Describes the table for screen readers. Required — tables need a name. */
   caption: string;
@@ -31,6 +50,8 @@ export interface DataTableProps<Row> {
   empty?: ReactNode;
   initialSort?: { key: string; direction: SortDirection };
   captionVisible?: boolean;
+  /** Omit for a table whose rows are not selectable. */
+  selection?: Selection<Row>;
 }
 
 export type SortDirection = 'ascending' | 'descending';
@@ -43,6 +64,7 @@ export function DataTable<Row>({
   empty,
   initialSort,
   captionVisible = false,
+  selection,
 }: DataTableProps<Row>) {
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | null>(
     initialSort ?? null,
@@ -72,12 +94,35 @@ export function DataTable<Row>({
 
   if (rows.length === 0 && empty) return <>{empty}</>;
 
+  const keys = sorted.map(rowKey);
+  const selectedHere = keys.filter((key) => selection?.selected.has(key));
+  const allSelected = keys.length > 0 && selectedHere.length === keys.length;
+
   return (
     <div className="table-scroll">
       <table className="table">
         <caption className={captionVisible ? undefined : 'sr-only'}>{caption}</caption>
         <thead>
           <tr>
+            {selection ? (
+              <th scope="col" style={{ width: 44 }}>
+                <input
+                  type="checkbox"
+                  className="table-select"
+                  checked={allSelected}
+                  // Partly-selected is a third state, and the box has to show
+                  // it: a plain unchecked box next to four ticked rows reads as
+                  // "nothing is selected".
+                  ref={(node) => {
+                    if (node) {
+                      node.indeterminate = selectedHere.length > 0 && !allSelected;
+                    }
+                  }}
+                  onChange={(event) => selection.onToggleAll(keys, event.target.checked)}
+                  aria-label={selection.allLabel}
+                />
+              </th>
+            ) : null}
             {columns.map((column) => {
               const active = sort?.key === column.key;
               return (
@@ -124,15 +169,30 @@ export function DataTable<Row>({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row) => (
-            <tr key={rowKey(row)}>
-              {columns.map((column) => (
-                <td key={column.key} style={{ textAlign: column.align ?? 'left' }}>
-                  {column.render(row)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {sorted.map((row) => {
+            const key = rowKey(row);
+            const isSelected = selection?.selected.has(key) ?? false;
+            return (
+              <tr key={key} data-selected={isSelected || undefined}>
+                {selection ? (
+                  <td>
+                    <input
+                      type="checkbox"
+                      className="table-select"
+                      checked={isSelected}
+                      onChange={(event) => selection.onToggle(key, event.target.checked)}
+                      aria-label={selection.rowLabel(row)}
+                    />
+                  </td>
+                ) : null}
+                {columns.map((column) => (
+                  <td key={column.key} style={{ textAlign: column.align ?? 'left' }}>
+                    {column.render(row)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

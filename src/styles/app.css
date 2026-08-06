@@ -1472,6 +1472,64 @@ dialog.dialog {
   font-size: 13px;
 }
 
+/* ── Selecting several reports (KAN-43) ──────────────────────────────────── */
+
+/* Sits between the filters and the table, so the count is next to the rows it
+   counts rather than pinned to the bottom of the window where it would cover
+   the last row of a short list. */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--color-accent-400);
+  background: var(--color-accent-100);
+  color: var(--color-accent-900);
+}
+.bulk-count {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Named, not counted: what makes deleting several at once safe is seeing which
+   ones. Scrolls rather than growing, so the confirm button stays reachable
+   when twenty are selected. */
+.bulk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.bulk-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.bulk-list li span:first-child {
+  overflow-wrap: anywhere;
+}
+
+.table-select {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+/* A wash rather than a border, so a selected row does not shift by a pixel. */
+.table tbody tr[data-selected] {
+  background: var(--color-accent-100);
+}
+
 /* ── Variable details (KAN-14 / KAN-46) ──────────────────────────────────── */
 
 /* The one measured fact the page opens with, beside the facts that qualify it.

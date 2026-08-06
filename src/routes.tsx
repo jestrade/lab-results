@@ -6,7 +6,6 @@ import { PublicLayout } from '@/layouts/PublicLayout';
 import { AccountSettings } from '@/pages/app/AccountSettings';
 import { ComingSoon } from '@/pages/app/ComingSoon';
 import { ReportDetails } from '@/pages/app/ReportDetails';
-import { Dashboard } from '@/pages/app/Dashboard';
 import { NotFound } from '@/pages/app/NotFound';
 import { Profile } from '@/pages/app/Profile';
 import { Reports } from '@/pages/app/Reports';
@@ -52,7 +51,17 @@ export function AppRoutes() {
         <Route path="verify-email" element={<VerifyEmail />} />
 
         <Route element={<AppLayout />}>
-          <Route path="dashboard" element={<Dashboard />} />
+          {/* Laboratory variables is the app's home: it is the page that
+              answers "where are my numbers now", which is what a signed-in
+              user came for. The dashboard that used to sit here had nothing
+              of its own to show — it was a heading and a link to /upload —
+              so it has been removed rather than kept as a stop on the way.
+
+              The path stays as a redirect. Bookmarks, the browser's history
+              and any link already sent to a user all point at /dashboard, and
+              answering those with "page not found" would be a worse outcome
+              than one extra hop. */}
+          <Route path="dashboard" element={<Navigate to="/variables" replace />} />
           <Route path="upload" element={<Upload />} />
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:reportId" element={<ReportDetails />} />

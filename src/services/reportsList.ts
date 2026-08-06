@@ -10,6 +10,8 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -77,8 +79,70 @@ function toReport(id: string, data: Record<string, unknown>): Report {
     retryCount: Number(data.retryCount ?? 0),
     lastRetryAt: (data.lastRetryAt as Timestamp | null) ?? null,
     supersededBy: (data.supersededBy as string | null) ?? null,
+    duplicateOf: (data.duplicateOf as string | null) ?? null,
     version: Number(data.version ?? 1),
   };
+}
+
+/**
+ * How far back the metadata comparison looks.
+ *
+ * The hash query below is exhaustive — an exact re-upload is caught however
+ * old the original is. This second query exists only for the weaker
+ * name-and-size signal, and reading a user's entire history to run it would
+ * cost a document read per report on every file they choose. A duplicate the
+ * user is about to create by hand is almost always of something recent, and
+ * the server-side content check (functions/src/duplicates.ts) catches the rest
+ * after extraction, where the comparison is a good deal better than a
+ * filename.
+ */
+const METADATA_SCAN_LIMIT = 50;
+
+/**
+ * Reports that might be the file the user just chose (KAN-28, spec §40.2).
+ *
+ * Two queries rather than one, because they answer different questions and
+ * only one of them can be answered exactly:
+ *
+ *   by hash — complete, over the user's whole history, and certain when it
+ *             hits. `firestore.indexes.json` carries the ownerId+contentHash
+ *             index this needs.
+ *   by date — the most recent reports, filtered in memory for name and size.
+ *             A composite index per signal would be the alternative, and the
+ *             signals are heuristics that will change.
+ *
+ * Deduplicated by id: a re-uploaded file matches both queries, and the dialog
+ * must not list the same report twice.
+ *
+ * Failures are not swallowed here — the caller decides, and the Upload page
+ * treats "we could not check" as "no warning" rather than blocking an upload
+ * on a check that is itself only advisory.
+ */
+export async function fetchDuplicateCandidates(
+  ownerId: string,
+  contentHash: string,
+): Promise<Report[]> {
+  const reports = collection(getDb(), 'reports');
+
+  const [byHash, recent] = await Promise.all([
+    contentHash
+      ? getDocs(query(reports, where('ownerId', '==', ownerId), where('contentHash', '==', contentHash)))
+      : null,
+    getDocs(
+      query(
+        reports,
+        where('ownerId', '==', ownerId),
+        orderBy('uploadedAt', 'desc'),
+        limit(METADATA_SCAN_LIMIT),
+      ),
+    ),
+  ]);
+
+  const byId = new Map<string, Report>();
+  for (const snapshot of [byHash, recent]) {
+    for (const entry of snapshot?.docs ?? []) byId.set(entry.id, toReport(entry.id, entry.data()));
+  }
+  return [...byId.values()];
 }
 
 /**
@@ -118,6 +182,42 @@ export async function deleteReport(report: Report): Promise<void> {
   }
 
   await deleteDoc(doc(getDb(), 'reports', report.id));
+}
+
+export interface BulkDeleteOutcome {
+  /** Reports that are gone, and the bytes they were occupying. */
+  deleted: Report[];
+  /** Reports still there, because their delete failed. */
+  failed: Report[];
+}
+
+/**
+ * Deletes several reports, reporting honestly on a partial result.
+ *
+ * ── Why this is not a transaction, and why that is stated ─────────────────
+ *
+ * Each report is a Storage object plus a Firestore document, in two different
+ * services. There is no atomic delete across the two, let alone across a
+ * dozen reports, so "delete these nine" can genuinely end with seven gone and
+ * two still there. `allSettled` rather than `all` is the point: one failure
+ * must not abandon the deletes that would have succeeded, and the caller is
+ * given both lists so it can say what actually happened rather than "done".
+ *
+ * Run together rather than one after another. Each delete is independent, and
+ * a user who selected a dozen reports should not wait a dozen round trips —
+ * selections are bounded by what fits on the page, so there is no fan-out here
+ * worth throttling.
+ */
+export async function deleteReports(reports: Report[]): Promise<BulkDeleteOutcome> {
+  const results = await Promise.allSettled(reports.map((report) => deleteReport(report)));
+
+  const deleted: Report[] = [];
+  const failed: Report[] = [];
+  results.forEach((result, index) => {
+    (result.status === 'fulfilled' ? deleted : failed).push(reports[index]!);
+  });
+
+  return { deleted, failed };
 }
 
 /**

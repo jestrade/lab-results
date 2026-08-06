@@ -23,6 +23,11 @@ import { getStorage } from 'firebase-admin/storage';
 import { analyseResult, needsAnalysis } from './analysis';
 import { classify, isOutOfRange, parseValue, type ReferenceRange } from './classification';
 import { PARTIAL_PROCESSING_NOTICE } from './copy';
+import {
+  DUPLICATE_WARNING_CODE,
+  duplicateNotice,
+  findLikelyDuplicate,
+} from './duplicates';
 import { extractResults, NoTextLayerError, readPdfText } from './extraction';
 import { calculateTrend, mergePoints } from './trends';
 import { resolveVariables, type ResolvedVariable } from './variables/catalog';
@@ -273,6 +278,24 @@ export async function processReport(report: ReportRef): Promise<void> {
   const outOfRange = classified.filter((entry) => isOutOfRange(entry.status)).length;
   const partial = extraction.dropped > 0;
 
+  // ── duplicates: the half of KAN-28 the browser could not run ────────────
+  //
+  // Last, and never fatal. This is a notice about a report that has already
+  // been processed and stored — the user's results are safe on the document
+  // before we go looking for what they might duplicate, and a failure here
+  // must not turn a processed report into a failed one.
+  const duplicate = await findDuplicate(report, extraction.output, classified).catch((error) => {
+    logger.warn('Duplicate check failed', { reportId: report.id, error });
+    return null;
+  });
+
+  const warnings = [
+    ...(partial ? [{ code: 'extraction/partial', message: PARTIAL_PROCESSING_NOTICE }] : []),
+    ...(duplicate
+      ? [{ code: DUPLICATE_WARNING_CODE, message: duplicateNotice(duplicate.fileName) }]
+      : []),
+  ];
+
   await setStatus(report.id, {
     status: partial ? 'partially_processed' : 'processed',
     resultCount: classified.length,
@@ -282,9 +305,12 @@ export async function processReport(report: ReportRef): Promise<void> {
       ? new Date(`${extraction.output.reportDate}T00:00:00Z`)
       : null,
     processedAt: FieldValue.serverTimestamp(),
-    warnings: partial
-      ? [{ code: 'extraction/partial', message: PARTIAL_PROCESSING_NOTICE }]
-      : [],
+    warnings,
+    // The pointer, kept apart from the warning text so the reports UI can link
+    // to the other report rather than parsing a sentence for a filename. Null
+    // rather than absent on a clean run: a report that *was* flagged and is
+    // reprocessed after the other copy is deleted has to be able to lose it.
+    duplicateOf: duplicate?.reportId ?? null,
   });
 
   logger.info('Report processed', {
@@ -293,7 +319,54 @@ export async function processReport(report: ReportRef): Promise<void> {
     outOfRange,
     analysed,
     dropped: extraction.dropped,
+    duplicateOf: duplicate?.reportId ?? null,
   });
+}
+
+/**
+ * Builds this report's fingerprint and looks for the report it duplicates.
+ *
+ * The incoming side is built from what is already in memory rather than read
+ * back from Firestore: these are the same values that were just written, and a
+ * re-read would be a subcollection fetch to learn what we already know.
+ */
+async function findDuplicate(
+  report: ReportRef,
+  output: { reportDate?: string | null; laboratoryName?: string | null },
+  classified: { variable: ResolvedVariable; row: { rawValue: string }; value: number | null }[],
+): Promise<{ reportId: string; fileName: string } | null> {
+  const db = getFirestore();
+
+  // The hash is the client's, written when the record was created; a report
+  // from before hashing existed simply has no hash, and the content signals
+  // carry the check on their own.
+  const snap = await db.collection('reports').doc(report.id).get();
+  const contentHash = String(snap.data()?.contentHash ?? '');
+
+  const found = await findLikelyDuplicate(
+    db,
+    { id: report.id, ownerId: report.ownerId, contentHash },
+    {
+      reportDate: output.reportDate ?? null,
+      laboratoryName: output.laboratoryName ?? null,
+      entries: classified.map((entry) => ({
+        variableId: entry.variable.variableId,
+        value: entry.value,
+        rawValue: entry.row.rawValue,
+      })),
+    },
+  );
+
+  if (!found) return null;
+
+  logger.info('Possible duplicate report', {
+    reportId: report.id,
+    duplicateOf: found.reportId,
+    signals: found.verdict.signals,
+    similarity: Number(found.verdict.similarity.toFixed(3)),
+  });
+
+  return { reportId: found.reportId, fileName: found.fileName };
 }
 
 /**

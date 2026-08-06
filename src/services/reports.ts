@@ -105,6 +105,15 @@ export interface UploadOptions {
   file: File;
   ownerId: string;
   userLabel?: string | null;
+  /**
+   * The file's SHA-256, when the caller has already computed it.
+   *
+   * The duplicate check (KAN-28) hashes every file before the upload starts,
+   * and hashing a 25 MB PDF a second time to store the same string would be
+   * pure repeated work on the main thread. Omitted, this hashes the file
+   * itself, so a caller that does not care keeps working unchanged.
+   */
+  contentHash?: string;
   onProgress?: (percent: number) => void;
 }
 
@@ -112,6 +121,7 @@ export function uploadReport({
   file,
   ownerId,
   userLabel = null,
+  contentHash: knownHash,
   onProgress,
 }: UploadOptions): UploadHandle {
   // The id is minted up front so the storage path and the Firestore record
@@ -130,7 +140,7 @@ export function uploadReport({
   let cancelled = false;
 
   const done = (async () => {
-    const contentHash = await hashFile(file);
+    const contentHash = knownHash ?? (await hashFile(file));
 
     await new Promise<void>((resolve, reject) => {
       task.on(

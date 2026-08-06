@@ -161,7 +161,7 @@ export function Trends() {
           title={t('trends.emptyTitle')}
           action={
             <ButtonLink to="/upload" variant="primary" icon="upload-simple">
-              {t('dashboard.uploadReport')}
+              {t('common.uploadReport')}
             </ButtonLink>
           }
         >

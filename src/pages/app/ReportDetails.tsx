@@ -185,6 +185,24 @@ export function ReportDetails() {
         </Alert>
       ) : null}
 
+      {/* Possible duplicate (KAN-28). A notice with a way to look, not a
+          prompt to act: both reports are kept, and the only thing offered
+          here is the other one to compare against. Deleting either stays a
+          deliberate act on the reports list (spec §40.2). */}
+      {report.duplicateOf ? (
+        <Alert
+          tone="info"
+          title={t('detail.duplicateTitle')}
+          actions={
+            <ButtonLink to={`/reports/${report.duplicateOf}`}>
+              {t('detail.duplicateCompare')}
+            </ButtonLink>
+          }
+        >
+          {t('detail.duplicateBody')}
+        </Alert>
+      ) : null}
+
       {report.status === 'failed' ? (
         <Alert tone="danger" title={t('detail.failedTitle')} actions={retryButton}>
           {/* The warning is the pipeline's own words and stays English; our

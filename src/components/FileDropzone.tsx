@@ -14,22 +14,33 @@
 
 import { useCallback, useRef, useState, type DragEvent } from 'react';
 
+import type { MessageKey } from '@/i18n/messages';
 import { useT } from '@/i18n/useI18n';
 import { Icon } from './Icon';
 
 export interface FileDropzoneProps {
-  onFileSelected: (file: File) => void;
+  /**
+   * Called with everything the user dropped or picked, in the order they gave
+   * it. Always an array, even for one file: the page queues uploads, and a
+   * single-file callback would make "one" a special case for no benefit.
+   */
+  onFilesSelected: (files: File[]) => void;
   disabled?: boolean;
   /** Explains why the zone is disabled — shown instead of the usual prompt. */
   disabledReason?: string;
   accept?: string;
+  /** Prompt shown in the zone. Defaults to the single-file wording. */
+  promptKey?: MessageKey;
+  hintKey?: MessageKey;
 }
 
 export function FileDropzone({
-  onFileSelected,
+  onFilesSelected,
   disabled = false,
   disabledReason,
   accept = 'application/pdf,.pdf',
+  promptKey = 'dropzone.prompt',
+  hintKey = 'dropzone.hint',
 }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
@@ -67,10 +78,12 @@ export function FileDropzone({
     if (disabled) return;
     event.preventDefault();
     reset();
-    // Only the first file: one report per upload, so silently taking a second
-    // one would be a surprise. Validation of what it is happens upstream.
-    const file = event.dataTransfer.files?.[0];
-    if (file) onFileSelected(file);
+    // Everything that was dropped, in the order the browser reports it.
+    // Validation of what each one is happens upstream, per file, so a folder
+    // of PDFs with one stray image queues the PDFs and explains the image
+    // rather than refusing the whole drop.
+    const files = [...(event.dataTransfer.files ?? [])];
+    if (files.length > 0) onFilesSelected(files);
   }
 
   return (
@@ -96,10 +109,10 @@ export function FileDropzone({
           <>
             <Icon name="file-pdf" size={56} />
             <span className="dropzone-title">
-              {t(disabled ? 'dropzone.unavailable' : 'dropzone.prompt')}
+              {t(disabled ? 'dropzone.unavailable' : promptKey)}
             </span>
             <span className="muted" style={{ fontSize: 13 }}>
-              {disabled ? disabledReason : t('dropzone.hint')}
+              {disabled ? disabledReason : t(hintKey)}
             </span>
           </>
         )}
@@ -109,12 +122,13 @@ export function FileDropzone({
         ref={inputRef}
         type="file"
         accept={accept}
+        multiple
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) onFileSelected(file);
+          const files = [...(event.target.files ?? [])];
+          if (files.length > 0) onFilesSelected(files);
           // Clear the value so choosing the same file twice in a row still
           // fires a change event.
           event.target.value = '';

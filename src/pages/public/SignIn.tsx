@@ -36,7 +36,7 @@ export function SignIn() {
   const [googlePending, setGooglePending] = useState(false);
 
   // Guards stash the page the user was trying to reach; send them back there.
-  const destination = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard';
+  const destination = (location.state as LocationState | null)?.from?.pathname ?? '/variables';
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

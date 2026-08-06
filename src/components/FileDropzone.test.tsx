@@ -23,9 +23,9 @@ function dropEvent(files: File[]) {
 
 describe('FileDropzone', () => {
   it('opens the file picker when activated from the keyboard', async () => {
-    const onFileSelected = vi.fn();
+    const onFilesSelected = vi.fn();
     const user = userEvent.setup();
-    const { container } = renderWithProviders(<FileDropzone onFileSelected={onFileSelected} />);
+    const { container } = renderWithProviders(<FileDropzone onFilesSelected={onFilesSelected} />);
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     const click = vi.spyOn(input, 'click').mockImplementation(() => {});
@@ -40,28 +40,39 @@ describe('FileDropzone', () => {
   });
 
   it('hands over a dropped file', () => {
-    const onFileSelected = vi.fn();
-    const { container } = renderWithProviders(<FileDropzone onFileSelected={onFileSelected} />);
+    const onFilesSelected = vi.fn();
+    const { container } = renderWithProviders(<FileDropzone onFilesSelected={onFilesSelected} />);
     const zone = container.firstElementChild as HTMLElement;
 
     fireEvent.drop(zone, dropEvent([pdf()]));
 
-    expect(onFileSelected).toHaveBeenCalledWith(expect.objectContaining({ name: 'panel.pdf' }));
+    expect(onFilesSelected).toHaveBeenCalledWith([expect.objectContaining({ name: 'panel.pdf' })]);
   });
 
-  it('takes only the first file when several are dropped', () => {
-    const onFileSelected = vi.fn();
-    const { container } = renderWithProviders(<FileDropzone onFileSelected={onFileSelected} />);
+  it('hands over every file when several are dropped', () => {
+    const onFilesSelected = vi.fn();
+    const { container } = renderWithProviders(<FileDropzone onFilesSelected={onFilesSelected} />);
     const zone = container.firstElementChild as HTMLElement;
 
     fireEvent.drop(zone, dropEvent([pdf('first.pdf'), pdf('second.pdf')]));
 
-    expect(onFileSelected).toHaveBeenCalledTimes(1);
-    expect(onFileSelected).toHaveBeenCalledWith(expect.objectContaining({ name: 'first.pdf' }));
+    // Dropping four months of reports at once is the normal case, not an
+    // accident to be trimmed down to one.
+    expect(onFilesSelected).toHaveBeenCalledTimes(1);
+    expect(onFilesSelected).toHaveBeenCalledWith([
+      expect.objectContaining({ name: 'first.pdf' }),
+      expect.objectContaining({ name: 'second.pdf' }),
+    ]);
+  });
+
+  it('lets the picker take more than one file', () => {
+    const { container } = renderWithProviders(<FileDropzone onFilesSelected={vi.fn()} />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input.multiple).toBe(true);
   });
 
   it('stays in the drag-over state while the pointer crosses child elements', () => {
-    const { container } = renderWithProviders(<FileDropzone onFileSelected={vi.fn()} />);
+    const { container } = renderWithProviders(<FileDropzone onFilesSelected={vi.fn()} />);
     const zone = container.firstElementChild as HTMLElement;
     const button = screen.getByRole('button');
 
@@ -78,23 +89,23 @@ describe('FileDropzone', () => {
   });
 
   it('ignores a drop while disabled', () => {
-    const onFileSelected = vi.fn();
+    const onFilesSelected = vi.fn();
     const { container } = renderWithProviders(
-      <FileDropzone onFileSelected={onFileSelected} disabled disabledReason="Verify first." />,
+      <FileDropzone onFilesSelected={onFilesSelected} disabled disabledReason="Verify first." />,
     );
     fireEvent.drop(container.firstElementChild as HTMLElement, dropEvent([pdf()]));
-    expect(onFileSelected).not.toHaveBeenCalled();
+    expect(onFilesSelected).not.toHaveBeenCalled();
   });
 
   it('explains why it is disabled', () => {
     renderWithProviders(
-      <FileDropzone onFileSelected={vi.fn()} disabled disabledReason="Verify your email address first." />,
+      <FileDropzone onFilesSelected={vi.fn()} disabled disabledReason="Verify your email address first." />,
     );
     expect(screen.getByText('Verify your email address first.')).toBeInTheDocument();
   });
 
   it('has no serious accessibility violations', async () => {
-    const { container } = renderWithProviders(<FileDropzone onFileSelected={vi.fn()} />);
+    const { container } = renderWithProviders(<FileDropzone onFilesSelected={vi.fn()} />);
     await expectNoA11yViolations(container);
   });
 });

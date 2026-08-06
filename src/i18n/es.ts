@@ -8,7 +8,7 @@
  * vocabulary already printed on the reports being uploaded.
  *
  * `ordenador`/`computadora` and similar are avoided rather than chosen.
- * `informe` is used for a laboratory report throughout, never `reporte`.
+ * `reporte` is used for a laboratory report throughout, never `reporte`.
  */
 
 import type { Messages } from './messages';
@@ -35,6 +35,7 @@ export const es: Messages = {
   'common.unexpectedError':
     'Ha ocurrido un error inesperado. Normalmente basta con recargar la página.',
   'common.reload': 'Recargar la página',
+  'common.uploadReport': 'Subir un informe',
 
   // ── Language ──────────────────────────────────────────────────────────
   'lang.heading': 'Idioma',
@@ -59,10 +60,9 @@ export const es: Messages = {
   'theme.saveFailed': 'Se cambió el tema, pero no se pudo guardar en tu perfil.',
 
   // ── Navigation ────────────────────────────────────────────────────────
-  'nav.dashboard': 'Panel',
-  'nav.upload': 'Subir informe',
-  'nav.reports': 'Informes',
-  'nav.variables': 'Variables de laboratorio',
+  'nav.upload': 'Subir reporte',
+  'nav.reports': 'Reportes',
+  'nav.variables': 'Inicio',
   'nav.trends': 'Análisis de tendencias',
   'nav.account': 'Cuenta',
   'nav.profile': 'Perfil',
@@ -98,14 +98,14 @@ export const es: Messages = {
   'disclaimer.readFull': 'Leer el aviso completo',
   'dropzone.release': 'Suelta el archivo para subirlo',
   'dropzone.unavailable': 'La subida todavía no está disponible',
-  'dropzone.prompt': 'Arrastra aquí el PDF de tu laboratorio',
-  'dropzone.hint': 'o elige un archivo de tu equipo: solo PDF, hasta 25 MB',
+  'dropzone.prompt': 'Arrastra aquí los PDF de tu laboratorio',
+  'dropzone.hint': 'o elige archivos de tu equipo: solo PDF, hasta 25 MB cada uno',
   'password.show': 'Mostrar la contraseña',
   'password.hide': 'Ocultar la contraseña',
   'google.waiting': 'Esperando a Google…',
   'quota.used': '{label}: {percent} % utilizado',
   'quota.ofTotal': '{used} de {total}',
-  'quota.full': 'Sin espacio. Elimina algún informe que ya no necesites para liberar espacio.',
+  'quota.full': 'Sin espacio. Elimina algún reporte que ya no necesites para liberar espacio.',
   'quota.remaining': 'Quedan {amount}',
   'skeleton.loadingResults': 'Cargando los resultados',
   'chart.date': 'Fecha',
@@ -113,19 +113,19 @@ export const es: Messages = {
   // ── Status tables (@/domain/status) ───────────────────────────────────
   'status.result.normal': 'Normal',
   'status.result.normal.description':
-    'Dentro del intervalo de referencia impreso en este informe.',
+    'Dentro del intervalo de referencia impreso en este reporte.',
   'status.result.low': 'Bajo',
   'status.result.low.description':
-    'Por debajo del intervalo de referencia impreso en este informe.',
+    'Por debajo del intervalo de referencia impreso en este reporte.',
   'status.result.high': 'Alto',
   'status.result.high.description':
-    'Por encima del intervalo de referencia impreso en este informe.',
+    'Por encima del intervalo de referencia impreso en este reporte.',
   'status.result.critical': 'Crítico',
   'status.result.critical.description':
     'Fuera de los umbrales críticos indicados por el laboratorio. Puede requerir atención médica sin demora.',
   'status.result.unknown': 'Sin clasificar',
   'status.result.unknown.description':
-    'Este informe no incluía un intervalo de referencia utilizable, por lo que el valor no se ha clasificado.',
+    'Este reporte no incluía un intervalo de referencia utilizable, por lo que el valor no se ha clasificado.',
 
   'status.report.uploaded': 'Subido',
   'status.report.uploaded.description':
@@ -133,38 +133,38 @@ export const es: Messages = {
   'status.report.queued': 'En cola',
   'status.report.queued.description': 'A la espera de un turno de procesamiento.',
   'status.report.processing': 'Procesando',
-  'status.report.processing.description': 'Se están extrayendo los resultados del informe.',
+  'status.report.processing.description': 'Se están extrayendo los resultados del reporte.',
   'status.report.processed': 'Procesado',
   'status.report.processed.description': 'Todos los resultados se han extraído correctamente.',
   'status.report.partiallyProcessed': 'Procesado parcialmente',
   'status.report.partiallyProcessed.description':
     'Se ha extraído la mayoría de los resultados; algunos valores no se han podido leer de forma fiable.',
   'status.report.failed': 'Fallido',
-  'status.report.failed.description': 'No se ha podido procesar el informe.',
+  'status.report.failed.description': 'No se ha podido procesar el reporte.',
 
   // Movimiento, nunca valoración: describen hacia dónde va el valor, sin
   // sugerir que eso sea bueno o malo.
   'status.trend.increasing': 'En aumento',
   'status.trend.increasing.description':
-    'El valor ha subido a lo largo de los informes recientes.',
+    'El valor ha subido a lo largo de los reportes recientes.',
   'status.trend.decreasing': 'En descenso',
   'status.trend.decreasing.description':
-    'El valor ha bajado a lo largo de los informes recientes.',
+    'El valor ha bajado a lo largo de los reportes recientes.',
   'status.trend.stable': 'Estable',
   'status.trend.stable.description':
-    'El valor no se ha movido de forma apreciable a lo largo de los informes recientes.',
+    'El valor no se ha movido de forma apreciable a lo largo de los reportes recientes.',
   'status.trend.insufficient': 'Datos insuficientes',
   'status.trend.insufficient.description':
     'Todavía no hay suficientes mediciones para describir una dirección.',
 
   'status.confidence.high': 'Confianza alta',
-  'status.confidence.high.description': 'Este valor se ha leído con claridad del informe.',
+  'status.confidence.high.description': 'Este valor se ha leído con claridad del reporte.',
   'status.confidence.medium': 'Confianza media',
   'status.confidence.medium.description':
-    'Este valor se ha leído con cierta incertidumbre. Compruébalo con el informe.',
+    'Este valor se ha leído con cierta incertidumbre. Compruébalo con el reporte.',
   'status.confidence.low': 'Confianza baja',
   'status.confidence.low.description':
-    'Este valor no se ha podido leer de forma fiable. Compruébalo con el informe original antes de darlo por bueno.',
+    'Este valor no se ha podido leer de forma fiable. Compruébalo con el reporte original antes de darlo por bueno.',
 
   'range.general': 'referencia general, no específica del laboratorio',
   'range.unavailable': 'intervalo de referencia no disponible',
@@ -180,15 +180,6 @@ export const es: Messages = {
   'sparkline.steady':
     '{name} apenas cambió, de {from} a {to}, a lo largo de {count} mediciones.',
 
-  // ── Dashboard ─────────────────────────────────────────────────────────
-  'dashboard.kicker': 'Tu historial de laboratorio',
-  'dashboard.welcome': 'Hola, {name}',
-  'dashboard.uploadReport': 'Subir un informe',
-  'dashboard.emptyTitle': 'Todavía no hay informes',
-  'dashboard.emptyBody':
-    'Sube un informe de laboratorio y se extraerá cada prueba, valor, unidad e intervalo de referencia que contenga, para seguirlos a lo largo del tiempo.',
-  'dashboard.uploadFirst': 'Sube tu primer informe',
-
   // ── Not found / coming soon ───────────────────────────────────────────
   'notFound.title': 'Esa página no existe',
   'notFound.body': 'Puede que el enlace esté anticuado o que la página haya cambiado de sitio.',
@@ -196,7 +187,7 @@ export const es: Messages = {
   'comingSoon.title': 'Todavía sin construir',
   'comingSoon.body': '{description} Esta pantalla la construye {ticket}.',
   'comingSoon.adminOverviewBody':
-    'Métricas de todo el sistema: usuarios, informes, fallos y tiempo medio de procesamiento.',
+    'Métricas de todo el sistema: usuarios, reportes, fallos y tiempo medio de procesamiento.',
   'comingSoon.adminUsersBody':
     'Busca cuentas, revisa su actividad y desactívalas o vuelve a activarlas.',
   'comingSoon.adminJobsBody':
@@ -207,7 +198,7 @@ export const es: Messages = {
   'settings.agreed': 'Aceptado',
   'settings.notAgreed': 'Sin aceptar',
   'settings.aiIntro':
-    'Para leer un informe enviamos su texto a {provider}, un proveedor externo de inteligencia artificial. Antes se eliminan los identificadores que somos capaces de detectar: direcciones de correo, números de teléfono, números de historia clínica y fechas.',
+    'Para leer un reporte enviamos su texto a {provider}, un proveedor externo de inteligencia artificial. Antes se eliminan los identificadores que somos capaces de detectar: direcciones de correo, números de teléfono, números de historia clínica y fechas.',
   'settings.aiFact.notAnonymised':
     'Esto {emphasis}. Los nombres escritos dentro del documento no se pueden eliminar de forma fiable de manera automática.',
   'settings.aiFact.notAnonymisedEmphasis': 'no es una anonimización completa',
@@ -216,20 +207,20 @@ export const es: Messages = {
   'settings.aiFact.noPdf':
     'El PDF original nunca se envía: solo el texto extraído de él, ya redactado.',
   'settings.aiFact.calculated':
-    'Que un resultado sea bajo, normal, alto o crítico se calcula a partir del intervalo impreso en tu informe; no lo decide la IA.',
+    'Que un resultado sea bajo, normal, alto o crítico se calcula a partir del intervalo impreso en tu reporte; no lo decide la IA.',
   'settings.fullDetail': 'Todos los detalles en la {document}.',
   'settings.agreedOn': 'Diste tu consentimiento el {date}.',
   'settings.withdraw': 'Retirar el consentimiento',
   'settings.blocked':
-    'No se puede procesar ningún informe hasta que lo aceptes. Puedes seguir sin subir nada, y los informes ya procesados no se ven afectados.',
+    'No se puede procesar ningún reporte hasta que lo aceptes. Puedes seguir sin subir nada, y los reportes ya procesados no se ven afectados.',
   'settings.agree': 'Lo entiendo y lo acepto',
   'settings.withdrawTitle': '¿Retirar el consentimiento para el procesamiento con IA?',
   'settings.keepIt': 'Mantenerlo',
   'settings.withdrawing': 'Retirando…',
   'settings.withdrawBody1':
-    'Los informes nuevos no se procesarán y no podrás subir ninguno hasta que vuelvas a aceptarlo. Desde el momento en que lo retires no se envía nada al proveedor de IA.',
+    'Los reportes nuevos no se procesarán y no podrás subir ninguno hasta que vuelvas a aceptarlo. Desde el momento en que lo retires no se envía nada al proveedor de IA.',
   'settings.withdrawBody2':
-    'Los informes ya procesados conservan sus resultados. Retirar el consentimiento no elimina nada: para eliminar tus datos, {deleteLink}.',
+    'Los reportes ya procesados conservan sus resultados. Retirar el consentimiento no elimina nada: para eliminar tus datos, {deleteLink}.',
   'settings.deleteAccountLink': 'elimina tu cuenta',
   'settings.otherHeading': 'Notificaciones y exportación de datos',
   'settings.otherBody':
@@ -239,16 +230,16 @@ export const es: Messages = {
 
   // ── Reports list ──────────────────────────────────────────────────────
   'reports.loading': 'Cargando',
-  'reports.countOne': '{count} informe',
-  'reports.countMany': '{count} informes',
+  'reports.countOne': '{count} reporte',
+  'reports.countMany': '{count} reportes',
   'reports.resultsCount': '{count} resultados',
   'reports.filter.all': 'Todos',
-  'reports.filterLabel': 'Filtrar los informes por estado',
-  'reports.emptyTitle': 'Todavía no hay informes',
+  'reports.filterLabel': 'Filtrar los reportes por estado',
+  'reports.emptyTitle': 'Todavía no hay reportes',
   'reports.emptyBody':
     'Sube tu primer PDF de laboratorio y extraeremos los resultados, los cruzaremos con los intervalos de referencia y empezaremos a seguir cada valor a lo largo del tiempo.',
-  'reports.uploadFirst': 'Sube tu primer informe',
-  'reports.col.reportDate': 'Fecha del informe',
+  'reports.uploadFirst': 'Sube tu primer reporte',
+  'reports.col.reportDate': 'Fecha del reporte',
   'reports.col.uploaded': 'Subido',
   'reports.col.file': 'Archivo original',
   'reports.col.status': 'Estado',
@@ -265,25 +256,43 @@ export const es: Messages = {
   'reports.originalPdfLabel': 'Abrir el PDF original de {file}',
   'reports.delete': 'Eliminar',
   'reports.deleteLabel': 'Eliminar {file}',
-  'reports.caption': 'Tus informes de laboratorio',
-  'reports.captionFiltered': 'Tus informes de laboratorio, filtrados por {status}',
+  'reports.caption': 'Tus reportes de laboratorio',
+  'reports.captionFiltered': 'Tus reportes de laboratorio, filtrados por {status}',
   'reports.noMatchTitle': 'Nada coincide con este filtro',
-  'reports.noMatchBody': 'Ahora mismo ningún informe tiene ese estado.',
-  'reports.deleteTitle': '¿Eliminar este informe?',
+  'reports.noMatchBody': 'Ahora mismo ningún reporte tiene ese estado.',
+  'reports.duplicateTag': 'Posible duplicado',
+  'reports.deleteTitle': '¿Eliminar este reporte?',
   'reports.deletePermanently': 'Eliminar definitivamente',
   'reports.deleting': 'Eliminando…',
   'reports.deleteBody':
     'Se eliminarán {file} y todos los resultados extraídos de él. Esto no se puede deshacer, y los valores que aportaba desaparecerán de tus tendencias.',
   'reports.deleteFreed': 'Se liberarán {size} de tu almacenamiento.',
   'reports.loadFailed':
-    'No hemos podido cargar tus informes. Comprueba tu conexión e inténtalo de nuevo.',
+    'No hemos podido cargar tus reportes. Comprueba tu conexión e inténtalo de nuevo.',
   'reports.openFailed': 'No se ha podido abrir ese archivo. Puede que todavía se esté subiendo.',
-  'reports.retryFailedAgain': 'Ese informe tampoco se ha podido procesar esta vez.',
+  'reports.retryFailedAgain': 'Ese reporte tampoco se ha podido procesar esta vez.',
   'reports.retrySucceeded': 'El procesamiento ha terminado. Los resultados están listos.',
-  'reports.deleted': 'Informe eliminado. Se han liberado {size} de tu almacenamiento.',
-  'reports.deleteFailed': 'No se ha podido eliminar ese informe. Inténtalo de nuevo.',
+  'reports.deleted': 'Reporte eliminado. Se han liberado {size} de tu almacenamiento.',
+  'reports.deleteFailed': 'No se ha podido eliminar ese reporte. Inténtalo de nuevo.',
+
+  // ── Selección de varios reportes (KAN-43) ─────────────────────────────
+  'reports.selectLabel': 'Seleccionar {file}',
+  'reports.selectAllLabel': 'Seleccionar todos los reportes visibles',
+  'reports.selectedOne': '{count} reporte seleccionado · {size}',
+  'reports.selectedMany': '{count} reportes seleccionados · {size}',
+  'reports.clearSelection': 'Quitar la selección',
+  'reports.deleteSelected': 'Eliminar los seleccionados',
+  'reports.deleteSelectedTitle': '¿Eliminar {count} reportes?',
+  'reports.deleteSelectedConfirm': 'Eliminar {count} de forma permanente',
+  'reports.deleteSelectedBody':
+    'Se eliminarán estos reportes y los resultados extraídos de ellos. No se puede deshacer. Tus variables conservan los valores que estos reportes aportaron; para borrarlos, hazlo por separado desde la página de variables.',
+  'reports.deletedOne': '{count} reporte eliminado. Se han liberado {size} de tu almacenamiento.',
+  'reports.deletedMany':
+    '{count} reportes eliminados. Se han liberado {size} de tu almacenamiento.',
+  'reports.deleteSomeFailed':
+    'No se han podido eliminar {count} y siguen seleccionados. Inténtalo de nuevo.',
   'reports.retryFailed':
-    'No hemos podido reiniciar el procesamiento de este informe. Inténtalo de nuevo dentro de unos minutos.',
+    'No hemos podido reiniciar el procesamiento de este reporte. Inténtalo de nuevo dentro de unos minutos.',
   'reports.failedRetryable': 'El procesamiento ha fallado. Puedes volver a intentarlo.',
   'reports.failedReupload': 'El procesamiento ha fallado. Prueba a subir el archivo de nuevo.',
   'reports.extracting': 'Extrayendo los resultados…',
@@ -293,23 +302,23 @@ export const es: Messages = {
   // ── File and quota refusals ───────────────────────────────────────────
   'fileError.empty': '{file} está vacío. No se ha subido nada.',
   'fileError.notPdf':
-    '{file} no es un PDF. Los informes de laboratorio deben subirse como archivo PDF. No se ha subido nada.',
+    '{file} no es un PDF. Los reportes de laboratorio deben subirse como archivo PDF. No se ha subido nada.',
   'fileError.tooLarge': '{file} ocupa {size} y supera el límite de {limit}. No se ha subido nada.',
   'quotaError.uploadsDisabled':
-    'Las subidas están pausadas mientras trabajamos en la capacidad. Tus informes actuales no se ven afectados. Inténtalo de nuevo más tarde.',
+    'Las subidas están pausadas mientras trabajamos en la capacidad. Tus reportes actuales no se ven afectados. Inténtalo de nuevo más tarde.',
   'quotaError.fileTooLarge':
-    'Ese archivo ocupa {size} y supera el límite de {limit} por informe. No se ha subido nada.',
+    'Ese archivo ocupa {size} y supera el límite de {limit} por reporte. No se ha subido nada.',
   'quotaError.storageFull':
-    'Este informe necesita {needed} y solo te quedan {free} de tus {allowance}. Elimina algún informe que ya no necesites y vuelve a intentarlo. No se ha subido nada.',
+    'Este reporte necesita {needed} y solo te quedan {free} de tus {allowance}. Elimina algún reporte que ya no necesites y vuelve a intentarlo. No se ha subido nada.',
   'quotaError.uploadsExhausted':
     'Has agotado las {limit} subidas de este mes. Tu asignación se renueva el día 1. No se ha subido nada.',
   'quotaError.systemFull':
-    'El servicio está al límite de capacidad y ahora mismo no puede aceptar informes nuevos. No se ha subido nada: inténtalo más tarde o escribe al soporte.',
+    'El servicio está al límite de capacidad y ahora mismo no puede aceptar reportes nuevos. No se ha subido nada: inténtalo más tarde o escribe al soporte.',
 
   'storageError.unauthorized':
     'El servidor ha rechazado esta subida. Suele deberse a un problema de configuración por nuestra parte y no a un problema con tu archivo. Escribe al soporte indicando la referencia de abajo. No se ha guardado nada.',
   'storageError.quotaExceeded':
-    'No hay espacio de almacenamiento disponible para este informe. Elimina algún informe que ya no necesites y vuelve a intentarlo. No se ha guardado nada.',
+    'No hay espacio de almacenamiento disponible para este reporte. Elimina algún reporte que ya no necesites y vuelve a intentarlo. No se ha guardado nada.',
   'storageError.unauthenticated':
     'Tu sesión ha caducado. Vuelve a iniciar sesión y reintenta la subida.',
   'storageError.retryLimit':
@@ -326,23 +335,23 @@ export const es: Messages = {
   // ── Upload page ───────────────────────────────────────────────────────
   'upload.kicker': 'Primer paso',
   'upload.lede':
-    'Solo PDF, hasta {perFile} por informe, dentro de tu asignación de {allowance}. Tu archivo se guarda de forma privada y se procesa en nuestros servidores; nunca se envía directamente desde tu navegador a un tercero.',
+    'Solo PDF, hasta {perFile} por reporte, dentro de tu asignación de {allowance}. Tu archivo se guarda de forma privada y se procesa en nuestros servidores; nunca se envía directamente desde tu navegador a un tercero.',
   'upload.allowanceLabel': 'Tu asignación de almacenamiento',
   'upload.storageUsed': 'Almacenamiento utilizado',
   'upload.uploadsThisMonth': 'Subidas de este mes',
   'upload.uploadsDetail': '{used} de {limit} utilizadas · se renueva el día 1',
   'upload.pausedTitle': 'Las subidas están pausadas',
   'upload.pausedBody':
-    'El servicio está al límite de capacidad, así que ahora mismo no se pueden aceptar informes nuevos. Tus informes y resultados actuales no se ven afectados.',
+    'El servicio está al límite de capacidad, así que ahora mismo no se pueden aceptar reportes nuevos. Tus reportes y resultados actuales no se ven afectados.',
   'upload.storageFullTitle': 'Tu almacenamiento está lleno',
   'upload.storageFullBody':
-    'Elimina algún informe que ya no necesites para liberar espacio. Estás utilizando {used} de {limit}.',
+    'Elimina algún reporte que ya no necesites para liberar espacio. Estás utilizando {used} de {limit}.',
   'upload.storageLowTitle': 'Te queda poco espacio',
   'upload.storageLowBody':
-    'Te quedan {remaining} de {limit}. Eliminar informes que ya no necesites liberará espacio.',
+    'Te quedan {remaining} de {limit}. Eliminar reportes que ya no necesites liberará espacio.',
   'upload.consentTitle': 'Antes de tu primera subida',
   'upload.consentBody1':
-    'Para leer tu informe enviamos su contenido a {provider}, un proveedor externo de inteligencia artificial. Antes se eliminan los identificadores que somos capaces de detectar (direcciones de correo, números de teléfono, números de historia clínica y fechas), pero esto no es una anonimización completa: {emphasis}.',
+    'Para leer tu reporte enviamos su contenido a {provider}, un proveedor externo de inteligencia artificial. Antes se eliminan los identificadores que somos capaces de detectar (direcciones de correo, números de teléfono, números de historia clínica y fechas), pero esto no es una anonimización completa: {emphasis}.',
   'upload.consentEmphasis':
     'los nombres escritos dentro del documento no se pueden eliminar de forma fiable',
   'upload.consentBody2':
@@ -350,53 +359,74 @@ export const es: Messages = {
   'upload.consentLink': 'Qué se envía, en detalle',
   'upload.verifyTitle': 'Verifica tu correo antes de subir nada',
   'upload.verifyBody':
-    'Para subir un informe hace falta una dirección verificada. Te enviamos un enlace cuando creaste tu cuenta.',
+    'Para subir un reporte hace falta una dirección verificada. Te enviamos un enlace cuando creaste tu cuenta.',
   'upload.verifyAction': 'Verificar mi correo',
-  'upload.rejectedTitle': 'Ese archivo no se ha aceptado',
-  'upload.failedTitle': 'La subida ha fallado',
   'upload.disabled.verify': 'Verifica antes tu dirección de correo.',
   'upload.disabled.consent': 'Acepta el procesamiento con IA antes de subir nada.',
   'upload.disabled.capacity':
     'El servicio está al límite de capacidad. Inténtalo de nuevo más tarde.',
   'upload.disabled.storageFull':
-    'Tu almacenamiento está lleno. Elimina algún informe para liberar espacio.',
+    'Tu almacenamiento está lleno. Elimina algún reporte para liberar espacio.',
   'upload.disabled.monthly': 'Has agotado todas tus subidas de este mes.',
   'upload.cancelLabel': 'Cancelar la subida de {file}',
+  'upload.removeLabel': 'Quitar {file} de la lista',
   'upload.progressLabel': 'Subiendo {file}',
-  'upload.storedTitle': 'Informe guardado',
+  'upload.storedTitle': 'Reporte guardado',
+  'upload.storedTitleMany': '{count} reportes guardados',
   'upload.storedBody':
-    '{file} se ha subido correctamente. Puedes salir de esta página: el procesamiento continúa y tu informe aparecerá en Informes cuando termine.',
-  'upload.another': 'Subir otro',
-  'upload.goToReports': 'Ir a los informes',
-  'upload.uploaded': 'Informe subido. El procesamiento empieza automáticamente.',
+    '{file} se ha subido correctamente. Puedes salir de esta página: el procesamiento continúa y tu reporte aparecerá en Reportes cuando termine.',
+  'upload.storedBodyMany':
+    'Los {count} reportes se han subido correctamente. Puedes salir de esta página: el procesamiento continúa y cada uno aparecerá en Reportes cuando termine.',
+  'upload.goToReports': 'Ir a los reportes',
+  'upload.uploaded': 'Reporte subido. El procesamiento empieza automáticamente.',
   'upload.cancelled': 'Subida cancelada.',
+  'upload.queueHeading': 'Tus archivos',
+  'upload.queueLabel': 'Archivos elegidos para subir',
+  'upload.queueCount': '{done} de {total} subidos',
+  'upload.clearFinished': 'Limpiar los terminados',
+  'upload.state.checking': 'Comprobando si este reporte ya está en tu cuenta…',
+  'upload.state.confirming': 'A la espera de tu respuesta.',
+  'upload.state.waiting': 'Esperando su turno: los archivos se suben de uno en uno.',
+  'upload.state.uploading': 'Subiendo.',
+  'upload.state.stored': 'Subido. El procesamiento empieza automáticamente.',
+  'upload.state.skipped':
+    'No se ha subido: has preferido conservar la copia que ya tenías ({file}).',
+  'upload.state.cancelled': 'Cancelado. No se ha guardado nada.',
+  'upload.duplicateTitle': 'Puede que este reporte ya exista',
+  'upload.duplicateBody': '{file} se parece a un reporte que ya está en tu cuenta.',
+  'upload.duplicateIdentical': 'Es el mismo archivo, byte a byte, que el reporte de abajo.',
+  'upload.duplicateSimilar':
+    'Tiene el mismo nombre y el mismo tamaño que el reporte de abajo, lo que suele significar que es el mismo archivo descargado dos veces.',
+  'upload.duplicateQuestion': '¿Quieres continuar y subirlo de todos modos?',
+  'upload.duplicateContinue': 'Subirlo igualmente',
+  'upload.duplicateSkip': 'No subirlo',
   'upload.statusHeading': 'Estado del procesamiento',
-  'upload.statusLabel': 'Progreso del procesamiento del informe',
+  'upload.statusLabel': 'Progreso del procesamiento del reporte',
   'upload.statusFoot':
-    'Puedes salir de esta página: el procesamiento continúa y tu informe aparecerá en Informes cuando termine.',
+    'Puedes salir de esta página: el procesamiento continúa y tu reporte aparecerá en Reportes cuando termine.',
   'upload.step.stored': '{size} guardados',
-  'upload.step.transferred': '{percent} % transferido',
+  'upload.step.transferring': 'Quedan {count}',
   'upload.step.chooseFile': 'Elige un PDF para empezar',
   'upload.step.waitingSlot': 'A la espera de un turno de procesamiento',
   'upload.step.extracting': 'Extrayendo los resultados',
   'upload.step.ready': 'Resultados y explicaciones listos',
 
   // ── Report details ────────────────────────────────────────────────────
-  'detail.loadFailed': 'No hemos podido cargar este informe. Puede que se haya eliminado.',
-  'detail.resultsLoadFailed': 'No hemos podido cargar los resultados de este informe.',
+  'detail.loadFailed': 'No hemos podido cargar este reporte. Puede que se haya eliminado.',
+  'detail.resultsLoadFailed': 'No hemos podido cargar los resultados de este reporte.',
   'detail.openFailed': 'No se ha podido abrir ese archivo.',
-  'detail.missingTitle': 'Ese informe no existe',
+  'detail.missingTitle': 'Ese reporte no existe',
   'detail.missingBody': 'Puede que se haya eliminado o que el enlace sea incorrecto.',
-  'detail.backToReports': 'Volver a los informes',
+  'detail.backToReports': 'Volver a los reportes',
   'detail.reprocessing': 'Reprocesando…',
   'detail.tryAgain': 'Intentar procesarlo de nuevo',
-  'detail.reportOf': 'Informe del {date}',
+  'detail.reportOf': 'Reporte del {date}',
   'detail.downloadOriginal': 'Descargar el original',
   'detail.criticalOne': '{count} resultado fuera del intervalo crítico',
   'detail.criticalMany': '{count} resultados fuera del intervalo crítico',
   'detail.partialTitle': 'Algunos valores no se han podido leer',
-  'detail.failedTitle': 'Este informe no se ha podido procesar',
-  'detail.failedFallback': 'Algo ha fallado al procesar este informe.',
+  'detail.failedTitle': 'Este reporte no se ha podido procesar',
+  'detail.failedFallback': 'Algo ha fallado al procesar este reporte.',
   'detail.processingTitle': 'Todavía procesando',
   'detail.processingBody':
     'Los resultados aparecerán aquí en cuanto termine la extracción. Puedes salir de esta página.',
@@ -407,7 +437,7 @@ export const es: Messages = {
   'detail.summaryLowConfidence': '{count} con confianza baja',
   'detail.noResultsTitle': 'Todavía no hay resultados',
   'detail.stillExtracting': 'La extracción sigue en curso.',
-  'detail.nothingExtracted': 'No se ha extraído nada de este informe.',
+  'detail.nothingExtracted': 'No se ha extraído nada de este reporte.',
   'detail.tableCaption': 'Resultados extraídos de {file}',
   'detail.col.test': 'Prueba',
   'detail.col.value': 'Valor',
@@ -417,10 +447,14 @@ export const es: Messages = {
   'detail.notStated': 'No indicado',
   'detail.aiGenerated': 'Generado por IA · no es asesoramiento médico',
   'detail.promptVersion': '{model} · prompt {version}',
-  'detail.metaLabel': 'Metadatos del informe',
+  'detail.duplicateTitle': 'Esto se parece a un reporte que ya tienes',
+  'detail.duplicateBody':
+    'Otro reporte de tu cuenta tiene la misma fecha, el mismo laboratorio o los mismos resultados. Se han conservado los dos: no se ha eliminado ni fusionado nada. Compáralos y elimina el que no quieras.',
+  'detail.duplicateCompare': 'Abrir el otro reporte',
+  'detail.metaLabel': 'Metadatos del reporte',
   'detail.meta.laboratory': 'Laboratorio',
-  'detail.meta.notStated': 'No consta en este informe',
-  'detail.meta.reportDate': 'Fecha del informe',
+  'detail.meta.notStated': 'No consta en este reporte',
+  'detail.meta.reportDate': 'Fecha del reporte',
   'detail.meta.uploaded': 'Subido',
   'detail.meta.processed': 'Procesado',
   'detail.meta.file': 'Archivo',
@@ -438,7 +472,7 @@ export const es: Messages = {
   'variables.loadingLabel': 'Cargando las variables',
   'variables.emptyTitle': 'Todavía no hay variables en seguimiento',
   'variables.emptyBody':
-    'Cuando se haya procesado un informe, cada prueba que contenga aparecerá aquí con su último valor y con cómo se ha movido a lo largo del tiempo.',
+    'Cuando se haya procesado un reporte, cada prueba que contenga aparecerá aquí con su último valor y con cómo se ha movido a lo largo del tiempo.',
   'variables.filterCategory': 'Filtrar por categoría',
   'variables.allCategories': 'Todas las categorías',
   'variables.outOfRangeOnly': 'Solo fuera de intervalo ({count})',
@@ -448,16 +482,15 @@ export const es: Messages = {
   'variables.groupCountMany': '{count} variables',
   'variables.showing': 'Mostrando {visible} de {total} variables.',
   'variables.cardLabel': '{name}, {value}',
-  'variables.clearHeading': 'Borrar los datos de tus variables',
   'variables.clearIntro':
-    'Los valores de esta página se guardan como un historial por prueba, construido a partir de todos los informes procesados. Al eliminar un informe se borra el archivo, no lo que aportó a ese historial: esto borra el historial en sí.',
+    'Los valores de esta página se guardan como un historial por prueba, construido a partir de todos los reportes procesados. Al eliminar un reporte se borra el archivo, no lo que aportó a ese historial: esto borra el historial en sí.',
   'variables.clearButton': 'Borrar los datos de las variables',
   'variables.clearTitle': '¿Borrar todos los datos de las variables?',
   'variables.clearBody':
     'Se eliminarán las {count} variables en seguimiento y todas las mediciones que hay detrás. {emphasis}',
   'variables.clearBodyEmphasis': 'No se puede deshacer.',
   'variables.clearKeeps':
-    'Tus informes y los resultados de cada uno de ellos no se tocan. Esta página se volverá a llenar a medida que se procesen nuevos informes.',
+    'Tus reportes y los resultados de cada uno de ellos no se tocan. Esta página se volverá a llenar a medida que se procesen nuevos reportes.',
   'variables.clearCancel': 'Conservarlos',
   'variables.clearConfirm': 'Borrarlo todo',
   'variables.clearing': 'Borrando…',
@@ -473,7 +506,7 @@ export const es: Messages = {
   'trends.period.all': 'Todo el historial',
   'trends.emptyTitle': 'Todavía no hay nada que representar',
   'trends.emptyBody':
-    'Cuando se haya procesado un informe, cada prueba que contenga podrá representarse aquí. Para indicar una dirección hacen falta al menos {min} mediciones de la misma prueba.',
+    'Cuando se haya procesado un reporte, cada prueba que contenga podrá representarse aquí. Para indicar una dirección hacen falta al menos {min} mediciones de la misma prueba.',
   'trends.variables': 'Variables',
   'trends.selectedCount': '{selected} de {total} seleccionadas',
   'trends.clear': 'Quitar la selección',
@@ -482,7 +515,7 @@ export const es: Messages = {
   'trends.chooseBody':
     'Selecciona arriba una o varias pruebas para representarlas a lo largo del tiempo.',
   'trends.note':
-    'Cada gráfico conserva su propia escala y su propio intervalo de referencia, de modo que los valores siguen siendo los impresos en tus informes. Comparten el eje temporal, así que puedes leerlos unos frente a otros.',
+    'Cada gráfico conserva su propia escala y su propio intervalo de referencia, de modo que los valores siguen siendo los impresos en tus reportes. Comparten el eje temporal, así que puedes leerlos unos frente a otros.',
   'trends.tooFewOne':
     '{count} medición por ahora. Para indicar una dirección hacen falta al menos {min}, así que no se muestra ninguna; las mediciones sí se representan.',
   'trends.tooFewMany':
@@ -494,7 +527,7 @@ export const es: Messages = {
     '{name}: {count} medición, del {firstDate} al {lastDate}, de {firstValue} a {lastValue}. Intervalo de referencia {range}.',
   'chart.summaryMany':
     '{name}: {count} mediciones, del {firstDate} al {lastDate}, de {firstValue} a {lastValue}. Intervalo de referencia {range}.',
-  'chart.rangeNotStated': 'no indicado en el informe',
+  'chart.rangeNotStated': 'no indicado en el reporte',
   'chart.showTableOne': 'Ver la {count} medición en forma de tabla',
   'chart.showTableMany': 'Ver las {count} mediciones en forma de tabla',
   'chart.tableCaption': 'Mediciones de {name}',
@@ -504,10 +537,10 @@ export const es: Messages = {
   'variable.loadFailed':
     'No hemos podido cargar esta variable. Comprueba tu conexión e inténtalo de nuevo.',
   'variable.historyFailed':
-    'No hemos podido leer las mediciones de esta variable. Lo que se muestra arriba sigue procediendo de tus informes; el historial de abajo está incompleto.',
+    'No hemos podido leer las mediciones de esta variable. Lo que se muestra arriba sigue procediendo de tus reportes; el historial de abajo está incompleto.',
   'variable.missingTitle': 'No hay seguimiento de esta prueba',
   'variable.missingBody':
-    'Puede que el enlace esté anticuado o que esta variable se haya borrado. Sube un informe que incluya esta prueba y aparecerá aquí.',
+    'Puede que el enlace esté anticuado o que esta variable se haya borrado. Sube un reporte que incluya esta prueba y aparecerá aquí.',
   'variable.backToVariables': 'Volver a las variables',
   'variable.currentHeading': 'Último resultado',
   'variable.lastMeasured': 'Medido el {date}',
@@ -531,35 +564,35 @@ export const es: Messages = {
   'variable.noNumeric':
     'Ninguno de estos resultados es un número, así que no hay nada que representar. Se listan abajo tal como los escribió el laboratorio.',
   'variable.historyTruncated':
-    'Compuesto a partir de tus {count} informes procesados más recientes. Lo anterior a ellos no se incluye aquí.',
+    'Compuesto a partir de tus {count} reportes procesados más recientes. Lo anterior a ellos no se incluye aquí.',
   'variable.qualitativeHeading': 'Valores informados',
   'variable.qualitativeBody':
-    'Estos resultados no eran números. Se muestran tal como los escribió el laboratorio, porque convertir «Negativo» en una cifra afirmaría algo que el informe nunca dijo.',
+    'Estos resultados no eran números. Se muestran tal como los escribió el laboratorio, porque convertir «Negativo» en una cifra afirmaría algo que el reporte nunca dijo.',
   'variable.explanationHeading': 'Qué mide esta prueba',
   'variable.explanationMissing': 'Todavía no se ha escrito una explicación de esta prueba.',
   'variable.explanationUnreviewed':
-    'Redactada automáticamente a partir del nombre impreso en un informe, sin revisión de una persona.',
+    'Redactada automáticamente a partir del nombre impreso en un reporte, sin revisión de una persona.',
   'variable.aliases': 'También impreso como {names}',
   'variable.analysisHeading': 'Análisis de tu último resultado',
   'variable.analysisOf': 'Redactado para el resultado del {date}',
   'variable.analysisMissing':
     'No se ha generado ningún análisis de esta prueba. Solo se redacta para resultados fuera de su intervalo de referencia, y únicamente si has aceptado el procesamiento con IA.',
   'variable.tableHeading': 'Todas las mediciones',
-  'variable.tableEmpty': 'No se han encontrado mediciones de esta prueba en tus informes.',
-  'variable.tableCaption': 'Todas las mediciones de {name} en tus informes',
+  'variable.tableEmpty': 'No se han encontrado mediciones de esta prueba en tus reportes.',
+  'variable.tableCaption': 'Todas las mediciones de {name} en tus reportes',
   'variable.col.date': 'Fecha',
-  'variable.col.report': 'Informe',
-  'variable.openReport': 'Abrir el informe',
+  'variable.col.report': 'Reporte',
+  'variable.openReport': 'Abrir el reporte',
 
   // ── Gráfico interactivo de la variable ────────────────────────────────
   'variableChart.pointLabel':
-    '{name} el {date}: {value}, {status}. Actívalo para ver el informe del que procede.',
+    '{name} el {date}: {value}, {status}. Actívalo para ver el reporte del que procede.',
   'variableChart.zoomHint':
     'Arrastra sobre el gráfico para acotar el periodo. Los botones de periodo de arriba hacen lo mismo sin ratón.',
   'variableChart.resetZoom': 'Restablecer el zoom',
-  'variableChart.openReport': 'Abrir el informe',
-  'variableChart.rangeOnReport': 'Intervalo en este informe {range}',
-  'variableChart.noRangeOnReport': 'Este informe no indicaba ningún intervalo de referencia',
+  'variableChart.openReport': 'Abrir el reporte',
+  'variableChart.rangeOnReport': 'Intervalo en este reporte {range}',
+  'variableChart.noRangeOnReport': 'Este reporte no indicaba ningún intervalo de referencia',
 
   // ── Auth errors (@/auth/authErrors) ───────────────────────────────────
   'authError.invalidCredential':
@@ -646,7 +679,7 @@ export const es: Messages = {
   'profile.contextIntro':
     'Los intervalos de referencia varían según la edad y el sexo, y saber qué tomas o con qué convives hace que una explicación sea más pertinente. Todos los campos son opcionales, y dejarlos en blanco no cambia nada en cómo se clasifican tus resultados.',
   'profile.contextLimit':
-    'Rellenar esto no convierte el análisis en una valoración médica. Nada de lo que pongas aquí se usa para decidir si un resultado es normal: eso siempre se calcula a partir del intervalo de referencia impreso en tu propio informe.',
+    'Rellenar esto no convierte el análisis en una valoración médica. Nada de lo que pongas aquí se usa para decidir si un resultado es normal: eso siempre se calcula a partir del intervalo de referencia impreso en tu propio reporte.',
   'profile.contextUnusedEmphasis': 'Todavía no se usa para el análisis.',
   'profile.contextUnused':
     '{emphasis} Esto se guarda en tu cuenta, pero el análisis con IA no lo lee. Enviarlo ampliaría lo que sale de esta aplicación más allá de lo que describe hoy el consentimiento de procesamiento con IA, así que antes hay que actualizar ese texto.',
@@ -654,7 +687,7 @@ export const es: Messages = {
   'profile.removeFailed':
     'No hemos podido eliminar esto. Comprueba tu conexión e inténtalo de nuevo.',
   'profile.dateOfBirth': 'Fecha de nacimiento',
-  'profile.dateOfBirthHint': 'Se usa para calcular tu edad en el momento de cada informe.',
+  'profile.dateOfBirthHint': 'Se usa para calcular tu edad en el momento de cada reporte.',
   'profile.biologicalSex': 'Sexo biológico',
   'profile.biologicalSexHint':
     'Se pregunta porque muchos intervalos de referencia varían según el sexo.',
@@ -676,7 +709,7 @@ export const es: Messages = {
   'profile.removing': 'Eliminando…',
   'profile.removeIt': 'Eliminarlo',
   'profile.removeBody':
-    'Se eliminarán de tu cuenta tu fecha de nacimiento, tu sexo, tu estado de embarazo, tu medicación, tus condiciones y tus síntomas. Tus informes y tus resultados no se ven afectados.',
+    'Se eliminarán de tu cuenta tu fecha de nacimiento, tu sexo, tu estado de embarazo, tu medicación, tus condiciones y tus síntomas. Tus reportes y tus resultados no se ven afectados.',
 
   // ── Account deletion ──────────────────────────────────────────────────
   'profile.dataHeading': 'Tus datos',
@@ -684,12 +717,12 @@ export const es: Messages = {
     'La privacidad y el consentimiento de procesamiento con IA están en {link}.',
   'profile.exportEmphasis': 'La exportación de datos todavía no está construida',
   'profile.exportBody':
-    '{emphasis} (KAN-23). Escríbenos si necesitas una copia de tus informes antes de eliminar tu cuenta: la eliminación no se puede deshacer.',
+    '{emphasis} (KAN-23). Escríbenos si necesitas una copia de tus reportes antes de eliminar tu cuenta: la eliminación no se puede deshacer.',
   'profile.deleted.profile':
     'Tu perfil: nombre, correo y todo lo que hayas rellenado en «Sobre ti».',
-  'profile.deleted.reports': 'Todos los informes que hayas subido, incluidos los PDF originales.',
+  'profile.deleted.reports': 'Todos los reportes que hayas subido, incluidos los PDF originales.',
   'profile.deleted.results':
-    'Todos los valores extraídos de esos informes y las explicaciones de la IA sobre ellos.',
+    'Todos los valores extraídos de esos reportes y las explicaciones de la IA sobre ellos.',
   'profile.deleted.variables': 'Tus variables en seguimiento y su historial.',
   'profile.deleted.account': 'Tu registro de consentimiento y tu propio acceso.',
   'profile.deleteHeading': 'Eliminar tu cuenta',
@@ -702,7 +735,7 @@ export const es: Messages = {
   'profile.deleteEverything': 'Eliminarlo todo',
   'profile.deleteWarningEmphasis': 'Esto no se puede deshacer.',
   'profile.deleteWarning':
-    '{emphasis} Tus informes, tus resultados, su historial y tu acceso se borran de nuestra base de datos y de nuestro almacenamiento de archivos. No hay ninguna copia de seguridad desde la que podamos restaurarte.',
+    '{emphasis} Tus reportes, tus resultados, su historial y tu acceso se borran de nuestra base de datos y de nuestro almacenamiento de archivos. No hay ninguna copia de seguridad desde la que podamos restaurarte.',
   'profile.yourPassword': 'Tu contraseña',
   'profile.yourPasswordHint':
     'Se pide para que quien encuentre esta página abierta no pueda eliminar tus registros.',
@@ -741,7 +774,7 @@ export const es: Messages = {
   // ── Register ──────────────────────────────────────────────────────────
   'register.asideHeading': 'Una sola cuenta. Todas las analíticas que te has hecho.',
   'register.asideLede':
-    'Tus informes y los valores extraídos de ellos solo los ves tú. Los archivos se guardan de forma privada y se procesan en nuestros servidores; el PDF original nunca recibe un enlace público.',
+    'Tus reportes y los valores extraídos de ellos solo los ves tú. Los archivos se guardan de forma privada y se procesan en nuestros servidores; el PDF original nunca recibe un enlace público.',
   'register.heading': 'Crea tu cuenta',
   'register.haveOne': '¿Ya tienes una? {link}',
   'register.signUpWithGoogle': 'Registrarse con Google',
@@ -757,7 +790,7 @@ export const es: Messages = {
     'He leído los {terms}, la {privacy} y el {disclaimer}, y entiendo que este servicio no proporciona asesoramiento médico.',
   'register.termsLink': 'Términos',
   'register.acceptAi':
-    'Consiento que el contenido de mis informes sea procesado por un proveedor externo de inteligencia artificial para extraer y explicar los resultados. {link}',
+    'Consiento que el contenido de mis reportes sea procesado por un proveedor externo de inteligencia artificial para extraer y explicar los resultados. {link}',
   'register.whatIsSent': 'Qué se envía',
   'register.creating': 'Creando tu cuenta…',
   'register.createAccount': 'Crear la cuenta',
@@ -784,9 +817,9 @@ export const es: Messages = {
   // ── Verify email ──────────────────────────────────────────────────────
   'verify.asideHeading': 'Un último paso antes de tu primera subida.',
   'verify.kicker': 'Verificación del correo',
-  'verify.heading': 'Verifica tu correo para poder subir informes',
+  'verify.heading': 'Verifica tu correo para poder subir reportes',
   'verify.body':
-    'Hemos enviado un enlace a {email}. Puedes echar un vistazo mientras tanto, pero para subir un informe hace falta una dirección verificada.',
+    'Hemos enviado un enlace a {email}. Puedes echar un vistazo mientras tanto, pero para subir un reporte hace falta una dirección verificada.',
   'verify.sent': 'Correo de verificación enviado. Puede tardar un minuto en llegar.',
   'verify.stillUnverified':
     'Esa dirección sigue sin verificar. Abre el enlace del correo y vuelve a intentarlo.',
@@ -801,24 +834,24 @@ export const es: Messages = {
   'landing.badge': 'Herramienta educativa · no es asesoramiento médico',
   'landing.heading': 'Deja de leer tus resultados de laboratorio en PDF.',
   'landing.lede':
-    'Sube los informes que ya tienes. Extraemos cada prueba, valor, unidad e intervalo de referencia, los emparejamos entre laboratorios y los representamos a lo largo del tiempo, con explicaciones en lenguaje llano siempre identificadas como generadas por IA.',
-  'landing.uploadFirst': 'Sube tu primer informe',
+    'Sube los reportes que ya tienes. Extraemos cada prueba, valor, unidad e intervalo de referencia, los emparejamos entre laboratorios y los representamos a lo largo del tiempo, con explicaciones en lenguaje llano siempre identificadas como generadas por IA.',
+  'landing.uploadFirst': 'Sube tu primer reporte',
   'landing.assurance.private': 'Privado por defecto',
   'landing.assurance.redacted': 'Identificadores eliminados antes de la IA',
   'landing.assurance.export': 'Exporta o elimina cuando quieras',
-  'landing.exampleReports': '7 informes · 2024-2026',
+  'landing.exampleReports': '7 reportes · 2024-2026',
   'landing.chartAlt':
-    'Gráfico de tendencia de ejemplo: la hemoglobina a lo largo de siete informes sobre un intervalo de referencia sombreado; baja por debajo del intervalo una vez, en noviembre de 2025, y vuelve a 14,2 g/dL en julio de 2026.',
+    'Gráfico de tendencia de ejemplo: la hemoglobina a lo largo de siete reportes sobre un intervalo de referencia sombreado; baja por debajo del intervalo una vez, en noviembre de 2025, y vuelve a 14,2 g/dL en julio de 2026.',
   'landing.belowRange': '11,8 · por debajo del intervalo',
   'landing.illustrative':
-    'Ejemplo ilustrativo. Los intervalos de referencia mostrados son los impresos en cada informe.',
+    'Ejemplo ilustrativo. Los intervalos de referencia mostrados son los impresos en cada reporte.',
   'landing.howItWorks': 'Cómo funciona',
   'landing.step1Title': 'Sube el PDF',
   'landing.step1Body':
-    'Arrastra un informe de cualquier laboratorio. El archivo original se guarda de forma privada y nunca recibe un enlace público.',
+    'Arrastra un reporte de cualquier laboratorio. El archivo original se guarda de forma privada y nunca recibe un enlace público.',
   'landing.step2Title': 'Extraemos todos los valores',
   'landing.step2Body':
-    'Nombre de la prueba, valor, unidad y el intervalo de referencia impreso en ese informe, incluidas las páginas escaneadas, mediante OCR.',
+    'Nombre de la prueba, valor, unidad y el intervalo de referencia impreso en ese reporte, incluidas las páginas escaneadas, mediante OCR.',
   'landing.step3Title': 'Los valores se emparejan y se clasifican',
   'landing.step3Body':
     'Hgb, Hb y Hemoglobina pasan a ser una sola variable. Bajo, normal, alto y crítico se deciden aritméticamente, no con IA.',

@@ -12,11 +12,19 @@ const subscribeToReports = vi.hoisted(() => vi.fn());
 const deleteReport = vi.hoisted(() => vi.fn());
 const getReportDownloadUrl = vi.hoisted(() => vi.fn());
 const retryReport = vi.hoisted(() => vi.fn());
+const deleteReports = vi.hoisted(() => vi.fn());
 
 vi.mock('@/services/reportsList', async (importOriginal) => {
   // Keep the real formatters and predicates — those are behaviour under test.
   const actual = await importOriginal<typeof ReportsListModule>();
-  return { ...actual, subscribeToReports, deleteReport, getReportDownloadUrl, retryReport };
+  return {
+    ...actual,
+    subscribeToReports,
+    deleteReport,
+    deleteReports,
+    getReportDownloadUrl,
+    retryReport,
+  };
 });
 
 function stamp(iso: string) {
@@ -65,6 +73,7 @@ describe('Reports', () => {
     deleteReport.mockReset();
     getReportDownloadUrl.mockReset();
     retryReport.mockReset();
+    deleteReports.mockReset();
   });
 
   it('subscribes for the signed-in user only', () => {
@@ -254,6 +263,20 @@ describe('Reports', () => {
     expect(await screen.findByText(/already been retried 3 times/i)).toBeInTheDocument();
   });
 
+  it('marks a possible duplicate in words, not by colour alone (KAN-28)', async () => {
+    renderPage();
+    emit([
+      makeReport({ duplicateOf: 'r9' }),
+      makeReport({ id: 'r2', originalFileName: 'thyroid.pdf' }),
+    ]);
+
+    // One tag, on the flagged row only — and that row is still listed like any
+    // other. Nothing is hidden or removed on a suspicion (spec §40.2).
+    expect(await screen.findByText(/possible duplicate/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/possible duplicate/i)).toHaveLength(1);
+    expect(screen.getByText('thyroid.pdf')).toBeInTheDocument();
+  });
+
   it('confirms before deleting, and says what will be lost', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -304,6 +327,141 @@ describe('Reports', () => {
     await user.click(screen.getByRole('button', { name: /delete permanently/i }));
 
     expect(await screen.findByText(/could not be deleted/i)).toBeInTheDocument();
+  });
+
+  // ── Selecting several reports (KAN-43) ──────────────────────────────
+
+  /** Ticks the checkbox belonging to a named report. */
+  async function select(user: ReturnType<typeof userEvent.setup>, file: string) {
+    await user.click(await screen.findByRole('checkbox', { name: `Select ${file}` }));
+  }
+
+  const second = makeReport({
+    id: 'r2',
+    originalFileName: 'scan0043.pdf',
+    storagePath: 'users/test-uid/reports/r2/scan0043.pdf',
+    fileSize: 500_000,
+    reportDate: stamp('2026-03-02T00:00:00Z'),
+  });
+
+  it('offers no bulk action until something is selected', async () => {
+    renderPage();
+    emit([makeReport(), second]);
+
+    await screen.findByText('quest-panel-2026-07-12.pdf');
+    expect(screen.queryByRole('button', { name: /delete selected/i })).not.toBeInTheDocument();
+  });
+
+  it('counts what is selected, and the space it would free', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit([makeReport(), second]);
+
+    await select(user, 'quest-panel-2026-07-12.pdf');
+    expect(await screen.findByText(/1 report selected/)).toBeInTheDocument();
+
+    await select(user, 'scan0043.pdf');
+    // 1,887,437 + 500,000 bytes, summed rather than counted.
+    expect(await screen.findByText(/2 reports selected · 2\.3 MB/)).toBeInTheDocument();
+  });
+
+  it('selects and clears every row from the header checkbox', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit([makeReport(), second]);
+
+    const all = await screen.findByRole('checkbox', { name: /select every report shown/i });
+    await user.click(all);
+    expect(await screen.findByText(/2 reports selected/)).toBeInTheDocument();
+
+    await user.click(all);
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /delete selected/i })).not.toBeInTheDocument(),
+    );
+  });
+
+  it('names every report in the confirmation rather than only counting them', async () => {
+    // A count alone asks the reader to trust that their ticks landed where they
+    // think they did. Deleting health records is not the place for that.
+    const user = userEvent.setup();
+    renderPage();
+    emit([makeReport(), second]);
+
+    await user.click(await screen.findByRole('checkbox', { name: /select every report shown/i }));
+    await user.click(screen.getByRole('button', { name: /delete selected/i }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('quest-panel-2026-07-12.pdf')).toBeInTheDocument();
+    expect(within(dialog).getByText('scan0043.pdf')).toBeInTheDocument();
+    expect(within(dialog).getByText(/cannot be undone/i)).toBeInTheDocument();
+    expect(deleteReports).not.toHaveBeenCalled();
+  });
+
+  it('deletes the selection only after confirmation', async () => {
+    const user = userEvent.setup();
+    const chosen = [makeReport(), second];
+    deleteReports.mockResolvedValue({ deleted: chosen, failed: [] });
+    renderPage();
+    emit(chosen);
+
+    await user.click(await screen.findByRole('checkbox', { name: /select every report shown/i }));
+    await user.click(screen.getByRole('button', { name: /delete selected/i }));
+    await user.click(screen.getByRole('button', { name: /delete 2 permanently/i }));
+
+    await waitFor(() => expect(deleteReports).toHaveBeenCalledTimes(1));
+    expect(deleteReports.mock.calls[0]![0].map((report: Report) => report.id)).toEqual([
+      'r1',
+      'r2',
+    ]);
+    expect(await screen.findByText(/2 reports deleted/)).toBeInTheDocument();
+  });
+
+  it('does not call a partial delete a complete one', async () => {
+    // Two services, no shared transaction: seven of nine is a real outcome,
+    // and reporting it as success would be a lie about someone's records.
+    const user = userEvent.setup();
+    const chosen = [makeReport(), second];
+    deleteReports.mockResolvedValue({ deleted: [chosen[0]!], failed: [chosen[1]!] });
+    renderPage();
+    emit(chosen);
+
+    await user.click(await screen.findByRole('checkbox', { name: /select every report shown/i }));
+    await user.click(screen.getByRole('button', { name: /delete selected/i }));
+    await user.click(screen.getByRole('button', { name: /delete 2 permanently/i }));
+
+    expect(await screen.findByText(/1 report deleted/)).toBeInTheDocument();
+    expect(await screen.findByText(/1 could not be deleted/)).toBeInTheDocument();
+    // The survivor stays selected, so retrying is one click rather than a hunt.
+    expect(await screen.findByText(/1 report selected/)).toBeInTheDocument();
+  });
+
+  it('never carries a selection past the filter it was made under', async () => {
+    // The bar must not offer to delete a report the reader can no longer see.
+    const user = userEvent.setup();
+    renderPage();
+    emit([makeReport(), makeReport({ id: 'r3', originalFileName: 'failed.pdf', status: 'failed' })]);
+
+    await select(user, 'failed.pdf');
+    expect(await screen.findByText(/1 report selected/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Processed' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /delete selected/i })).not.toBeInTheDocument(),
+    );
+  });
+
+  it('drops selected reports that have gone away underneath the reader', async () => {
+    // Another tab deletes one, or the pipeline removes it. A stale id would
+    // let the bar promise to delete two and remove one.
+    const user = userEvent.setup();
+    renderPage();
+    emit([makeReport(), second]);
+
+    await user.click(await screen.findByRole('checkbox', { name: /select every report shown/i }));
+    expect(await screen.findByText(/2 reports selected/)).toBeInTheDocument();
+
+    emit([makeReport()]);
+    expect(await screen.findByText(/1 report selected/)).toBeInTheDocument();
   });
 
   it('reports a subscription failure instead of showing an empty list', async () => {

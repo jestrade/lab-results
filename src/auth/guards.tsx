@@ -42,7 +42,7 @@ export function RequireRole({ role }: { role: UserRole }) {
   const { role: currentRole, loading } = useAuth();
 
   if (loading) return <FullPageSpinner label="Checking your access" />;
-  if (currentRole !== role) return <Navigate to="/dashboard" replace />;
+  if (currentRole !== role) return <Navigate to="/variables" replace />;
   return <Outlet />;
 }
 
@@ -51,6 +51,6 @@ export function RedirectIfSignedIn() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) return <FullPageSpinner label="Checking your session" />;
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) return <Navigate to="/variables" replace />;
   return <Outlet />;
 }

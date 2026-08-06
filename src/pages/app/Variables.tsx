@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { Alert } from '@/components/Alert';
 import { Button, ButtonLink } from '@/components/Button';
+import { DisclaimerBanner } from '@/components/DisclaimerBanner';
 import { EmptyState } from '@/components/EmptyState';
 import { Field, TextInput } from '@/components/Field';
 import { Modal } from '@/components/Modal';
@@ -152,6 +153,12 @@ export function Variables() {
             )}
           </Field>
         </div>
+        {/* In the header rather than at the foot of the page. An account with
+            a hundred tracked variables scrolls for a long time, and a control
+            for removing them all that only exists past the last card is a
+            control the user cannot find. It stays a secondary button beside
+            the search field — reachable, not inviting. */}
+        {all.length > 0 ? <ClearDataButton count={all.length} t={t} /> : null}
       </div>
 
       {error ? (
@@ -172,7 +179,7 @@ export function Variables() {
           title={t('variables.emptyTitle')}
           action={
             <ButtonLink to="/upload" variant="primary" icon="upload-simple">
-              {t('dashboard.uploadReport')}
+              {t('common.uploadReport')}
             </ButtonLink>
           }
         >
@@ -249,11 +256,13 @@ export function Variables() {
             </p>
           ) : null}
 
-          {/* Last on the page, and only when there is something to remove:
-              the control that empties it should never be the first thing the
-              eye lands on, and it has nothing to say to an account with no
-              variables — that case gets the empty state above instead. */}
-          <ClearDataSection count={all.length} t={t} />
+          {/* The dashboard used to be the page that greeted a signed-in user,
+              and it carried this. This page inherits both jobs: it is the
+              first thing seen after signing in, and it shows classified
+              values — "Alto", "Bajo" — which is exactly the reading the
+              disclaimer exists to qualify. Same position as /trends and the
+              variable detail page. */}
+          <DisclaimerBanner />
         </>
       )}
     </>
@@ -279,8 +288,17 @@ export function Variables() {
  * made after today would be worse than the honest blunt instrument. The dialog
  * therefore says exactly what goes and what stays, and the confirmation is a
  * separate deliberate click — deleting health data is never one misclick.
+ *
+ * ── Why the explanation lives in the dialog ───────────────────────────────
+ *
+ * It used to sit in a section under the grid, with the reasoning above it as
+ * body text. On an account tracking a hundred variables that section is several
+ * screens down, which made the one control for removing them all the hardest
+ * thing on the page to find. The button moved into the header; the sentences
+ * that justified it moved into the dialog, which is where someone deciding
+ * actually reads them.
  */
-function ClearDataSection({ count, t }: { count: number; t: I18nContextValue['t'] }) {
+function ClearDataButton({ count, t }: { count: number; t: I18nContextValue['t'] }) {
   const { push } = useToast();
   const [open, setOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -305,15 +323,9 @@ function ClearDataSection({ count, t }: { count: number; t: I18nContextValue['t'
 
   return (
     <>
-      <div className="danger-zone">
-        <h3>{t('variables.clearHeading')}</h3>
-        <p className="muted">{t('variables.clearIntro')}</p>
-        <div>
-          <Button variant="secondary" icon="trash" onClick={() => setOpen(true)}>
-            {t('variables.clearButton')}
-          </Button>
-        </div>
-      </div>
+      <Button variant="secondary" icon="trash" onClick={() => setOpen(true)}>
+        {t('variables.clearButton')}
+      </Button>
 
       <Modal
         open={open}
@@ -335,6 +347,12 @@ function ClearDataSection({ count, t }: { count: number; t: I18nContextValue['t'
           </>
         }
       >
+        {/* Why the numbers are still here after the reports were deleted.
+            Without it the dialog answers "what will this do" but not "why do
+            I need it", which is the question that brought the user here. */}
+        <p className="muted" style={{ fontSize: 13 }}>
+          {t('variables.clearIntro')}
+        </p>
         <p>
           <Trans
             id="variables.clearBody"

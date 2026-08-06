@@ -81,7 +81,7 @@ export const CRITICAL_RESULT_NOTICE_ES =
 
 /** Spec §40.10, in Spanish. Pending legal review. */
 export const PARTIAL_PROCESSING_NOTICE_ES =
-  'Se han extraído correctamente la mayoría de los resultados de este informe, ' +
+  'Se han extraído correctamente la mayoría de los resultados de este reporte, ' +
   'pero algunos valores no se han podido identificar de forma fiable.';
 
 /** Short form, in Spanish. Pending legal review. */

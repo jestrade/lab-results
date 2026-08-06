@@ -96,7 +96,7 @@ export function VerifyEmail() {
         <Alert tone="info">{t('verify.googleNote')}</Alert>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+          <Button variant="ghost" onClick={() => navigate('/variables')}>
             {t('verify.lookAround')}
           </Button>
           <Button variant="ghost" onClick={() => void signOutUser()}>

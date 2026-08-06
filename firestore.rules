@@ -125,6 +125,10 @@ service cloud.firestore {
              // A report that arrives claiming it has been retried -5 times
              // would hand its owner an unlimited reprocessing budget.
              'retryCount', 'lastRetryAt', 'processingStartedAt',
+             // Whether a report duplicates another is the pipeline's verdict
+             // (KAN-28), reached after reading both. A client that could set
+             // it would be writing the notice the user is shown.
+             'duplicateOf',
            ]);
 
       // Nothing the pipeline owns may be rewritten from the browser. What is
@@ -133,7 +137,7 @@ service cloud.firestore {
         || (isOwner(resource.data.ownerId) && untouched([
              'ownerId', 'storagePath', 'fileSize', 'contentHash', 'status',
              'uploadedAt', 'processedAt', 'resultCount', 'outOfRangeCount',
-             'warnings', 'pageCount', 'supersededBy', 'version',
+             'warnings', 'pageCount', 'supersededBy', 'duplicateOf', 'version',
              // The retry budget (KAN-7). Kept out of reach for the same reason
              // as the usage counters: a limit the client can reset is not a
              // limit, and each reprocessing spends AI calls.

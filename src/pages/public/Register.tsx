@@ -83,7 +83,7 @@ export function Register() {
     setGooglePending(true);
     try {
       await signInWithGoogle();
-      navigate('/dashboard', { replace: true });
+      navigate('/variables', { replace: true });
     } catch (caught) {
       setFormError(toAuthErrorMessage(caught, locale));
     } finally {

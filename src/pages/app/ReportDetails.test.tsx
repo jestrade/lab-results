@@ -170,6 +170,29 @@ describe('ReportDetails', () => {
     ).toBeInTheDocument();
   });
 
+  it('offers the other report when this one looks like a duplicate (KAN-28)', async () => {
+    render();
+    emitReport(makeReport({ duplicateOf: 'r9' }));
+    emitResults([makeResult()]);
+
+    expect(await screen.findByText(/looks like a report you already have/i)).toBeInTheDocument();
+    // A way to look, not a prompt to act: both copies are kept, and the notice
+    // says so (spec §40.2).
+    expect(screen.getByText(/nothing was removed or merged/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open the other report/i })).toHaveAttribute(
+      'href',
+      '/reports/r9',
+    );
+  });
+
+  it('says nothing about duplicates for an ordinary report', async () => {
+    render();
+    emitReport(makeReport());
+    emitResults([makeResult()]);
+    await screen.findByRole('table');
+    expect(screen.queryByText(/looks like a report you already have/i)).not.toBeInTheDocument();
+  });
+
   it('marks AI commentary as AI-generated and not medical advice', async () => {
     render();
     emitReport(makeReport());

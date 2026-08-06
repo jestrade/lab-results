@@ -32,11 +32,12 @@ interface NavItem {
   icon: string;
 }
 
+// Variables leads: with the dashboard gone it is the app's home, and the first
+// entry in the sidebar is what a reader takes "the main page" to mean.
 const PRIMARY_NAV: NavItem[] = [
-  { to: '/dashboard', label: 'nav.dashboard', icon: 'squares-four' },
+  { to: '/variables', label: 'nav.variables', icon: 'house' },
   { to: '/upload', label: 'nav.upload', icon: 'upload-simple' },
   { to: '/reports', label: 'nav.reports', icon: 'files' },
-  { to: '/variables', label: 'nav.variables', icon: 'flask' },
   { to: '/trends', label: 'nav.trends', icon: 'chart-line' },
 ];
 

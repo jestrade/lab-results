@@ -175,6 +175,15 @@ export interface Report {
   lastRetryAt?: Timestamp | null;
   /** Set when a later upload supersedes this one (KAN-31). */
   supersededBy: string | null;
+  /**
+   * The report this one appears to duplicate (KAN-28).
+   *
+   * Written by the pipeline, never by the client. A pointer rather than a flag
+   * so the interface can link to the other report; both copies are kept, and
+   * removing either is the user's decision alone (spec §40.2). Optional
+   * because reports processed before the check existed do not carry it.
+   */
+  duplicateOf?: string | null;
   version: number;
 }
 

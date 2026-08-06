@@ -43,6 +43,7 @@ export const en = {
   'common.somethingWentWrong': 'Something went wrong',
   'common.unexpectedError': 'An unexpected error occurred. Reloading the page usually helps.',
   'common.reload': 'Reload the page',
+  'common.uploadReport': 'Upload a report',
 
   // ── Language ──────────────────────────────────────────────────────────
   'lang.heading': 'Language',
@@ -70,10 +71,9 @@ export const en = {
   'theme.saveFailed': 'Your theme was changed, but saving it to your profile failed.',
 
   // ── Navigation ────────────────────────────────────────────────────────
-  'nav.dashboard': 'Dashboard',
   'nav.upload': 'Upload report',
   'nav.reports': 'Reports',
-  'nav.variables': 'Laboratory variables',
+  'nav.variables': 'Home',
   'nav.trends': 'Trend analysis',
   'nav.account': 'Account',
   'nav.profile': 'Profile',
@@ -109,8 +109,8 @@ export const en = {
   'disclaimer.readFull': 'Read the full disclaimer',
   'dropzone.release': 'Release to upload',
   'dropzone.unavailable': 'Uploading is not available yet',
-  'dropzone.prompt': 'Drag your laboratory PDF here',
-  'dropzone.hint': 'or choose a file from your computer — PDF only, up to 25 MB',
+  'dropzone.prompt': 'Drag your laboratory PDFs here',
+  'dropzone.hint': 'or choose files from your computer — PDF only, up to 25 MB each',
   'password.show': 'Show password',
   'password.hide': 'Hide password',
   'google.waiting': 'Waiting for Google…',
@@ -186,15 +186,6 @@ export const en = {
   'sparkline.rose': '{name} rose from {from} to {to} across {count} measurements.',
   'sparkline.fell': '{name} fell from {from} to {to} across {count} measurements.',
   'sparkline.steady': '{name} changed little from {from} to {to} across {count} measurements.',
-
-  // ── Dashboard ─────────────────────────────────────────────────────────
-  'dashboard.kicker': 'Your laboratory history',
-  'dashboard.welcome': 'Welcome, {name}',
-  'dashboard.uploadReport': 'Upload a report',
-  'dashboard.emptyTitle': 'No reports yet',
-  'dashboard.emptyBody':
-    'Upload a laboratory report and every test, value, unit and reference range on it will be extracted and tracked over time.',
-  'dashboard.uploadFirst': 'Upload your first report',
 
   // ── Not found / coming soon ───────────────────────────────────────────
   'notFound.title': 'That page does not exist',
@@ -276,6 +267,7 @@ export const en = {
   'reports.captionFiltered': 'Your laboratory reports, filtered to {status}',
   'reports.noMatchTitle': 'Nothing matches this filter',
   'reports.noMatchBody': 'No reports have that status right now.',
+  'reports.duplicateTag': 'Possible duplicate',
   'reports.deleteTitle': 'Delete this report?',
   'reports.deletePermanently': 'Delete permanently',
   'reports.deleting': 'Deleting…',
@@ -288,6 +280,22 @@ export const en = {
   'reports.retrySucceeded': 'Processing finished. The results are ready.',
   'reports.deleted': 'Report deleted. {size} of your storage freed.',
   'reports.deleteFailed': 'That report could not be deleted. Please try again.',
+
+  // ── Selecting several reports (KAN-43) ────────────────────────────────
+  'reports.selectLabel': 'Select {file}',
+  'reports.selectAllLabel': 'Select every report shown',
+  'reports.selectedOne': '{count} report selected · {size}',
+  'reports.selectedMany': '{count} reports selected · {size}',
+  'reports.clearSelection': 'Clear selection',
+  'reports.deleteSelected': 'Delete selected',
+  'reports.deleteSelectedTitle': 'Delete {count} reports?',
+  'reports.deleteSelectedConfirm': 'Delete {count} permanently',
+  'reports.deleteSelectedBody':
+    'These reports and their extracted results will be removed. This cannot be undone. Your tracked variables keep the values these reports contributed — clear those separately from the variables page.',
+  'reports.deletedOne': '{count} report deleted. {size} of your storage freed.',
+  'reports.deletedMany': '{count} reports deleted. {size} of your storage freed.',
+  'reports.deleteSomeFailed':
+    '{count} could not be deleted and are still selected. Try again.',
   'reports.retryFailed':
     'We could not restart processing for this report. Please try again in a few minutes.',
   'reports.failedRetryable': 'Processing failed. You can try again.',
@@ -355,28 +363,49 @@ export const en = {
   'upload.verifyBody':
     'Uploading a report needs a verified address. We sent a link when you created your account.',
   'upload.verifyAction': 'Verify my email',
-  'upload.rejectedTitle': 'That file was not accepted',
-  'upload.failedTitle': 'Upload failed',
   'upload.disabled.verify': 'Verify your email address first.',
   'upload.disabled.consent': 'Agree to AI processing before uploading.',
   'upload.disabled.capacity': 'The service is at capacity. Please try again later.',
   'upload.disabled.storageFull': 'Your storage is full. Delete a report to free space.',
   'upload.disabled.monthly': 'You have used all your uploads for this month.',
   'upload.cancelLabel': 'Cancel upload of {file}',
+  'upload.removeLabel': 'Remove {file} from the list',
   'upload.progressLabel': 'Uploading {file}',
   'upload.storedTitle': 'Report stored',
+  'upload.storedTitleMany': '{count} reports stored',
   'upload.storedBody':
     '{file} was uploaded successfully. You can leave this page — processing continues and your report appears under Reports when it finishes.',
-  'upload.another': 'Upload another',
+  'upload.storedBodyMany':
+    'All {count} reports were uploaded successfully. You can leave this page — processing continues and they appear under Reports as each one finishes.',
   'upload.goToReports': 'Go to reports',
   'upload.uploaded': 'Report uploaded. Processing starts automatically.',
   'upload.cancelled': 'Upload cancelled.',
+  'upload.queueHeading': 'Your files',
+  'upload.queueLabel': 'Files chosen for upload',
+  'upload.queueCount': '{done} of {total} uploaded',
+  'upload.clearFinished': 'Clear finished',
+  'upload.state.checking': 'Checking whether this report is already in your account…',
+  'upload.state.confirming': 'Waiting for your answer.',
+  'upload.state.waiting': 'Waiting its turn — files upload one at a time.',
+  'upload.state.uploading': 'Uploading.',
+  'upload.state.stored': 'Uploaded. Processing starts automatically.',
+  'upload.state.skipped': 'Not uploaded — you chose to keep the copy you already have ({file}).',
+  'upload.state.cancelled': 'Cancelled. Nothing was kept.',
+  'upload.duplicateTitle': 'This report may already exist',
+  'upload.duplicateBody': '{file} looks like a report that is already in your account.',
+  'upload.duplicateIdentical':
+    'It is the same file, byte for byte, as the report below.',
+  'upload.duplicateSimilar':
+    'It has the same name and size as the report below, which usually means the same file downloaded twice.',
+  'upload.duplicateQuestion': 'Would you like to continue uploading it?',
+  'upload.duplicateContinue': 'Upload it anyway',
+  'upload.duplicateSkip': 'Do not upload it',
   'upload.statusHeading': 'Processing status',
   'upload.statusLabel': 'Report processing progress',
   'upload.statusFoot':
     'You can leave this page — processing continues and your report appears under Reports when it finishes.',
   'upload.step.stored': '{size} stored',
-  'upload.step.transferred': '{percent}% transferred',
+  'upload.step.transferring': '{count} still to go',
   'upload.step.chooseFile': 'Choose a PDF to begin',
   'upload.step.waitingSlot': 'Waiting for a processing slot',
   'upload.step.extracting': 'Extracting results',
@@ -418,6 +447,10 @@ export const en = {
   'detail.notStated': 'Not stated',
   'detail.aiGenerated': 'AI-generated · not medical advice',
   'detail.promptVersion': '{model} · prompt {version}',
+  'detail.duplicateTitle': 'This looks like a report you already have',
+  'detail.duplicateBody':
+    'Another report in your account has the same date, laboratory or results. Both have been kept — nothing was removed or merged. Compare them and delete whichever you do not want.',
+  'detail.duplicateCompare': 'Open the other report',
   'detail.metaLabel': 'Report metadata',
   'detail.meta.laboratory': 'Laboratory',
   'detail.meta.notStated': 'Not stated on this report',
@@ -448,7 +481,6 @@ export const en = {
   'variables.groupCountMany': '{count} variables',
   'variables.showing': 'Showing {visible} of {total} variables.',
   'variables.cardLabel': '{name}, {value}',
-  'variables.clearHeading': 'Clear your variable data',
   'variables.clearIntro':
     'The values on this page are kept as a history per test, built from every report that has been processed. Deleting a report removes the file, not its contribution to that history — this removes the history itself.',
   'variables.clearButton': 'Clear variable data',
