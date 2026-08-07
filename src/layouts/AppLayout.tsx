@@ -38,7 +38,6 @@ const PRIMARY_NAV: NavItem[] = [
   { to: '/variables', label: 'nav.variables', icon: 'house' },
   { to: '/upload', label: 'nav.upload', icon: 'upload-simple' },
   { to: '/reports', label: 'nav.reports', icon: 'files' },
-  { to: '/trends', label: 'nav.trends', icon: 'chart-line' },
 ];
 
 const ACCOUNT_NAV: NavItem[] = [

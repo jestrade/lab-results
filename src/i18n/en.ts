@@ -74,7 +74,6 @@ export const en = {
   'nav.upload': 'Upload report',
   'nav.reports': 'Reports',
   'nav.variables': 'Home',
-  'nav.trends': 'Trend analysis',
   'nav.account': 'Account',
   'nav.profile': 'Profile',
   'nav.settings': 'Account settings',
@@ -119,7 +118,6 @@ export const en = {
   'quota.full': 'Full. Delete a report you no longer need to free space.',
   'quota.remaining': '{amount} remaining',
   'skeleton.loadingResults': 'Loading results',
-  'chart.date': 'Date',
 
   // ── Status tables (@/domain/status) ───────────────────────────────────
   // The label is the non-colour carrier for the status, so it exists in every
@@ -475,6 +473,10 @@ export const en = {
   'variables.filterCategory': 'Filter by category',
   'variables.allCategories': 'All categories',
   'variables.outOfRangeOnly': 'Outside range only ({count})',
+  'variables.sortBy': 'Order',
+  'variables.sort.category': 'By panel',
+  'variables.sort.recent': 'Most recent first',
+  'variables.sort.flagged': 'Outside range first',
   'variables.noMatchTitle': 'Nothing matches',
   'variables.noMatchBody': 'No tracked variable matches those filters.',
   'variables.groupCountOne': '{count} variable',
@@ -497,25 +499,16 @@ export const en = {
   'variables.clearedMany': '{count} variables cleared.',
   'variables.clearFailed': 'Your variable data could not be cleared. Please try again.',
 
-  // ── Trends ────────────────────────────────────────────────────────────
-  'trends.kicker': 'Compare variables',
-  'trends.period.12m': 'Last 12 months',
-  'trends.period.3y': 'Last 3 years',
-  'trends.period.all': 'All time',
-  'trends.emptyTitle': 'Nothing to chart yet',
-  'trends.emptyBody':
-    'Once a report has been processed, every test on it can be charted here. A direction needs at least {min} measurements of the same test.',
-  'trends.variables': 'Variables',
-  'trends.selectedCount': '{selected} of {total} selected',
-  'trends.clear': 'Clear',
-  'trends.period': 'Period',
-  'trends.chooseTitle': 'Choose a variable',
-  'trends.chooseBody': 'Pick one or more tests above to chart them over time.',
-  'trends.note':
-    'Each chart keeps its own scale and its own reference range, so the values stay the ones printed on your reports. They share a time axis, so you can read them against each other.',
-  'trends.tooFewOne':
+  // ── History chart (on the variable page) ──────────────────────────────
+  'period.label': 'Period',
+  'period.12m': 'Last 12 months',
+  'period.3y': 'Last 3 years',
+  'period.all': 'All time',
+  'variable.chartNote':
+    'The chart keeps this test\u2019s own scale and the reference range printed on each report, so the values stay the ones your laboratory reported. A direction describes movement over time — it is not a judgement about your health.',
+  'variable.tooFewOne':
     '{count} measurement so far. A direction needs at least {min}, so none is shown — the measurements themselves are still plotted.',
-  'trends.tooFewMany':
+  'variable.tooFewMany':
     '{count} measurements so far. A direction needs at least {min}, so none is shown — the measurements themselves are still plotted.',
 
   // ── Trend chart ───────────────────────────────────────────────────────
@@ -527,10 +520,6 @@ export const en = {
   'chart.summaryMany':
     '{name}: {count} measurements from {firstDate} to {lastDate}, {firstValue} to {lastValue}. Reference range {range}.',
   'chart.rangeNotStated': 'not stated on the report',
-  'chart.showTableOne': 'Show the {count} measurement as a table',
-  'chart.showTableMany': 'Show the {count} measurements as a table',
-  'chart.tableCaption': '{name} measurements',
-  'chart.value': 'Value',
 
   // ── Variable details (KAN-14 / KAN-46) ────────────────────────────────
   'variable.loadFailed': 'We could not load this variable. Check your connection and try again.',

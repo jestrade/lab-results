@@ -9,7 +9,6 @@ import { ReportDetails } from '@/pages/app/ReportDetails';
 import { NotFound } from '@/pages/app/NotFound';
 import { Profile } from '@/pages/app/Profile';
 import { Reports } from '@/pages/app/Reports';
-import { Trends } from '@/pages/app/Trends';
 import { Upload } from '@/pages/app/Upload';
 import { VariableDetails } from '@/pages/app/VariableDetails';
 import { Variables } from '@/pages/app/Variables';
@@ -67,7 +66,14 @@ export function AppRoutes() {
           <Route path="reports/:reportId" element={<ReportDetails />} />
           <Route path="variables" element={<Variables />} />
           <Route path="variables/:variableId" element={<VariableDetails />} />
-          <Route path="trends" element={<Trends />} />
+          {/* Trend analysis lived here. Every chart on it is now on the
+              variable's own page, which shows the same history against the
+              same reference band and adds what that page could not: each
+              point's own range, the report it came from, and a zoom. Keeping
+              a second screen that drew less of the same data was keeping a
+              worse copy. The path redirects for the same reason /dashboard
+              does — the links are already out there. */}
+          <Route path="trends" element={<Navigate to="/variables" replace />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<AccountSettings />} />
 

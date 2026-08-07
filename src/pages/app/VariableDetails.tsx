@@ -15,8 +15,11 @@ import {
   categoryLabel,
   formatReferenceRange,
   MIN_POINTS_FOR_TREND,
+  monthsFor,
+  PERIODS,
   seriesName,
   timeWindow,
+  type Period,
 } from '@/domain/variables';
 import {
   describeChange,
@@ -27,7 +30,6 @@ import {
 import type { LabVariable, VariableSeries } from '@/domain/types';
 import { formatObservedDate, formatObservedLongDate } from '@/i18n/dates';
 import type { I18nContextValue } from '@/i18n/I18nContext';
-import type { MessageKey } from '@/i18n/messages';
 import { useI18n } from '@/i18n/useI18n';
 import { fetchVariableCatalog, subscribeToVariableSeriesEntry } from '@/services/variables';
 import { fetchVariableHistory, type VariableHistory } from '@/services/variableHistory';
@@ -60,14 +62,6 @@ import { fetchVariableHistory, type VariableHistory } from '@/services/variableH
  * every one of them. See `services/variableHistory.ts` for why that is a query
  * per report rather than one query across all of them.
  */
-
-type Period = '12m' | '3y' | 'all';
-
-const PERIODS: { id: Period; label: MessageKey; months: number | null }[] = [
-  { id: '12m', label: 'trends.period.12m', months: 12 },
-  { id: '3y', label: 'trends.period.3y', months: 36 },
-  { id: 'all', label: 'trends.period.all', months: null },
-];
 
 export function VariableDetails() {
   const { variableId } = useParams<{ variableId: string }>();
@@ -142,7 +136,7 @@ export function VariableDetails() {
     () =>
       timeWindow(
         numeric.map((measurement) => measurement.observedAt.getTime()),
-        PERIODS.find((option) => option.id === period)?.months ?? null,
+        monthsFor(period),
         Date.now(),
       ),
     [numeric, period],
@@ -238,7 +232,7 @@ export function VariableDetails() {
         <div className="trend-card-head">
           <h2>{t('variable.historyHeading')}</h2>
           <div className="spacer" />
-          <div role="group" aria-label={t('trends.period')} className="variable-chips">
+          <div role="group" aria-label={t('period.label')} className="variable-chips">
             {PERIODS.map((option) => (
               <button
                 key={option.id}
@@ -286,12 +280,19 @@ export function VariableDetails() {
 
             {numeric.length < MIN_POINTS_FOR_TREND ? (
               <Alert tone="info">
-                {t(numeric.length === 1 ? 'trends.tooFewOne' : 'trends.tooFewMany', {
+                {t(numeric.length === 1 ? 'variable.tooFewOne' : 'variable.tooFewMany', {
                   count: numeric.length,
                   min: MIN_POINTS_FOR_TREND,
                 })}
               </Alert>
             ) : null}
+
+            {/* What the chart is and is not. It sat under the same charts on
+                /trends, and it belongs next to a plot with a direction badge
+                above it: the scale is this variable's own, the band is the one
+                its own reports printed, and a direction is movement rather
+                than a verdict. */}
+            <p className="muted trend-note">{t('variable.chartNote')}</p>
           </>
         )}
 

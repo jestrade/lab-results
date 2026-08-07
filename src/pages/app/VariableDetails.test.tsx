@@ -254,6 +254,28 @@ describe('VariableDetails', () => {
     expect(points[2]).toHaveAccessibleName(/Glucose on 1 June 2026: 118 mg\/dL, High/);
   });
 
+  it('writes the newest value on the plot', async () => {
+    renderPage();
+    emit(series);
+
+    await screen.findAllByRole('button', { name: /Glucose on/ });
+
+    // Carried over from the chart on the deleted /trends page. Without it the
+    // only numbers on the plot are the range bounds, and "where am I now" can
+    // only be answered by hovering — which is no answer on a touchscreen.
+    const svg = document.querySelector('.variable-chart svg')!;
+    expect(svg.textContent).toContain('118 mg/dL');
+  });
+
+  it('says what the chart is measuring against, and what a direction is not', async () => {
+    renderPage();
+    emit(series);
+
+    // The note that sat under the same charts on /trends. A page that shows a
+    // direction badge has to say that a direction is movement, not a verdict.
+    expect(await screen.findByText(/not a judgement about your health/i)).toBeInTheDocument();
+  });
+
   it('narrows the period without losing the page', async () => {
     // Note the counts are compared as numbers: an assertion that fails while
     // holding SVG elements crashes the reporter trying to print them.

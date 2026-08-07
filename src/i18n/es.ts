@@ -63,7 +63,6 @@ export const es: Messages = {
   'nav.upload': 'Subir reporte',
   'nav.reports': 'Reportes',
   'nav.variables': 'Inicio',
-  'nav.trends': 'Análisis de tendencias',
   'nav.account': 'Cuenta',
   'nav.profile': 'Perfil',
   'nav.settings': 'Configuración de la cuenta',
@@ -108,7 +107,6 @@ export const es: Messages = {
   'quota.full': 'Sin espacio. Elimina algún reporte que ya no necesites para liberar espacio.',
   'quota.remaining': 'Quedan {amount}',
   'skeleton.loadingResults': 'Cargando los resultados',
-  'chart.date': 'Fecha',
 
   // ── Status tables (@/domain/status) ───────────────────────────────────
   'status.result.normal': 'Normal',
@@ -476,6 +474,10 @@ export const es: Messages = {
   'variables.filterCategory': 'Filtrar por categoría',
   'variables.allCategories': 'Todas las categorías',
   'variables.outOfRangeOnly': 'Solo fuera de intervalo ({count})',
+  'variables.sortBy': 'Orden',
+  'variables.sort.category': 'Por panel',
+  'variables.sort.recent': 'Más recientes primero',
+  'variables.sort.flagged': 'Fuera de intervalo primero',
   'variables.noMatchTitle': 'Nada coincide',
   'variables.noMatchBody': 'Ninguna variable en seguimiento coincide con esos filtros.',
   'variables.groupCountOne': '{count} variable',
@@ -499,26 +501,16 @@ export const es: Messages = {
   'variables.clearFailed':
     'No se han podido borrar los datos de tus variables. Inténtalo de nuevo.',
 
-  // ── Trends ────────────────────────────────────────────────────────────
-  'trends.kicker': 'Comparar variables',
-  'trends.period.12m': 'Últimos 12 meses',
-  'trends.period.3y': 'Últimos 3 años',
-  'trends.period.all': 'Todo el historial',
-  'trends.emptyTitle': 'Todavía no hay nada que representar',
-  'trends.emptyBody':
-    'Cuando se haya procesado un reporte, cada prueba que contenga podrá representarse aquí. Para indicar una dirección hacen falta al menos {min} mediciones de la misma prueba.',
-  'trends.variables': 'Variables',
-  'trends.selectedCount': '{selected} de {total} seleccionadas',
-  'trends.clear': 'Quitar la selección',
-  'trends.period': 'Periodo',
-  'trends.chooseTitle': 'Elige una variable',
-  'trends.chooseBody':
-    'Selecciona arriba una o varias pruebas para representarlas a lo largo del tiempo.',
-  'trends.note':
-    'Cada gráfico conserva su propia escala y su propio intervalo de referencia, de modo que los valores siguen siendo los impresos en tus reportes. Comparten el eje temporal, así que puedes leerlos unos frente a otros.',
-  'trends.tooFewOne':
+  // ── Gráfico del historial (en la página de la variable) ───────────────
+  'period.label': 'Periodo',
+  'period.12m': 'Últimos 12 meses',
+  'period.3y': 'Últimos 3 años',
+  'period.all': 'Todo el historial',
+  'variable.chartNote':
+    'El gráfico conserva la escala propia de esta prueba y el intervalo de referencia impreso en cada informe, de modo que los valores siguen siendo los que informó tu laboratorio. Una dirección describe el movimiento a lo largo del tiempo; no es un juicio sobre tu salud.',
+  'variable.tooFewOne':
     '{count} medición por ahora. Para indicar una dirección hacen falta al menos {min}, así que no se muestra ninguna; las mediciones sí se representan.',
-  'trends.tooFewMany':
+  'variable.tooFewMany':
     '{count} mediciones por ahora. Para indicar una dirección hacen falta al menos {min}, así que no se muestra ninguna; las mediciones sí se representan.',
 
   // ── Trend chart ───────────────────────────────────────────────────────
@@ -528,10 +520,6 @@ export const es: Messages = {
   'chart.summaryMany':
     '{name}: {count} mediciones, del {firstDate} al {lastDate}, de {firstValue} a {lastValue}. Intervalo de referencia {range}.',
   'chart.rangeNotStated': 'no indicado en el reporte',
-  'chart.showTableOne': 'Ver la {count} medición en forma de tabla',
-  'chart.showTableMany': 'Ver las {count} mediciones en forma de tabla',
-  'chart.tableCaption': 'Mediciones de {name}',
-  'chart.value': 'Valor',
 
   // ── Detalle de la variable (KAN-14 / KAN-46) ──────────────────────────
   'variable.loadFailed':

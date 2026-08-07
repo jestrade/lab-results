@@ -8,11 +8,13 @@
  */
 
 import { messageFor } from '@/i18n/catalogs';
+import type { MessageKey } from '@/i18n/messages';
 import { DEFAULT_LOCALE, translate, type Locale, type Translated } from './locales';
 import { present, rangeSourceLabel, TREND } from './status';
 import type {
   LabVariable,
   ReferenceRange,
+  ResultStatus,
   VariableCategory,
   VariableSeries,
 } from './types';
@@ -134,14 +136,34 @@ export const MIN_POINTS_FOR_TREND = 3;
 /**
  * The stretch of time a chart should draw.
  *
- * Shared by /trends, where one window governs several stacked charts, and by
- * the variable page, where it governs one — the arithmetic is the same and the
- * two must agree, or "last 12 months" would mean something different on each.
+ * Used by the variable page's period buttons and by its zoom. Kept here rather
+ * than in the page because the sparkline on the grid answers the same question
+ * over the same history, and a window computed two ways is a window that
+ * eventually disagrees with itself.
  *
  * `months` is null for "all time". The window never starts before the earliest
  * measurement: a period wider than the history should show the history, not an
  * empty stretch of axis leading up to it.
  */
+export type Period = '12m' | '3y' | 'all';
+
+/**
+ * The periods offered, defined once.
+ *
+ * The grid and the variable page both offer these, and they have to mean the
+ * same stretch of time on both — a reader who narrows to "last 12 months" on
+ * the grid and opens a card should not find a different twelve months there.
+ */
+export const PERIODS: { id: Period; label: MessageKey; months: number | null }[] = [
+  { id: 'all', label: 'period.all', months: null },
+  { id: '3y', label: 'period.3y', months: 36 },
+  { id: '12m', label: 'period.12m', months: 12 },
+];
+
+export function monthsFor(period: Period): number | null {
+  return PERIODS.find((option) => option.id === period)?.months ?? null;
+}
+
 export function timeWindow(
   observed: number[],
   months: number | null,
@@ -154,6 +176,44 @@ export function timeWindow(
   const cutoff = new Date(latest);
   cutoff.setMonth(cutoff.getMonth() - months);
   return { from: Math.max(earliest, cutoff.getTime()), to: latest };
+}
+
+/**
+ * One series as it looks through a time window, or null if it is not in it.
+ *
+ * ── Membership is decided by the latest measurement, not by the points ─────
+ *
+ * A card whose newest result predates the window is out: "last 12 months"
+ * showing a value from 2023 as the current one would be the card lying about
+ * what it is. But it cannot be decided by the plotted points either, because a
+ * qualitative series — "Negative", "Trace" — has no plottable points at all
+ * and would vanish from every window but "all time" despite having been
+ * measured last week. The latest instant is the one fact every series has.
+ *
+ * ── Why the count moves with the points ───────────────────────────────────
+ *
+ * `resultCount` is the length of the stored point list (see `updateSeries` in
+ * the pipeline), so trimming the points and leaving the count would print "5
+ * results" under a line drawn from two. When the window removes nothing the
+ * series is returned untouched, so the default view is exactly as before.
+ */
+export function seriesInWindow(
+  series: VariableSeries,
+  from: number,
+  to: number,
+): VariableSeries | null {
+  const latest = series.latestObservedAt?.toMillis?.();
+  // A series with no usable instant is kept rather than hidden: a missing
+  // timestamp is a gap in our record, not evidence the test is old.
+  if (typeof latest === 'number' && (latest < from || latest > to)) return null;
+
+  const kept = series.points.filter((point) => {
+    const at = point.observedAt?.toMillis?.();
+    return typeof at !== 'number' || (at >= from && at <= to);
+  });
+
+  if (kept.length === series.points.length) return series;
+  return { ...series, points: kept, resultCount: kept.length };
 }
 
 export interface FormattedRange {
@@ -330,6 +390,68 @@ export interface CategoryGroup {
  * are a report. Within a group the sort is by the *displayed* name, so the
  * alphabetical order matches what the reader can actually see.
  */
+/**
+ * How the grid on the home page is ordered.
+ *
+ * `category` is the default and the only one that groups; the other two are
+ * flat, because their whole purpose is to bring a card to the top from
+ * wherever in the alphabet its panel put it.
+ */
+export type VariableSort = 'category' | 'recent' | 'flagged';
+
+/** Worst first. Ties inside a rank fall through to the next comparison. */
+const STATUS_RANK: Record<ResultStatus, number> = {
+  critical: 0,
+  high: 1,
+  low: 1,
+  unknown: 2,
+  normal: 3,
+};
+
+/**
+ * Orders the grid for a reader who has more variables than fit on a screen.
+ *
+ * An account tracking a hundred tests cannot be read by scrolling, and the two
+ * questions people actually arrive with are "what came back in my last report"
+ * and "what is outside its range". Category order answers neither: it puts
+ * whatever the newest report contained wherever the alphabet happens to place
+ * it, several screens apart.
+ *
+ * `high` and `low` deliberately share a rank. Which of the two is more serious
+ * is a clinical judgement, and ordering one above the other would be this
+ * application making it.
+ */
+export function sortSeries(
+  all: VariableSeries[],
+  sort: VariableSort,
+  locale: Locale = DEFAULT_LOCALE,
+): VariableSeries[] {
+  const collator = new Intl.Collator(locale);
+  const byName = (a: VariableSeries, b: VariableSeries) =>
+    collator.compare(seriesName(a, locale), seriesName(b, locale));
+  const measuredAt = (series: VariableSeries) => series.latestObservedAt?.toMillis?.() ?? 0;
+
+  const sorted = all.slice();
+
+  if (sort === 'recent') {
+    // Newest measurement first, and alphabetical within one report — a panel
+    // run on one day shares an instant, and leaving those in arrival order
+    // would shuffle a dozen cards on every render.
+    return sorted.sort((a, b) => measuredAt(b) - measuredAt(a) || byName(a, b));
+  }
+
+  if (sort === 'flagged') {
+    return sorted.sort(
+      (a, b) =>
+        STATUS_RANK[a.latestStatus] - STATUS_RANK[b.latestStatus] ||
+        measuredAt(b) - measuredAt(a) ||
+        byName(a, b),
+    );
+  }
+
+  return sorted.sort(byName);
+}
+
 export function groupByCategory(
   all: VariableSeries[],
   locale: Locale = DEFAULT_LOCALE,

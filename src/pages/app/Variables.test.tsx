@@ -209,6 +209,162 @@ describe('Variables', () => {
     expect(screen.queryByRole('link', { name: /hemoglobin/i })).not.toBeInTheDocument();
   });
 
+  describe('time window', () => {
+    /** Last measured two and a half years before the newest card on the page. */
+    const stale = makeSeries({
+      variableId: 'ferritin',
+      canonicalName: 'Ferritin',
+      latestObservedAt: stamp('2024-01-15T00:00:00Z'),
+      resultCount: 1,
+      points: [{ value: 40, observedAt: stamp('2024-01-15T00:00:00Z') }],
+    });
+
+    it('shows everything until a window is chosen', async () => {
+      renderPage();
+      emit([makeSeries(), stale]);
+
+      // A grid that opened narrowed would be hiding results before the reader
+      // knew a window existed.
+      expect(await screen.findByRole('link', { name: /hemoglobin/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /ferritin/i })).toBeInTheDocument();
+    });
+
+    it('drops a variable whose newest result predates the window', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeSeries(), stale]);
+      await screen.findByRole('link', { name: /ferritin/i });
+
+      await user.click(screen.getByRole('button', { name: /last 12 months/i }));
+
+      expect(screen.getByRole('link', { name: /hemoglobin/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /ferritin/i })).not.toBeInTheDocument();
+    });
+
+    it('counts what the window left, in the line that reports the filtering', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeSeries(), stale]);
+      await screen.findByRole('link', { name: /ferritin/i });
+
+      await user.click(screen.getByRole('button', { name: /last 12 months/i }));
+
+      // The heading still counts what the account tracks; this line is what
+      // explains why one of them is not on screen.
+      expect(screen.getByText(/showing 1 of 2 variables/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 variables tracked/i)).toBeInTheDocument();
+    });
+
+    it('narrows the sparkline to the window, count and all', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([
+        makeSeries({
+          resultCount: 2,
+          points: [
+            { value: 13.8, observedAt: stamp('2024-01-15T00:00:00Z') },
+            { value: 14.2, observedAt: stamp('2026-07-12T00:00:00Z') },
+          ],
+        }),
+      ]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+      expect(screen.getByText(/2 results/i)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /last 12 months/i }));
+
+      // "2 results" under a line drawn from one measurement would be the card
+      // counting history the window has excluded.
+      expect(screen.getByText(/1 result\b/i)).toBeInTheDocument();
+    });
+
+    it('counts only the flagged variables inside the window', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([
+        potassium,
+        makeSeries({
+          variableId: 'ldl',
+          canonicalName: 'LDL',
+          latestStatus: 'high',
+          latestObservedAt: stamp('2024-01-15T00:00:00Z'),
+          points: [{ value: 180, observedAt: stamp('2024-01-15T00:00:00Z') }],
+        }),
+      ]);
+      expect(await screen.findByRole('button', { name: /outside range only \(2\)/i })).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /last 12 months/i }));
+
+      // A count that included cards the window removed would not match the
+      // grid it sits above.
+      expect(screen.getByRole('button', { name: /outside range only \(1\)/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('ordering', () => {
+    it('groups by panel until asked to do otherwise', async () => {
+      renderPage();
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      expect((await screen.findAllByRole('heading', { level: 2 })).length).toBeGreaterThan(0);
+    });
+
+    it('drops the panel headings when the order no longer follows them', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      await user.click(screen.getByRole('button', { name: /most recent first/i }));
+
+      // Category headings over a list that is no longer in category order
+      // would be labels that lie. Every card is still on the page.
+      expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /potassium/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /hemoglobin/i })).toBeInTheDocument();
+    });
+
+    it('orders by worst status without hiding anything', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeSeries(), potassium]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      await user.click(screen.getByRole('button', { name: /outside range first/i }));
+
+      const cards = screen
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+        .filter((href) => href?.startsWith('/variables/'));
+      expect(cards).toEqual(['/variables/potassium', '/variables/hemoglobin']);
+    });
+
+    it('keeps the ordering when a filter narrows the grid', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      await user.click(screen.getByRole('button', { name: /most recent first/i }));
+      await user.type(screen.getByLabelText(/search/i), 'Potassium');
+
+      expect(screen.getByRole('link', { name: /potassium/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /hemoglobin/i })).not.toBeInTheDocument();
+    });
+
+    it('says nothing matches rather than showing an empty grid', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      await user.click(screen.getByRole('button', { name: /most recent first/i }));
+      await user.type(screen.getByLabelText(/search/i), 'zzzz');
+
+      expect(screen.getByText(/nothing matches/i)).toBeInTheDocument();
+    });
+  });
+
   it('distinguishes an empty filter from an empty account', async () => {
     const user = userEvent.setup();
     renderPage();

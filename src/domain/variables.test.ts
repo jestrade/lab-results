@@ -11,7 +11,9 @@ import {
   groupByCategory,
   matchesQuery,
   MIN_POINTS_FOR_TREND,
+  seriesInWindow,
   seriesName,
+  sortSeries,
   sparklinePath,
   summariseSeries,
   withCatalog,
@@ -195,6 +197,136 @@ describe('matchesQuery', () => {
 
   it('does not match an unrelated term', () => {
     expect(matchesQuery(makeSeries(), 'potassium')).toBe(false);
+  });
+});
+
+describe('seriesInWindow', () => {
+  const JAN_2024 = new Date('2024-01-15T00:00:00Z').getTime();
+  const JUN_2026 = new Date('2026-06-01T00:00:00Z').getTime();
+  const JUL_2026 = new Date('2026-07-12T00:00:00Z').getTime();
+
+  const recent = makeSeries({
+    latestObservedAt: stamp('2026-07-12T00:00:00Z'),
+    resultCount: 2,
+    points: [
+      { value: 13.8, observedAt: stamp('2024-01-15T00:00:00Z') },
+      { value: 14.2, observedAt: stamp('2026-07-12T00:00:00Z') },
+    ],
+  });
+
+  it('keeps a variable measured inside the window', () => {
+    expect(seriesInWindow(recent, JUN_2026, JUL_2026)).not.toBeNull();
+  });
+
+  it('drops one whose newest result predates the window', () => {
+    // Drawing a 2024 value as the current one under "last 12 months" would be
+    // the card misrepresenting itself.
+    const stale = makeSeries({
+      latestObservedAt: stamp('2024-01-15T00:00:00Z'),
+      points: [{ value: 13.8, observedAt: stamp('2024-01-15T00:00:00Z') }],
+    });
+    expect(seriesInWindow(stale, JUN_2026, JUL_2026)).toBeNull();
+  });
+
+  it('keeps a qualitative result, which has no plottable points at all', () => {
+    // "Negative" measured last week would otherwise vanish from every window
+    // but "all time".
+    const qualitative = makeSeries({
+      latestValue: null,
+      latestRawValue: 'Negative',
+      latestObservedAt: stamp('2026-07-12T00:00:00Z'),
+      points: [],
+    });
+    expect(seriesInWindow(qualitative, JUN_2026, JUL_2026)).not.toBeNull();
+  });
+
+  it('trims the points to the window and moves the count with them', () => {
+    // The count is the length of the point list, so leaving it would print
+    // "2 results" under a line drawn from one.
+    const windowed = seriesInWindow(recent, JUN_2026, JUL_2026)!;
+    expect(windowed.points).toHaveLength(1);
+    expect(windowed.resultCount).toBe(1);
+  });
+
+  it('returns the same object when the window removes nothing', () => {
+    // The default view has to be exactly what it was before windows existed.
+    expect(seriesInWindow(recent, JAN_2024, JUL_2026)).toBe(recent);
+  });
+
+  it('leaves the original untouched when it trims', () => {
+    seriesInWindow(recent, JUN_2026, JUL_2026);
+    expect(recent.points).toHaveLength(2);
+    expect(recent.resultCount).toBe(2);
+  });
+
+  it('keeps a series with no usable timestamp rather than hiding it', () => {
+    // A missing instant is a gap in our record, not evidence the test is old.
+    const undated = makeSeries({ latestObservedAt: undefined as never, points: [] });
+    expect(seriesInWindow(undated, JUN_2026, JUL_2026)).not.toBeNull();
+  });
+});
+
+describe('sortSeries', () => {
+  const hemoglobin = makeSeries({
+    variableId: 'hgb',
+    canonicalName: 'Hemoglobin',
+    latestStatus: 'normal',
+    latestObservedAt: stamp('2026-07-12T00:00:00Z'),
+  });
+  const potassium = makeSeries({
+    variableId: 'k',
+    canonicalName: 'Potassium',
+    category: 'electrolytes',
+    latestStatus: 'critical',
+    latestObservedAt: stamp('2025-01-04T00:00:00Z'),
+  });
+  const ldl = makeSeries({
+    variableId: 'ldl',
+    canonicalName: 'LDL',
+    category: 'lipid_profile',
+    latestStatus: 'high',
+    latestObservedAt: stamp('2026-07-12T00:00:00Z'),
+  });
+
+  it('puts the newest measurement first', () => {
+    // "What came back in my last report" — the question a reader arrives with
+    // the day after uploading one.
+    const order = sortSeries([potassium, hemoglobin, ldl], 'recent').map((s) => s.variableId);
+    expect(order.at(-1)).toBe('k');
+    expect(order.slice(0, 2).sort()).toEqual(['hgb', 'ldl']);
+  });
+
+  it('breaks a shared instant by name rather than by arrival', () => {
+    // A panel run on one day shares an instant; leaving those in input order
+    // would reshuffle a dozen cards on every snapshot.
+    const order = sortSeries([ldl, hemoglobin], 'recent').map((s) => s.variableId);
+    expect(order).toEqual(['hgb', 'ldl']);
+  });
+
+  it('brings the worst status to the top', () => {
+    const order = sortSeries([hemoglobin, ldl, potassium], 'flagged').map((s) => s.variableId);
+    expect(order).toEqual(['k', 'ldl', 'hgb']);
+  });
+
+  it('ranks high and low together', () => {
+    // Which is more serious is a clinical judgement, and ordering one above the
+    // other would be this application making it.
+    const low = makeSeries({ variableId: 'na', canonicalName: 'Sodium', latestStatus: 'low' });
+    const high = makeSeries({ variableId: 'ca', canonicalName: 'Calcium', latestStatus: 'high' });
+    const order = sortSeries([low, high], 'flagged').map((s) => s.variableId);
+    // Same rank, so the tiebreakers decide — never the status.
+    expect(order.sort()).toEqual(['ca', 'na']);
+  });
+
+  it('sorts by displayed name in category mode', () => {
+    const order = sortSeries([potassium, hemoglobin, ldl], 'category').map((s) => s.variableId);
+    expect(order).toEqual(['hgb', 'ldl', 'k']);
+  });
+
+  it('does not mutate the list it was given', () => {
+    const input = [potassium, hemoglobin];
+    sortSeries(input, 'flagged');
+    expect(input.map((s) => s.variableId)).toEqual(['k', 'hgb']);
   });
 });
 

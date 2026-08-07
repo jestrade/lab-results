@@ -15,6 +15,7 @@ import { useToast } from '@/components/useToast';
 import { Trans } from '@/i18n/Trans';
 import { useI18n } from '@/i18n/useI18n';
 import type { I18nContextValue } from '@/i18n/I18nContext';
+import type { MessageKey } from '@/i18n/messages';
 import type { Locale } from '@/domain/locales';
 import { isOutOfRange } from '@/domain/status';
 import type { LabVariable, VariableCategory, VariableSeries } from '@/domain/types';
@@ -23,9 +24,16 @@ import {
   describeSparkline,
   groupByCategory,
   matchesQuery,
+  monthsFor,
+  PERIODS,
+  seriesInWindow,
   seriesName,
+  sortSeries,
   summariseSeries,
+  timeWindow,
   withCatalog,
+  type Period,
+  type VariableSort,
 } from '@/domain/variables';
 import {
   clearVariableData,
@@ -46,6 +54,12 @@ import {
  * alternative is deriving trends in the browser from raw results, which would
  * put the classification logic in two places and let them disagree.
  */
+const SORTS: { id: VariableSort; label: MessageKey }[] = [
+  { id: 'category', label: 'variables.sort.category' },
+  { id: 'recent', label: 'variables.sort.recent' },
+  { id: 'flagged', label: 'variables.sort.flagged' },
+];
+
 export function Variables() {
   const { user } = useAuth();
   const { t, locale } = useI18n();
@@ -56,6 +70,14 @@ export function Variables() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<VariableCategory | 'all'>('all');
   const [outOfRangeOnly, setOutOfRangeOnly] = useState(false);
+  // Grouped by panel by default: it is how a laboratory report is laid out, so
+  // it is where the reader expects to find a test when they are not looking for
+  // anything in particular.
+  const [sort, setSort] = useState<VariableSort>('category');
+  // All time by default. A grid that opened on a narrowed window would be
+  // hiding results the moment the page loaded, and the reader has no reason
+  // yet to know a window exists.
+  const [period, setPeriod] = useState<Period>('all');
 
   useEffect(() => {
     if (!user) return;
@@ -93,9 +115,43 @@ export function Variables() {
   // while the subscription is still pending, invalidating every memo below it.
   const all = useMemo(() => withCatalog(series ?? [], catalog), [series, catalog]);
 
+  /**
+   * The window the period chips select.
+   *
+   * Anchored on the newest measurement in the account, not on today — the same
+   * arithmetic the variable page uses, so "last 12 months" is one stretch of
+   * time across both screens. Anchoring on today would empty the grid for
+   * anyone who has not uploaded since last year, which is the reader most in
+   * need of seeing what they do have.
+   */
+  const { from, to } = useMemo(
+    () =>
+      timeWindow(
+        all.flatMap((entry) =>
+          entry.points.map((point) => point.observedAt?.toMillis?.() ?? 0).filter(Boolean),
+        ),
+        monthsFor(period),
+        Date.now(),
+      ),
+    [all, period],
+  );
+
+  /**
+   * Every tracked variable, as it looks through the chosen window.
+   *
+   * `all` stays the account's full list — the heading counts what is tracked,
+   * not what is currently on screen — and this is what the grid is built from.
+   */
+  const inWindow = useMemo(() => {
+    if (period === 'all') return all;
+    return all
+      .map((entry) => seriesInWindow(entry, from, to))
+      .filter((entry): entry is (typeof all)[number] => entry !== null);
+  }, [all, period, from, to]);
+
   const outOfRangeCount = useMemo(
-    () => all.filter((entry) => isOutOfRange(entry.latestStatus)).length,
-    [all],
+    () => inWindow.filter((entry) => isOutOfRange(entry.latestStatus)).length,
+    [inWindow],
   );
 
   /**
@@ -106,25 +162,28 @@ export function Variables() {
    * sections they scroll to.
    */
   const availableCategories = useMemo(() => {
-    const present = new Set(all.map((entry) => entry.category));
-    return groupByCategory(all, locale)
+    const present = new Set(inWindow.map((entry) => entry.category));
+    return groupByCategory(inWindow, locale)
       .map((group) => group.category)
       .filter((category) => present.has(category));
-  }, [all, locale]);
+  }, [inWindow, locale]);
 
   const visible = useMemo(
     () =>
-      all.filter(
+      inWindow.filter(
         (entry) =>
           matchesQuery(entry, query) &&
           (category === 'all' || entry.category === category) &&
           (!outOfRangeOnly || isOutOfRange(entry.latestStatus)),
       ),
-    [all, query, category, outOfRangeOnly],
+    [inWindow, query, category, outOfRangeOnly],
   );
 
   const groups = useMemo(() => groupByCategory(visible, locale), [visible, locale]);
-  const hasFilters = query.trim() !== '' || category !== 'all' || outOfRangeOnly;
+  /** The flat orderings. Only read when `sort` is not `category`. */
+  const ordered = useMemo(() => sortSeries(visible, sort, locale), [visible, sort, locale]);
+  const hasFilters =
+    query.trim() !== '' || category !== 'all' || outOfRangeOnly || period !== 'all';
 
   return (
     <>
@@ -210,7 +269,48 @@ export function Variables() {
               ))}
             </div>
 
+            {/* The time window, beside the panel filters because it narrows the
+                same grid: a period answers "what has been measured lately",
+                which is a filter on the cards and not only a scale for the
+                sparklines on them. A card whose newest result predates the
+                window is removed rather than drawn with a value from outside
+                it — showing a 2023 number under "last 12 months" would be the
+                card misrepresenting itself. */}
+            <div role="group" aria-label={t('period.label')} className="variable-chips">
+              {PERIODS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="chip"
+                  aria-pressed={period === option.id}
+                  onClick={() => setPeriod(option.id)}
+                >
+                  {t(option.label)}
+                </button>
+              ))}
+            </div>
+
             <div className="spacer" />
+
+            {/* Ordering, not filtering: every card stays on the page whichever
+                of these is pressed. A hundred tests cannot be read by
+                scrolling, and the two questions people arrive with — what came
+                back in my last report, and what is outside its range — are
+                both answered by moving cards to the top rather than by hiding
+                the rest. */}
+            <div role="group" aria-label={t('variables.sortBy')} className="variable-chips">
+              {SORTS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="chip"
+                  aria-pressed={sort === option.id}
+                  onClick={() => setSort(option.id)}
+                >
+                  {t(option.label)}
+                </button>
+              ))}
+            </div>
 
             <button
               type="button"
@@ -222,11 +322,11 @@ export function Variables() {
             </button>
           </div>
 
-          {groups.length === 0 ? (
+          {visible.length === 0 ? (
             <EmptyState icon="funnel" title={t('variables.noMatchTitle')}>
               {t('variables.noMatchBody')}
             </EmptyState>
-          ) : (
+          ) : sort === 'category' ? (
             groups.map((group) => (
               <section key={group.category} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -248,6 +348,16 @@ export function Variables() {
                 </div>
               </section>
             ))
+          ) : (
+            /* Flat, and deliberately without headings: the point of these two
+               orderings is that the panel a test belongs to is not what the
+               reader is sorting by, and category headings over a list that no
+               longer follows them would be labels that lie. */
+            <div className="variable-grid">
+              {ordered.map((entry) => (
+                <VariableCard key={entry.variableId} series={entry} locale={locale} t={t} />
+              ))}
+            </div>
           )}
 
           {hasFilters ? (

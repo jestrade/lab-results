@@ -14,16 +14,18 @@ import { ResultStatusBadge } from './StatusBadge';
 /**
  * One variable's measurements over time, interactively (KAN-14, KAN-46).
  *
- * ── How this differs from `TrendChart` ────────────────────────────────────
+ * ── What this draws ───────────────────────────────────────────────────────
  *
- * `TrendChart` draws a series: a value and an instant per point, one reference
- * band, no interaction. It is the right thing on /trends, where several charts
- * are stacked and read as a group.
+ * There used to be a second chart component, `TrendChart`, on a second page,
+ * /trends. It drew a *series*: a value and an instant per point, one reference
+ * band for all of them, no interaction. Both are gone — this component and this
+ * page draw everything they did and more, and two renderings of one history
+ * that disagreed in detail was one too many.
  *
- * This one draws *measurements*, which carry the rest of what a report said
- * about each value — the range it was measured against, the status it was
- * given, the document it came from. Three consequences follow, and they are
- * the reason this is a separate component rather than a flag on that one:
+ * This draws *measurements*, which carry the rest of what a report said about
+ * each value — the range it was measured against, the status it was given, the
+ * document it came from. Three consequences follow, and they are what made the
+ * older, simpler chart not worth keeping:
  *
  *   The band is stepped, not constant. Each point is drawn against its own
  *   report's range, so a laboratory that changed its reference interval shows
@@ -402,6 +404,35 @@ export function VariableChart({
               </g>
             );
           })}
+
+          {/* The newest value, written on the plot.
+              Carried over from the chart on the old /trends page, which is the
+              one thing it drew that this one did not. Without it the only
+              numbers on the chart are the range bounds, and "where am I now"
+              has to be discovered by hovering — which is no answer at all on a
+              touchscreen or by keyboard. Earlier points stay unlabelled: the
+              table below carries every one of them, and labelling a decade of
+              bloodwork collides with itself. */}
+          {(() => {
+            const newest = visible.at(-1)!;
+            const unit = newest.point.unit ? ` ${newest.point.unit}` : '';
+            return (
+              <text
+                x={x(newest.at)}
+                y={y(newest.point.value) - 12}
+                fontSize="11"
+                fontWeight="600"
+                textAnchor="end"
+                fill="var(--color-text)"
+                // Decorative here: the value is already in the hero above, in
+                // the point's own accessible name and in the table below.
+                aria-hidden="true"
+              >
+                {newest.point.value}
+                {unit}
+              </text>
+            );
+          })()}
 
           <text x={PAD.left} y={height - 8} fontSize="10" fill="var(--color-text-muted)">
             {formatObservedDate(new Date(view.from), locale)}

@@ -1345,82 +1345,7 @@ dialog.dialog {
   color: var(--color-accent-900);
 }
 
-/* ── Trend analysis (KAN-47) ─────────────────────────────────────────────── */
-
-.trend-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px 32px;
-  padding: 16px;
-  border-radius: var(--r-card);
-  background: var(--card-bg);
-  box-shadow: var(--card-shadow);
-}
-.trend-controls .kicker-quiet {
-  margin-bottom: 8px;
-}
-
-/* The variable picker holds every test the user has a history for — around
-   fifty on a full panel. Flat, that is a wall of chips with no landmarks, so
-   it is broken into the same category groups the /variables grid uses, in the
-   same fixed order, so a test sits where the reader last saw it.
-
-   Columns matter as much as the grouping: chips are short and the card is
-   wide, so one column would leave most of each row empty while the list ran
-   off the screen. */
-/* Stacked full-width rather than laid out in columns.
-
-   Columns were the first attempt and looked worse: group sizes here are wildly
-   uneven — one lipid marker beside forty uncategorised ones — and a grid row is
-   as tall as its tallest cell, so single-chip groups reserved the height of the
-   largest and left the card mostly empty. Full width lets every group's chips
-   wrap to fill the space they actually need. */
-.trend-variable-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  /* A long history should scroll the picker, not push the charts off-screen —
-     the charts are what the page is for. */
-  max-height: 300px;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-.trend-variable-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-.trend-group-head {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.trend-group-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-.trend-group-count,
-.trend-selected-count {
-  font-size: 11px;
-}
-.trend-variables-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.trend-variables-head .kicker-quiet {
-  margin-bottom: 0;
-}
-
-/* The picker takes the free width of the controls row; the period chips
-   beside it need only their own. */
-.trend-controls > div:first-child {
-  flex: 1 1 420px;
-  min-width: 0;
-}
+/* ── Variable history cards (KAN-46) ─────────────────────────────────────── */
 
 .trend-note {
   margin: 0;
@@ -1451,25 +1376,6 @@ dialog.dialog {
 .trend-card-meta {
   margin: 0;
   font-size: 12px;
-}
-
-/* The table alternative is the chart's equal, not a footnote — but it is long,
-   so it opens on request rather than doubling the height of every card. */
-.chart-data {
-  margin-top: 4px;
-}
-.chart-data > summary {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: 4px 0;
-}
-.chart-data > summary:hover {
-  color: var(--color-text);
-}
-.chart-data .table {
-  margin-top: 8px;
-  font-size: 13px;
 }
 
 /* ── Selecting several reports (KAN-43) ──────────────────────────────────── */
