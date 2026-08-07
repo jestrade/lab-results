@@ -1,0 +1,1701 @@
+/* LabResults — application layout and component styles (KAN-25, KAN-39).
+ *
+ * Broadsheet supplies the primitives; this file supplies the app's own
+ * structures: the authenticated shell, the split auth screens, the legal
+ * document shell, the dropzone, the step indicator, and the status pills.
+ *
+ * The design board is drawn at a fixed 1440px desktop frame. Everything here
+ * is the responsive reading of it: the same composition at lg and up, and a
+ * documented collapse at md and below (KAN-25 asks for mobile + desktop,
+ * KAN-53 for sm/md/lg/xl).
+ */
+
+/* ── skip link ─────────────────────────────────────────────────────────── */
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 12px 18px;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-radius: 0 0 var(--r-card) 0;
+  font-weight: 600;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* ── generic helpers ───────────────────────────────────────────────────── */
+
+.muted {
+  color: var(--color-text-muted);
+}
+.faint {
+  color: var(--color-text-faint);
+}
+.kicker {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.kicker-quiet {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  font-weight: 600;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+.row {
+  display: flex;
+  align-items: center;
+}
+.spacer {
+  flex: 1;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── public shell ──────────────────────────────────────────────────────── */
+
+.public-nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 18px 24px;
+  flex-wrap: wrap;
+}
+@media (min-width: 1024px) {
+  .public-nav {
+    padding: 22px 56px;
+  }
+}
+.brand {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 21px;
+  color: var(--color-text);
+}
+.brand:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.public-nav-links {
+  display: none;
+  gap: 26px;
+  font-size: 14px;
+}
+@media (min-width: 1024px) {
+  .public-nav-links {
+    display: flex;
+  }
+}
+.public-nav-links a {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.public-footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 26px 24px 34px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-divider);
+}
+@media (min-width: 1024px) {
+  .public-footer {
+    padding: 26px 56px 34px;
+  }
+}
+.public-footer a {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+/* ── landing ───────────────────────────────────────────────────────────── */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  padding: 48px 24px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .hero {
+    grid-template-columns: 1.05fr 1fr;
+    gap: 56px;
+    padding: 72px 56px 64px;
+  }
+}
+.hero h1 {
+  font-size: clamp(36px, 5vw, 60px);
+  margin: 0;
+  line-height: 1.05;
+  text-wrap: pretty;
+}
+.hero-lede {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.65;
+  max-width: 520px;
+  color: var(--color-text-muted);
+}
+.hero-panel {
+  background: var(--panel-bg);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-md);
+  padding: 28px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.hero-assurances {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.hero-assurances span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 640px) {
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .steps-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.step-num {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.section-pad {
+  padding: 8px 24px 64px;
+}
+@media (min-width: 1024px) {
+  .section-pad {
+    padding: 8px 56px 64px;
+  }
+}
+
+/* ── auth split screen ─────────────────────────────────────────────────── */
+
+.auth-split {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+.auth-aside {
+  width: 560px;
+  flex: none;
+  background: var(--color-accent-surface);
+  color: var(--color-accent-surface-ink);
+  padding: 56px 52px;
+  display: none;
+  flex-direction: column;
+  gap: 40px;
+}
+@media (min-width: 1024px) {
+  .auth-aside {
+    display: flex;
+  }
+}
+.auth-aside h1 {
+  font-size: 46px;
+  margin: 0;
+  color: var(--color-accent-surface-ink);
+  line-height: 1.1;
+  text-wrap: pretty;
+}
+.auth-aside .brand {
+  color: var(--color-accent-surface-ink);
+  font-size: 22px;
+}
+.auth-aside-points {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth-aside-point {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.auth-aside-point-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.auth-aside-point-body {
+  font-size: 14px;
+  opacity: 0.86;
+}
+.auth-aside-foot {
+  margin: 0;
+  font-size: 12px;
+  /* The board draws this at 0.82, which composites to 4.46:1 on the accent —
+     just under the 4.5 bar for 12px text. 0.9 reads the same and measures
+     5.01:1. Caught by the axe pass in the Playwright suite. */
+  opacity: 0.9;
+  line-height: 1.6;
+  max-width: 420px;
+}
+.auth-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+.auth-form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.auth-form h2 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.divider-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+.divider-text::before,
+.divider-text::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-divider);
+}
+
+.legal-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* Broadsheet's .radio dot is a circle; checkboxes square it off. */
+.checkbox .dot {
+  border-radius: 4px;
+}
+.checkbox {
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.checkbox .dot {
+  margin-top: 2px;
+}
+
+/* The caption above a *group* of controls — a radio group, where Broadsheet's
+   `.field > label` cannot be used: a <label> may only point at one control, and
+   pointing it at one of three radios would announce that radio twice and the
+   group not at all. Declarations mirror `.field > label` so that a grouped
+   setting and a plain one read identically down a settings page. */
+.field > .field-caption {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+
+.password-meter {
+  display: flex;
+  gap: 4px;
+  margin-top: 7px;
+}
+.password-meter-seg {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-neutral-300);
+}
+.password-meter-seg[data-filled='true'] {
+  background: var(--color-accent);
+}
+
+/* ── legal document shell ──────────────────────────────────────────────── */
+
+.legal-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  padding: 32px 24px 64px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .legal-shell {
+    grid-template-columns: 280px 1fr;
+    gap: 56px;
+    padding: 48px 56px 64px;
+  }
+}
+.legal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+@media (min-width: 1024px) {
+  .legal-nav {
+    position: sticky;
+    top: 24px;
+  }
+}
+.legal-nav-link {
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: var(--r-pill-sm);
+  color: var(--color-text);
+  font-weight: 500;
+}
+.legal-nav-link:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.legal-nav-link[aria-current='page'] {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-weight: 600;
+}
+.legal-nav-link[aria-current='page']:hover {
+  background: var(--color-accent-600);
+  color: var(--color-accent-ink);
+}
+.legal-doc {
+  max-width: 720px;
+}
+.legal-doc h1 {
+  font-size: clamp(32px, 5vw, 46px);
+  margin: 0 0 6px;
+}
+.legal-doc h2 {
+  font-size: 22px;
+  margin: 28px 0 8px;
+}
+.legal-doc p {
+  font-size: 16px;
+  line-height: 1.8;
+  margin: 0 0 14px;
+}
+.legal-callout {
+  padding: 20px 22px;
+  background: var(--color-accent-100);
+  border-radius: var(--r-card);
+  margin-bottom: 14px;
+}
+.legal-callout p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--color-accent-900);
+}
+
+/* ── authenticated shell ───────────────────────────────────────────────── */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.app-sidebar {
+  width: var(--sidebar-width);
+  flex: none;
+  background: var(--panel-bg);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+/* Below lg the sidebar becomes an off-canvas drawer toggled from the top bar. */
+@media (max-width: 1023px) {
+  .app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+  }
+  .app-sidebar[data-open='true'] {
+    transform: translateX(0);
+  }
+}
+.app-sidebar-scrim {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .app-sidebar-scrim[data-open='true'] {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: var(--scrim);
+    border: 0;
+  }
+}
+.app-sidebar-brand {
+  padding: 0 24px;
+}
+.app-sidebar-brand .brand {
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.1;
+  display: block;
+}
+.app-sidebar-tagline {
+  font-size: 11px;
+  color: var(--color-text-faint);
+}
+.app-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.app-nav-heading {
+  padding: 0 24px 6px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  font-weight: 600;
+}
+.app-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 14px;
+  padding: 11px 14px;
+  font-size: 14px;
+  border-radius: var(--r-pill-sm);
+  color: var(--color-text);
+  font-weight: 500;
+}
+.app-nav-link:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.app-nav-link[aria-current='page'] {
+  color: var(--color-accent-ink);
+  background: var(--color-accent);
+  font-weight: 600;
+}
+.app-nav-link[aria-current='page']:hover {
+  background: var(--color-accent-600);
+  color: var(--color-accent-ink);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.app-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+}
+@media (min-width: 1024px) {
+  .app-topbar {
+    padding: 18px 40px 14px;
+  }
+}
+.app-topbar-date {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+.app-topbar-rule {
+  height: 1px;
+  background: var(--color-divider);
+  margin: 0 20px;
+}
+@media (min-width: 1024px) {
+  .app-topbar-rule {
+    margin: 0 40px;
+  }
+}
+.sidebar-toggle {
+  display: inline-flex;
+}
+@media (min-width: 1024px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+.app-content {
+  padding: 24px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+@media (min-width: 1024px) {
+  .app-content {
+    padding: 32px 40px 48px;
+    gap: 40px;
+  }
+}
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-head h1 {
+  font-size: clamp(30px, 4vw, 42px);
+  margin: 2px 0 0;
+}
+
+/* ── status pills (KAN-38, KAN-39) ─────────────────────────────────────── */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.status-pill[data-status='normal'] {
+  background: var(--status-normal-bg);
+  color: var(--status-normal-ink);
+}
+.status-pill[data-status='low'] {
+  background: var(--status-low-bg);
+  color: var(--status-low-ink);
+}
+.status-pill[data-status='high'] {
+  background: var(--status-high-bg);
+  color: var(--status-high-ink);
+}
+.status-pill[data-status='critical'] {
+  background: var(--status-critical-bg);
+  color: var(--status-critical-ink);
+}
+.status-pill[data-status='unknown'] {
+  background: var(--status-unknown-bg);
+  color: var(--status-unknown-ink);
+}
+
+/* ── inline alerts ─────────────────────────────────────────────────────── */
+
+.alert {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--r-card);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.alert p {
+  margin: 0;
+}
+.alert-icon {
+  flex: none;
+  margin-top: 1px;
+  font-size: 18px;
+}
+.alert[data-tone='info'] {
+  background: var(--feedback-info-bg);
+  color: var(--feedback-info-ink);
+}
+.alert[data-tone='success'] {
+  background: var(--feedback-success-bg);
+  color: var(--feedback-success-ink);
+}
+.alert[data-tone='warning'] {
+  background: var(--feedback-warning-bg);
+  color: var(--feedback-warning-ink);
+}
+.alert[data-tone='danger'] {
+  background: var(--feedback-danger-bg);
+  color: var(--feedback-danger-ink);
+}
+
+/* ── disclaimer banner ─────────────────────────────────────────────────── */
+
+.disclaimer-banner {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px 20px;
+  background: var(--panel-bg);
+  border-radius: var(--r-card);
+}
+.disclaimer-banner p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 1000px;
+}
+.disclaimer-banner .alert-icon {
+  color: var(--color-accent);
+  font-size: 20px;
+  margin-top: 2px;
+}
+.disclaimer-strong {
+  margin: 0 56px 56px;
+  padding: 26px 28px;
+  background: var(--color-accent-surface);
+  color: var(--color-accent-surface-ink);
+  border-radius: var(--r-card);
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+@media (max-width: 1023px) {
+  .disclaimer-strong {
+    margin: 0 24px 40px;
+  }
+}
+.disclaimer-strong p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 960px;
+  opacity: 0.94;
+}
+
+/* ── dropzone (KAN-3 / KAN-42) ─────────────────────────────────────────── */
+
+.dropzone {
+  border: 1px dashed color-mix(in srgb, var(--color-text) 32%, transparent);
+  border-radius: var(--r-card);
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  background: transparent;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+@media (min-width: 640px) {
+  .dropzone {
+    padding: 56px 40px;
+  }
+}
+.dropzone:hover:not(:disabled) {
+  border-color: var(--color-accent-400);
+}
+.dropzone[data-dragging='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-100);
+}
+.dropzone:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.dropzone-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: clamp(18px, 3vw, 22px);
+}
+
+.upload-row {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-card);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.upload-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.progress-track {
+  height: 4px;
+  background: var(--color-neutral-300);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 160ms ease;
+}
+
+/* ── step indicator ────────────────────────────────────────────────────── */
+
+.steps {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.step {
+  flex: 1 1 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.step-rule {
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+.step[data-state='pending'] {
+  opacity: 0.45;
+}
+.step[data-state='pending'] .step-rule {
+  background: var(--color-text);
+}
+.step[data-state='failed'] .step-rule {
+  background: var(--chart-point-critical);
+}
+.step-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.step[data-state='pending'] .step-label {
+  color: var(--color-text);
+}
+.step[data-state='failed'] .step-label {
+  color: var(--chart-point-critical);
+}
+.step-detail {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── empty / skeleton ──────────────────────────────────────────────────── */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+  border-radius: var(--r-card);
+  background: var(--panel-bg);
+}
+.empty-state-icon {
+  font-size: 44px;
+  color: var(--color-accent-400);
+}
+.empty-state-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 18px;
+}
+.empty-state-body {
+  margin: 0;
+  font-size: 14px;
+  max-width: 420px;
+  color: var(--color-text-muted);
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-200) 25%,
+    var(--color-neutral-100) 37%,
+    var(--color-neutral-200) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* ── toasts ────────────────────────────────────────────────────────────── */
+
+.toast-region {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-md);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.toast[data-tone='info'] {
+  background: var(--feedback-info-bg);
+  color: var(--feedback-info-ink);
+}
+.toast[data-tone='success'] {
+  background: var(--feedback-success-bg);
+  color: var(--feedback-success-ink);
+}
+.toast[data-tone='warning'] {
+  background: var(--feedback-warning-bg);
+  color: var(--feedback-warning-ink);
+}
+.toast[data-tone='danger'] {
+  background: var(--feedback-danger-bg);
+  color: var(--feedback-danger-ink);
+}
+.toast-dismiss {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ── spinner ───────────────────────────────────────────────────────────── */
+
+.spinner {
+  display: inline-block;
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── metric row ────────────────────────────────────────────────────────── */
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 24px;
+}
+.metric-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.metric-value {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1.1;
+  margin-top: 6px;
+}
+
+/* ── table wrapper ─────────────────────────────────────────────────────── */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* ── quota meter (spec §79) ────────────────────────────────────────────── */
+
+.quota-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--r-card);
+  background: var(--panel-bg);
+}
+.quota-meter[data-compact] {
+  padding: 0;
+  background: transparent;
+}
+.quota-meter-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.quota-meter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.quota-meter-value {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.quota-meter-detail {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.quota-meter[data-tone='warning'] .quota-meter-label {
+  color: var(--feedback-warning-ink);
+}
+.quota-meter[data-tone='danger'] .quota-meter-label {
+  color: var(--feedback-danger-ink);
+}
+
+/* `<meter>` has no agreed default appearance across engines, so it is styled
+   explicitly for both the WebKit/Blink and Gecko pseudo-elements. The element
+   is kept (rather than swapped for a div) for its built-in semantics. */
+.quota-meter-bar {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--color-neutral-200);
+  appearance: none;
+}
+.quota-meter-bar::-webkit-meter-bar {
+  background: var(--color-neutral-200);
+  border: 0;
+  border-radius: var(--r-pill);
+  height: 8px;
+}
+.quota-meter-bar::-webkit-meter-optimum-value,
+.quota-meter-bar::-webkit-meter-suboptimum-value,
+.quota-meter-bar::-webkit-meter-even-less-good-value {
+  border-radius: var(--r-pill);
+}
+.quota-meter-bar::-webkit-meter-optimum-value {
+  background: var(--color-accent);
+}
+.quota-meter-bar::-webkit-meter-suboptimum-value {
+  background: var(--feedback-warning-ink);
+}
+.quota-meter-bar::-webkit-meter-even-less-good-value {
+  background: var(--feedback-danger-ink);
+}
+.quota-meter-bar::-moz-meter-bar {
+  border-radius: var(--r-pill);
+  background: var(--color-accent);
+}
+.quota-meter[data-tone='warning'] .quota-meter-bar::-moz-meter-bar {
+  background: var(--feedback-warning-ink);
+}
+.quota-meter[data-tone='danger'] .quota-meter-bar::-moz-meter-bar {
+  background: var(--feedback-danger-ink);
+}
+
+/* ── laboratory variables (KAN-45) ─────────────────────────────────────── */
+
+.variable-grid {
+  display: grid;
+  /* Auto-fit rather than a fixed four columns: the design board is drawn at
+     1440px, and this keeps the same card size while the count adapts down to
+     one on a phone. */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.variable-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.variable-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* A filter chip is a toggle, so it is a real button with aria-pressed rather
+   than a styled span — it has to be reachable and operable by keyboard. */
+.chip {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-800);
+  cursor: pointer;
+}
+.chip:hover {
+  background: var(--color-neutral-200);
+}
+.chip[aria-pressed='true'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+.variable-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  color: var(--color-text);
+  font-weight: 400;
+}
+.variable-card:hover {
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  text-decoration: none;
+}
+/* A wash of the status colour, echoing the design board. It is reinforcement
+   only — the badge inside already names the status in words. */
+.variable-card[data-flagged][data-status='critical'] {
+  background: var(--status-critical-wash);
+}
+.variable-card[data-flagged][data-status='high'] {
+  background: var(--status-high-wash);
+}
+.variable-card[data-flagged][data-status='low'] {
+  background: var(--status-low-wash);
+}
+
+.variable-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.variable-card-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.variable-card-number {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1;
+}
+.variable-card-unit {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+/* Pins the summary to the bottom of every card, so a title that wraps to two
+   lines ("Vitamin D (25-OH)") does not leave the row ragged. */
+.variable-card .card-meta {
+  margin-top: auto;
+}
+
+.sparkline-empty {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+/* ── native <dialog> correction ────────────────────────────────────────────
+ *
+ * Broadsheet's `.dialog` sets `display: flex` unconditionally, because it is
+ * written for a `<div class="dialog">` sitting inside a `.dialog-backdrop`
+ * div. Our Modal uses a real `<dialog>` element instead, for the focus trap,
+ * Escape handling and top-layer placement the platform gives us for free.
+ *
+ * Those two things collide. A closed `<dialog>` is hidden by the user-agent
+ * stylesheet's `dialog:not([open]) { display: none }`, and an author-level
+ * `display: flex` beats it — so the dialog rendered permanently, on every
+ * page, with empty content. Restore the closed state here.
+ *
+ * The rule is `dialog.dialog`, not `.dialog`, so Broadsheet's div-based
+ * pattern keeps working if anything ever uses it.
+ */
+dialog.dialog:not([open]) {
+  display: none;
+}
+
+/* A native dialog's overlay is the ::backdrop pseudo-element, not the
+   `.dialog-backdrop` div Broadsheet ships — without this there is no dimming
+   at all, and the dialog appears to float on live content. */
+dialog.dialog::backdrop {
+  background: var(--scrim);
+}
+
+dialog.dialog {
+  border: 0;
+  /* Centres in the top layer. The UA default is `margin: auto`, but Broadsheet
+     sets a width, and some engines then pin it to the inline start. */
+  margin: auto;
+}
+
+/* ── AI processing consent gate (spec §54) ─────────────────────────────── */
+
+.consent-gate {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px 22px;
+  border-radius: var(--r-card);
+  background: var(--feedback-info-bg);
+  color: var(--feedback-info-ink);
+}
+.consent-gate .alert-icon {
+  color: var(--color-accent);
+  font-size: 22px;
+  margin-top: 2px;
+}
+.consent-gate-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.consent-gate p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 720px;
+}
+
+/* ── account settings (KAN-27 / KAN-48) ────────────────────────────────── */
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px;
+  border-radius: var(--r-card);
+  background: var(--panel-bg);
+  max-width: 760px;
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.settings-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.settings-section p {
+  margin: 0;
+  line-height: 1.65;
+}
+.settings-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-facts li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.settings-facts li i {
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-accent);
+}
+
+/* ── danger zone: account deletion (KAN-23) ────────────────────────────────
+   Set apart by a rule and a tinted heading rather than by a red panel. The
+   section is read by everyone who visits the page, and a block of alarm
+   colour would shout at all of them; what actually needs weight is the
+   consequence, which the dialog states in words. */
+
+.danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--feedback-danger-border);
+}
+.danger-zone h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--feedback-danger-ink);
+}
+.danger-facts li i {
+  color: var(--feedback-danger-ink);
+}
+
+/* ── report details (KAN-44) ───────────────────────────────────────────── */
+
+.report-detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .report-detail {
+    /* The design board puts the PDF viewer here. Until KAN-44's viewer lands,
+       the metadata rail keeps the same position so the layout does not shift
+       when it arrives. */
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+.report-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.report-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: var(--r-card);
+  background: var(--panel-bg);
+}
+
+/* Visually distinct from the extracted values, because it is a different kind
+   of thing: one is what the laboratory printed, the other is a machine's
+   paraphrase. Blurring that line is the failure mode this product must avoid. */
+.result-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  margin: 0 0 6px;
+  border-left: 3px solid var(--color-accent-300);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+  background: var(--color-accent-100);
+}
+.result-analysis-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent-800);
+}
+.result-analysis p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-accent-900);
+}
+
+/* ── Variable history cards (KAN-46) ─────────────────────────────────────── */
+
+.trend-note {
+  margin: 0;
+  font-size: 13px;
+  max-width: 68ch;
+}
+
+.trend-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}
+.trend-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.trend-card-head h2 {
+  margin: 0;
+  font-size: 17px;
+  margin-right: 4px;
+}
+.trend-card-meta {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* ── Selecting several reports (KAN-43) ──────────────────────────────────── */
+
+/* Sits between the filters and the table, so the count is next to the rows it
+   counts rather than pinned to the bottom of the window where it would cover
+   the last row of a short list. */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--color-accent-400);
+  background: var(--color-accent-100);
+  color: var(--color-accent-900);
+}
+.bulk-count {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Named, not counted: what makes deleting several at once safe is seeing which
+   ones. Scrolls rather than growing, so the confirm button stays reachable
+   when twenty are selected. */
+.bulk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.bulk-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.bulk-list li span:first-child {
+  overflow-wrap: anywhere;
+}
+
+.table-select {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+/* A wash rather than a border, so a selected row does not shift by a pixel. */
+.table tbody tr[data-selected] {
+  background: var(--color-accent-100);
+}
+
+/* ── Variable details (KAN-14 / KAN-46) ──────────────────────────────────── */
+
+/* The one measured fact the page opens with, beside the facts that qualify it.
+   Value on the left at display size, qualifiers on the right at reading size:
+   the number is what the reader came for, and the range beside it is what
+   makes the number mean anything. */
+.variable-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px 40px;
+  padding: 20px 22px;
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}
+.variable-hero-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+.variable-hero-number {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 42px;
+  line-height: 1;
+}
+.variable-hero-unit {
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+.variable-hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 32px;
+  margin: 0;
+}
+
+/* The chart in words. Sized as body copy rather than as a caption because it
+   is the equivalent of the plot, not a footnote to it. */
+.variable-change {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 68ch;
+}
+
+.variable-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Anchors the tooltip, which is positioned as a percentage of this box — the
+   same box the SVG fills, so the percentages land on the point they describe. */
+.variable-chart-plot {
+  position: relative;
+}
+.variable-chart-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Points are operable, so they take a real focus ring. `outline` on an SVG
+   group is unreliable across engines; a drawn ring is not. */
+.variable-chart-point {
+  cursor: pointer;
+  outline: none;
+}
+.variable-chart-point:focus-visible circle:last-of-type {
+  stroke: var(--color-accent-800);
+  stroke-width: 3;
+}
+
+/* Sits above the point it describes, and out of the way of the pointer that
+   opened it — a tooltip under the cursor flickers as the mouse chases it. */
+.variable-chart-tip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 14px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 168px;
+  max-width: 260px;
+  padding: 10px 12px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--color-divider);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow-md);
+  z-index: 2;
+}
+.variable-chart-tip[data-pinned] {
+  border-color: var(--color-accent-400);
+}
+.variable-chart-tip-date {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.variable-chart-tip-value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1;
+}
+.variable-chart-tip-unit {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.variable-chart-tip-link {
+  font-size: 12px;
+}
+
+/* Results that were never numbers. A list rather than a plot, because there is
+   no axis "Negative" belongs on — see `splitMeasurements`. */
+.variable-qualitative {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.variable-qualitative li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-divider);
+}
+.variable-qualitative-date {
+  min-width: 108px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.variable-qualitative-value {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Reference content and machine commentary, side by side on a wide screen and
+   stacked on a narrow one. Equal columns on purpose: neither is the other's
+   caption. */
+.variable-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .variable-panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Profile (KAN-27 / KAN-48) ───────────────────────────────────────────── */
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.profile-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.profile-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-divider);
+}
+.profile-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.profile-meta-row > :first-child {
+  min-width: 150px;
+}
+
+/* A disabled input still has to be readable — it is showing the user their own
+   email address, not a control they are being denied. */
+.profile-form input:disabled {
+  opacity: 1;
+  color: var(--color-text-muted);
+  background: var(--color-neutral-100);
+  cursor: default;
+}
+.profile-form textarea.input {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  padding: 10px 12px;
+  width: 100%;
+}
+.profile-form select.input {
+  width: 100%;
+}
+
+/* ── language switcher (KAN-8) ─────────────────────────────────────────── */
+
+/* The compact switcher in the headers. Sized to disappear into the chrome:
+   someone who already reads the interface should not have a language control
+   competing with the navigation, while someone who cannot read it is scanning
+   for exactly this and finds it by the glyph. */
+.lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+}
+/* Transparent chrome, but a real `<select>` underneath. The focus ring comes
+   from the global `:focus-visible` rule and is deliberately not overridden —
+   this control is reached by keyboard by the people least able to hunt for it
+   visually. */
+.lang-switcher select {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.lang-switcher select:hover {
+  border-color: color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+
+/* The auth screen centres a single child, so the switcher is taken out of that
+   flow rather than added to it — as a flex sibling it would sit beside the
+   form instead of above it. */
+.auth-main {
+  position: relative;
+}
+.auth-lang {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+}

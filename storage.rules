@@ -1,0 +1,95 @@
+rules_version = '2';
+
+// LabResults — Cloud Storage security rules (KAN-4, spec §79).
+//
+// Layout mirrors ownership so the rule can be decided from the path alone:
+//
+//   users/{userId}/reports/{reportId}/{fileName}.pdf
+//
+// Original PDFs are never made public and never given a download token by the
+// client. The app reads them back through a short-lived signed URL issued by
+// the server, so a leaked path is not a leaked report.
+//
+// ── Why there is no firestore.get() here any more ─────────────────────────
+//
+// An earlier version enforced the per-user and global storage caps directly,
+// by reading the usage counters with `firestore.get()`. That is "cross-service
+// rules", and it requires the Firebase Rules service agent to hold
+// `roles/firebaserules.firestoreServiceAgent` on the project. The Firebase
+// console grants that automatically when you write such rules there; a
+// `firebase deploy` from the CLI does not.
+//
+// Without the grant, every evaluation that touches `firestore.get()` fails —
+// not the individual condition, the whole rule — so every upload returned
+// HTTP 403 "Permission denied" with nothing to indicate why. A security rule
+// whose correctness depends on an IAM binding that deploys do not create is a
+// rule that will break again, silently, on the next project.
+//
+// So the caps moved to `functions/src/usage.ts`, which already computes usage
+// on every finalize and can now delete an object that breaches them. The
+// honest description of the change:
+//
+//   before: an over-quota upload was REFUSED
+//   after:  an over-quota upload is ACCEPTED, then removed within seconds,
+//           and the user is told
+//
+// That is weaker, and spec §79 has been updated to say so rather than keep
+// claiming prevention. It is tolerable here only because the caps sit below
+// the no-cost allowance with room to spare, so the brief overshoot costs
+// nothing. Everything that can be decided from the request alone — ownership,
+// verification, size, type — is still decided here, before any byte is stored.
+//
+// To restore true prevention, grant the role and put the checks back:
+//
+//   gcloud projects add-iam-policy-binding labresults-2a13f \
+//     --member="serviceAccount:service-<PROJECT_NUMBER>@gcp-sa-firebaserules.iam.gserviceaccount.com" \
+//     --role="roles/firebaserules.firestoreServiceAgent"
+//
+// The numeric literals below are checked against config/quotas.json by
+// src/domain/quotas.rules.test.ts.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    match /users/{userId}/reports/{reportId}/{fileName} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Everything here is decidable from the request itself. No cross-service
+      // reads, so no dependency on an IAM binding that a deploy will not create.
+      allow create: if isOwner(userId)
+        && isVerified()
+        // Per-file: 25 MiB. Mirrors validateFile() in services/reports.ts.
+        && request.resource.size <= 26214400
+        && request.resource.contentType == 'application/pdf'
+        && fileName.matches('.*\\.pdf');
+
+      // A stored report is immutable — a corrected report is a new upload,
+      // linked to the old one by the versioning workflow (KAN-31). This also
+      // closes a capacity hole: overwriting in place would change an object's
+      // size without producing the finalize event the counters rely on.
+      allow update: if false;
+
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

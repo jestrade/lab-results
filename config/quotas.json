@@ -1,0 +1,191 @@
+{
+  "$comment": [
+    "SINGLE SOURCE OF TRUTH for every capacity limit in this project (spec §79).",
+    "Imported by the web app, by the Cloud Functions, and checked against the",
+    "hardcoded literals in firestore.rules / storage.rules by a drift test.",
+    "Change a number here and nowhere else; the test will tell you what else",
+    "needs updating.",
+    "",
+    "Allowances are the Blaze plan's no-cost tier as published at",
+    "https://firebase.google.com/pricing, read 2026-08-04. They are recorded",
+    "here so the derivation of every cap is auditable rather than folklore.",
+    "",
+    "IMPORTANT: this project's bucket is labresults-2a13f.firebasestorage.app,",
+    "a *.firebasestorage.app bucket. Its allowances differ substantially from",
+    "the legacy *.appspot.com ones — notably upload operations, which are",
+    "5K PER MONTH here versus 20K per DAY on a legacy bucket. Do not copy",
+    "limits from appspot documentation."
+  ],
+
+  "policy": {
+    "safetyMarginFraction": 0.8,
+    "$comment": [
+      "Every app cap is 80% of the no-cost allowance unless stated otherwise.",
+      "The 20% headroom absorbs the counter drift described in `enforcement`",
+      "below, and means crossing a cap costs nothing — it is a warning line,",
+      "not a cliff. Storage is set tighter still (see storage.globalBytes)."
+    ]
+  },
+
+  "storage": {
+    "$service": "Cloud Storage for Firebase (*.firebasestorage.app bucket)",
+
+    "perUserBytes": 419430400,
+    "perUserLabel": "400 MiB",
+
+    "globalBytes": 4294967296,
+    "globalLabel": "4 GiB",
+
+    "freeAllowanceBytes": 5368709120,
+    "freeAllowanceLabel": "5 GB stored (GB-months)",
+
+    "maxFileBytes": 26214400,
+    "maxFileLabel": "25 MiB",
+
+    "uploadOpsPerMonth": 4000,
+    "uploadOpsFreeAllowance": 5000,
+
+    "downloadOpsPerMonth": 40000,
+    "downloadOpsFreeAllowance": 50000,
+
+    "egressBytesPerMonth": 85899345920,
+    "egressFreeAllowanceLabel": "100 GB/month downloaded",
+
+    "$comment": [
+      "globalBytes is 4 GiB against a 5 GB allowance — deliberately below the",
+      "0.8 policy margin, because the allowance may be quoted in decimal GB",
+      "(5.0e9 bytes) rather than binary GiB (5.37e9). 4 GiB = 4.295e9 bytes is",
+      "under either reading, so the cap holds whichever unit Google means.",
+      "",
+      "UPLOAD OPERATIONS ARE THE BINDING CONSTRAINT, NOT STORAGE. At 4000",
+      "uploads/month across the planned ceiling of 10 users, that is 400",
+      "uploads per user per month — while 400 MiB of storage holds roughly 200",
+      "typical 2 MiB reports in total. A user hits the monthly op budget long",
+      "before they fill their space. Note also that a resumable upload can",
+      "consume more than one operation, so treat 4000 as optimistic."
+    ]
+  },
+
+  "ai": {
+    "$service": "Gemini API (gemini-2.5-flash)",
+    "$comment": [
+      "AI spend is NOT a Firebase allowance and is not covered by the Blaze",
+      "caps above — it is billed separately by Google's Gemini API. These are",
+      "app-level budgets, chosen to keep usage inside the Gemini free tier and",
+      "to bound the damage if something loops.",
+      "",
+      "PRIVACY: on the Gemini FREE tier, Google's terms allow submitted content",
+      "to be used to improve their products. For laboratory reports that is a",
+      "disclosure obligation, not a footnote. Two mitigations are in place:",
+      "identifiers are redacted before every call (functions/src/ai/redaction.ts),",
+      "and the app reports the training status truthfully in AI metadata.",
+      "Setting GEMINI_BILLING_ENABLED=true after enabling billing moves the",
+      "project to the paid tier, where content is not used for training.",
+      "",
+      "Cost, once billed: $0.30 per 1M input tokens, $2.50 per 1M output.",
+      "At ~4K tokens per report that is roughly $0.01 per report analysed."
+    ],
+
+    "callsPerUserPerDay": 50,
+    "callsPerProjectPerDay": 500,
+
+    "inputTokensPerUserPerDay": 200000,
+    "outputTokensPerUserPerDay": 50000,
+
+    "maxOutputTokensPerCall": 2048,
+    "timeoutMs": 30000,
+    "maxRetriesPerCall": 2,
+
+    "$derivation": [
+      "callsPerProjectPerDay is callsPerUserPerDay x the plannedUserCeiling of",
+      "10, so the project budget and the per-user budget cannot disagree.",
+      "50 calls/user/day is generous against real use — a report holds ~24",
+      "results and variable explanations are cached per variable, not per user."
+    ]
+  },
+
+  "firestore": {
+    "$service": "Cloud Firestore (Standard edition)",
+    "storedBytes": 858993459,
+    "storedFreeAllowanceLabel": "1 GiB total",
+    "readsPerDay": 40000,
+    "readsFreeAllowance": 50000,
+    "writesPerDay": 16000,
+    "writesFreeAllowance": 20000,
+    "deletesPerDay": 16000,
+    "deletesFreeAllowance": 20000,
+    "egressBytesPerMonth": 8589934592,
+    "egressFreeAllowanceLabel": "10 GiB/month"
+  },
+
+  "auth": {
+    "$service": "Firebase Authentication",
+    "monthlyActiveUsers": 40000,
+    "freeAllowance": 50000,
+    "$comment": [
+      "Not a practical constraint: the storage caps put the planned ceiling at",
+      "10 concurrent users. Recorded for completeness and because a future",
+      "storage-tier change would make it relevant."
+    ]
+  },
+
+  "functions": {
+    "$service": "Cloud Functions",
+    "invocationsPerMonth": 1600000,
+    "invocationsFreeAllowance": 2000000,
+    "gbSecondsPerMonth": 320000,
+    "gbSecondsFreeAllowance": 400000,
+    "cpuSecondsPerMonth": 160000,
+    "cpuSecondsFreeAllowance": 200000,
+    "egressBytesPerMonth": 4294967296,
+    "egressFreeAllowanceLabel": "5 GB/month outbound"
+  },
+
+  "hosting": {
+    "$service": "Firebase Hosting",
+    "storedBytes": 8589934592,
+    "storedFreeAllowanceLabel": "10 GB",
+    "transferBytesPerDay": 301989888,
+    "transferFreeAllowanceLabel": "360 MB/day"
+  },
+
+  "enforcement": {
+    "$comment": [
+      "What is actually enforced, and how hard. Written down because a limit",
+      "nobody enforces is a wish, and a limit enforced only in the browser is",
+      "a suggestion.",
+      "",
+      "HARD (denied server-side, cannot be bypassed):",
+      "  - per-file size            storage.rules, on every create",
+      "  - per-user stored bytes    storage.rules via firestore.get(usage/{uid})",
+      "  - global stored bytes      storage.rules via firestore.get(systemUsage/global)",
+      "  - per-user monthly uploads storage.rules via the same usage document",
+      "  - the uploadsDisabled kill switch",
+      "",
+      "SOFT (surfaced, not blocked): Firestore read/write/delete counts,",
+      "  Functions invocations, egress. Counting these in-band would cost a",
+      "  write per operation, which spends the very budget it protects. They",
+      "  are covered by the GCP billing budget and alerting described in",
+      "  docs/quotas.md instead.",
+      "",
+      "KNOWN GAP — counter drift. The storage counters are updated by a",
+      "Storage-triggered function AFTER an object is finalized, so several",
+      "uploads racing in parallel can each pass the rule check before any",
+      "counter moves. Worst case overshoot is roughly",
+      "(concurrent uploads x maxFileBytes). Three things contain it: the client",
+      "uploads strictly one file at a time, the caps sit below the no-cost",
+      "allowance so an overshoot costs nothing, and reconcileUsage recomputes",
+      "true usage from the bucket every day and corrects the counters."
+    ]
+  },
+
+  "plannedUserCeiling": 10,
+  "$ceilingComment": [
+    "floor(globalBytes / perUserBytes) = 10. This is the number of users who",
+    "can hold a full quota at once, and it is what the per-user share of every",
+    "other budget is derived from. It is NOT enforced at registration —",
+    "real users rarely fill their quota, and locking out an 11th signup would",
+    "be a product decision, not an infrastructure one. The admin dashboard",
+    "warns when active users exceed it."
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "name": "lab-results-functions",
+  "private": true,
+  "type": "commonjs",
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "sync:config": "node -e \"for (const n of ['quotas','retry']) require('fs').copyFileSync('../config/' + n + '.json', 'src/' + n + '.generated.json')\"",
+    "build": "npm run sync:config && tsc",
+    "watch": "npm run sync:config && tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@google/genai": "^2.15.0",
+    "@types/pdf-parse": "^1.1.5",
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.2.0",
+    "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.7"
+  }
+}

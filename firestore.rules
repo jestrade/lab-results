@@ -1,0 +1,222 @@
+rules_version = '2';
+
+// LabResults — Firestore security rules (KAN-4, KAN-2).
+//
+// Two principles run through everything below:
+//
+//  1. A user reaches their own data and nothing else. Every document that
+//     holds health data carries an `ownerId`, and access is decided from it.
+//  2. The client never writes anything the pipeline is responsible for.
+//     Extraction results, classifications, processing state and audit records
+//     are written by the Admin SDK (Cloud Functions), which bypasses these
+//     rules entirely. Denying those writes here is what makes the extracted
+//     data trustworthy.
+//
+// Role lives in the `role` custom claim, not in the profile document. The
+// profile mirrors it for display only, and the mirror is not writable by the
+// user — otherwise the mirror would be a privilege-escalation path.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── helpers ──────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && uid() == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    // Email verification is required before a user may put a report into the
+    // system — it is the gate the upload UI enforces client-side (KAN-3), and
+    // this is the same gate enforced server-side.
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // Fields the client is never allowed to set or change on a given write.
+    function untouched(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(fields);
+    }
+
+    function createdWithout(fields) {
+      return !request.resource.data.keys().hasAny(fields);
+    }
+
+    // ── users/{userId} ───────────────────────────────────────────────────
+    // Profile document. Created by the client on first sign-in, kept in step
+    // with the auth record by a Cloud Function.
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      // A new profile may not carry role or disabled — those are set from the
+      // custom claim by the server, never claimed by the account itself.
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.email is string
+        && request.resource.data.createdAt == request.time
+        && createdWithout(['role', 'disabled', 'deletedAt']);
+
+      // The user may edit their own display name, preferences and consent
+      // record. Everything security-relevant is off limits.
+      allow update: if isAdmin()
+        || (isOwner(userId) && untouched([
+             'uid', 'email', 'role', 'disabled', 'createdAt', 'deletedAt',
+           ]));
+
+      // Account deletion is a server-side workflow (KAN-23): the `deleteAccount`
+      // callable in functions/src/deleteAccount.ts. Denied here because a client
+      // delete cannot touch the variableSeries subcollection, the extracted
+      // results, the Storage objects or the Auth record — it would leave the
+      // health data behind and only remove the document that points at it.
+      allow delete: if false;
+
+      // Per-variable aggregated history (populated by the trend engine,
+      // KAN-11). Read-only to its owner.
+      match /variableSeries/{variableId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    // ── reports/{reportId} ───────────────────────────────────────────────
+    // Top-level rather than nested under the user so admins can query across
+    // owners (KAN-51) without a collection-group read of user subtrees.
+
+    match /reports/{reportId} {
+      allow get: if isSignedIn()
+        && (isOwner(resource.data.ownerId) || isAdmin());
+
+      // Ownership is filtered by the query itself; rules cannot inspect the
+      // query, so a list is only allowed to a signed-in user and the client
+      // must always constrain by ownerId. Admins list freely.
+      allow list: if isSignedIn();
+
+      // The client creates the report record when it finishes uploading the
+      // PDF, and may only ever declare it as `uploaded`. Advancing it to
+      // queued/processing/processed is the pipeline's job (KAN-7).
+      allow create: if isVerified()
+        && request.resource.data.ownerId == uid()
+        && request.resource.data.status == 'uploaded'
+        && request.resource.data.uploadedAt == request.time
+        && request.resource.data.storagePath is string
+        && request.resource.data.storagePath
+             .matches('^users/' + uid() + '/reports/.*')
+        && request.resource.data.originalFileName is string
+        && request.resource.data.fileSize is int
+        && request.resource.data.fileSize > 0
+        && request.resource.data.fileSize <= 25 * 1024 * 1024
+        && createdWithout([
+             'resultCount', 'outOfRangeCount', 'processedAt', 'warnings',
+             'laboratoryName', 'reportDate',
+             // A report that arrives claiming it has been retried -5 times
+             // would hand its owner an unlimited reprocessing budget.
+             'retryCount', 'lastRetryAt', 'processingStartedAt',
+             // Whether a report duplicates another is the pipeline's verdict
+             // (KAN-28), reached after reading both. A client that could set
+             // it would be writing the notice the user is shown.
+             'duplicateOf',
+           ]);
+
+      // Nothing the pipeline owns may be rewritten from the browser. What is
+      // left for the user is the label they typed on the upload form.
+      allow update: if isAdmin()
+        || (isOwner(resource.data.ownerId) && untouched([
+             'ownerId', 'storagePath', 'fileSize', 'contentHash', 'status',
+             'uploadedAt', 'processedAt', 'resultCount', 'outOfRangeCount',
+             'warnings', 'pageCount', 'supersededBy', 'duplicateOf', 'version',
+             // The retry budget (KAN-7). Kept out of reach for the same reason
+             // as the usage counters: a limit the client can reset is not a
+             // limit, and each reprocessing spends AI calls.
+             'retryCount', 'lastRetryAt', 'processingStartedAt',
+           ]));
+
+      allow delete: if isSignedIn()
+        && (isOwner(resource.data.ownerId) || isAdmin());
+
+      // Extracted values. Written exclusively by the extraction pipeline
+      // (KAN-6); the user-correction workflow (KAN-29) will go through a
+      // callable function, not a direct write, so this stays closed.
+      match /results/{resultId} {
+        allow read: if isSignedIn()
+          && (isOwner(get(/databases/$(database)/documents/reports/$(reportId)).data.ownerId)
+              || isAdmin());
+        allow write: if false;
+      }
+    }
+
+    // ── usage/{userId} ───────────────────────────────────────────────────
+    // Storage consumption per user (spec §79). Read by `storage.rules` via
+    // firestore.get() to decide whether an upload fits, and by the app to draw
+    // the quota meter.
+    //
+    // Client writes are denied outright. This document is the thing the quota
+    // is enforced against — if a user could edit it, the quota would be
+    // decorative. Only the Storage-triggered functions and the nightly
+    // reconciliation update it, through the Admin SDK.
+
+    match /usage/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+
+    // ── systemUsage/global ───────────────────────────────────────────────
+    // Project-wide totals and the upload kill switch (spec §79).
+    //
+    // Readable by any signed-in user because `storage.rules` consults it on
+    // every upload and the app needs to explain a "service at capacity"
+    // refusal. It holds aggregate byte counts and a boolean — nothing about
+    // any individual — so exposing it discloses nothing personal.
+
+    match /systemUsage/{docId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+
+    // ── variables/{variableId} ───────────────────────────────────────────
+    // The canonical laboratory-variable catalog (KAN-8). Reference data:
+    // readable by any signed-in user, maintained by admins.
+
+    match /variables/{variableId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── processingJobs/{jobId} ───────────────────────────────────────────
+    // Pipeline telemetry surfaced in the admin console (KAN-20).
+
+    match /processingJobs/{jobId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ── auditLogs/{logId} ────────────────────────────────────────────────
+    // Append-only from the server (KAN-21). No client write of any kind: an
+    // audit trail a client can touch is not an audit trail.
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

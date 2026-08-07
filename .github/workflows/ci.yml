@@ -1,0 +1,228 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Lint, typecheck, unit tests and the production build. Everything here is
+  # cheap and gates the pipeline.
+  verify:
+    name: Lint, typecheck and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:coverage
+
+      - name: Install Cloud Functions dependencies
+        run: npm --prefix functions ci
+
+      - name: Build and test Cloud Functions
+        run: npm run test:functions
+
+      - name: Build
+        run: npm run build
+        env:
+          # The build only needs these to exist — the real values are injected
+          # at deploy time. A build must never depend on production secrets.
+          VITE_FIREBASE_API_KEY: ci
+          VITE_FIREBASE_AUTH_DOMAIN: ci.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: ci
+          VITE_FIREBASE_STORAGE_BUCKET: ci.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: '0'
+          VITE_FIREBASE_APP_ID: ci
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+  # Accessibility and journey coverage in a real browser (KAN-53).
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run e2e
+        env:
+          VITE_FIREBASE_API_KEY: ci
+          VITE_FIREBASE_AUTH_DOMAIN: ci.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: ci
+          VITE_FIREBASE_STORAGE_BUCKET: ci.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: '0'
+          VITE_FIREBASE_APP_ID: ci
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # Dependency and secret hygiene (KAN-36).
+  security:
+    name: Security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Scan history for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Every PR gets a clickable build on its own Hosting channel, so a reviewer
+  # can try the change instead of reading a diff and imagining it.
+  preview:
+    name: Preview deploy
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_STAGING_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_STAGING_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_STAGING_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_STAGING_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_STAGING_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_STAGING_FIREBASE_APP_ID }}
+          VITE_SENTRY_ENVIRONMENT: staging
+          VITE_APP_VERSION: ${{ github.sha }}
+
+      # Points at the staging project, never production: a preview must not be
+      # able to write to real users' data.
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.VITE_STAGING_FIREBASE_PROJECT_ID }}
+          expires: 7d
+
+  # Deploy on green, from main only.
+  deploy:
+    name: Deploy to Firebase
+    runs-on: ubuntu-latest
+    needs: [verify, e2e, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: production
+          VITE_APP_VERSION: ${{ github.sha }}
+
+      - name: Write deploy credentials
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "${{ github.workspace }}/service-account.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Build Cloud Functions
+        run: npm --prefix functions ci && npm run build:functions
+
+      # One `firebase deploy` for everything, rather than the hosting-deploy
+      # action — that action only ships hosting, and hosting alone would put a
+      # UI live against rules and functions that had not moved with it.
+      #
+      # Order is not optional. Rules first, so the security and quota gates are
+      # in force before anything can reach them. Functions next, so the
+      # counters those rules read are actually being written. Hosting last, so
+      # no user sees a UI whose backend is not ready yet.
+      - name: Deploy rules, indexes, functions and hosting
+        run: |
+          npm install --no-save firebase-tools@^13
+          npx firebase deploy \
+            --only firestore:rules,firestore:indexes,storage,functions,hosting \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive \
+            --force
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          # Workload Identity Federation would be better than a long-lived key;
+          # tracked as the least-privilege IAM item on KAN-36.
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/service-account.json
+
+      - name: Remove deploy credentials
+        if: always()
+        run: rm -f "${{ github.workspace }}/service-account.json"

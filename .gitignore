@@ -1,0 +1,20 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+.firebase
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+google_service_account_key.json
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Firebase CLI debug output
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

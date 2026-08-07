@@ -1,0 +1,21 @@
+# Automated dependency updates (KAN-36).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Patch and minor bumps arrive as one PR per ecosystem group rather than a
+    # dozen individual ones; majors stay separate because they need reading.
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    labels: [dependencies]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencies, ci]

@@ -1,0 +1,811 @@
+{
+  "variables": [
+    {
+      "id": "hemoglobin",
+      "canonicalName": "Hemoglobin",
+      "names": {
+        "en": "Hemoglobin",
+        "es": "Hemoglobina"
+      },
+      "descriptions": {
+        "en": "Hemoglobin is an iron-rich protein in red blood cells responsible for carrying oxygen from the lungs to the rest of the body. Its measurement is essential for diagnosing and monitoring different types of anemia, as well as evaluating overall health and the body's oxygenation capacity.",
+        "es": "La hemoglobina es una proteína rica en hierro presente en los glóbulos rojos, encargada de transportar el oxígeno desde los pulmones hacia el resto del cuerpo. Su medición es fundamental para diagnosticar y monitorear diferentes tipos de anemia, así como para evaluar el estado general de salud y la capacidad de oxigenación del organismo."
+      },
+      "aliases": [
+        "Hemoglobin",
+        "Hemoglobina"
+      ],
+      "category": "complete_blood_count",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "white-blood-cells",
+      "canonicalName": "White Blood Cells (WBC)",
+      "names": {
+        "en": "White Blood Cells (WBC)",
+        "es": "Leucocitos (Glóbulos Blancos)"
+      },
+      "descriptions": {
+        "en": "Leukocytes are the primary cells of the immune system that defend the body against infections and diseases. An abnormal count can indicate the presence of an acute infection, inflammatory processes, immune system disorders, or bone marrow diseases.",
+        "es": "Los leucocitos son las células principales del sistema inmunológico que defienden al cuerpo contra infecciones y enfermedades. Un recuento anormal puede indicar la presencia de una infección aguda, procesos inflamatorios, trastornos del sistema inmunológico o enfermedades de la médula ósea."
+      },
+      "aliases": [
+        "White Blood Cells (WBC)",
+        "White Blood Cells",
+        "WBC",
+        "Leucocitos (Glóbulos Blancos)",
+        "Leucocitos",
+        "Glóbulos Blancos"
+      ],
+      "category": "complete_blood_count",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "hematocrit",
+      "canonicalName": "Hematocrit",
+      "names": {
+        "en": "Hematocrit",
+        "es": "Hematocrito"
+      },
+      "descriptions": {
+        "en": "Hematocrit measures the proportion of total blood volume that consists of red blood cells. It is crucial for evaluating anemia, dehydration, or disorders like polycythemia vera.",
+        "es": "El hematocrito mide la proporción del volumen total de sangre que está compuesta por glóbulos rojos. Es crucial para evaluar anemias, deshidratación o trastornos como la policitemia vera."
+      },
+      "aliases": [
+        "Hematocrit",
+        "Hematocrito"
+      ],
+      "category": "complete_blood_count",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "platelets",
+      "canonicalName": "Platelets",
+      "names": {
+        "en": "Platelets",
+        "es": "Plaquetas"
+      },
+      "descriptions": {
+        "en": "Platelets are cell fragments essential for blood clotting. Low levels can lead to excessive bleeding, while high levels increase the risk of thrombosis.",
+        "es": "Las plaquetas son fragmentos celulares esenciales para la coagulación de la sangre. Niveles bajos pueden provocar sangrado excesivo, mientras que niveles altos aumentan el riesgo de trombosis."
+      },
+      "aliases": [
+        "Platelets",
+        "Plaquetas"
+      ],
+      "category": "complete_blood_count",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "mean-corpuscular-volume",
+      "canonicalName": "Mean Corpuscular Volume (MCV)",
+      "names": {
+        "en": "Mean Corpuscular Volume (MCV)",
+        "es": "Volumen Corpuscular Medio (VCM)"
+      },
+      "descriptions": {
+        "en": "Measures the average size of red blood cells. It helps classify the type of anemia (microcytic, normocytic, or macrocytic) to determine its cause, such as iron or vitamin B12 deficiency.",
+        "es": "Mide el tamaño promedio de los glóbulos rojos. Ayuda a clasificar el tipo de anemia (microcítica, normocítica o macrocítica) para determinar su causa, como deficiencia de hierro o de vitamina B12."
+      },
+      "aliases": [
+        "Mean Corpuscular Volume (MCV)",
+        "Mean Corpuscular Volume",
+        "MCV",
+        "Volumen Corpuscular Medio (VCM)",
+        "Volumen Corpuscular Medio",
+        "VCM"
+      ],
+      "category": "complete_blood_count",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "eosinophils",
+      "canonicalName": "Eosinophils",
+      "names": {
+        "en": "Eosinophils",
+        "es": "Eosinófilos"
+      },
+      "descriptions": {
+        "en": "A type of white blood cell primarily associated with allergic responses and defense against parasitic infections. Chronic elevation may require further investigation.",
+        "es": "Un tipo de glóbulo blanco asociado principalmente con respuestas alérgicas y la defensa contra infecciones parasitarias. Su elevación crónica puede requerir investigación adicional."
+      },
+      "aliases": [
+        "Eosinophils",
+        "Eosinófilos"
+      ],
+      "category": "complete_blood_count",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "lymphocytes",
+      "canonicalName": "Lymphocytes",
+      "names": {
+        "en": "Lymphocytes",
+        "es": "Linfocitos"
+      },
+      "descriptions": {
+        "en": "White blood cells critical to the adaptive immune system, responsible for fighting viral infections and producing antibodies.",
+        "es": "Glóbulos blancos fundamentales para el sistema inmunológico adaptativo, encargados de combatir infecciones virales y producir anticuerpos."
+      },
+      "aliases": [
+        "Lymphocytes",
+        "Linfocitos"
+      ],
+      "category": "complete_blood_count",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "total-cholesterol",
+      "canonicalName": "Total Cholesterol",
+      "names": {
+        "en": "Total Cholesterol",
+        "es": "Colesterol Total"
+      },
+      "descriptions": {
+        "en": "Cholesterol is a substance the body needs to build cells. This test measures the sum of all types of cholesterol and is a crucial indicator for assessing heart disease risk.",
+        "es": "El colesterol es una sustancia que el cuerpo necesita para construir células. Esta prueba mide la suma de todos los tipos de colesterol y es un indicador crucial para evaluar el riesgo de enfermedades cardíacas."
+      },
+      "aliases": [
+        "Total Cholesterol",
+        "Colesterol Total"
+      ],
+      "category": "lipid_profile",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "triglycerides",
+      "canonicalName": "Triglycerides",
+      "names": {
+        "en": "Triglycerides",
+        "es": "Triglicéridos"
+      },
+      "descriptions": {
+        "en": "They are the most common type of fat in the body, derived from extra calories. Chronically elevated levels increase the risk of coronary artery disease and pancreatitis.",
+        "es": "Son el tipo más común de grasa en el cuerpo, provenientes de calorías adicionales. Mantener niveles elevados crónicamente aumenta el riesgo de enfermedad coronaria y pancreatitis."
+      },
+      "aliases": [
+        "Triglycerides",
+        "Triglicéridos"
+      ],
+      "category": "lipid_profile",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "hdl-cholesterol",
+      "canonicalName": "HDL Cholesterol",
+      "names": {
+        "en": "HDL Cholesterol",
+        "es": "Colesterol HDL"
+      },
+      "descriptions": {
+        "en": "Known as 'good' cholesterol, it helps transport excess cholesterol back to the liver for elimination, reducing cardiovascular risk.",
+        "es": "Conocido como colesterol 'bueno', ayuda a transportar el exceso de colesterol de vuelta al hígado para su eliminación, reduciendo el riesgo cardiovascular."
+      },
+      "aliases": [
+        "HDL Cholesterol",
+        "Colesterol HDL"
+      ],
+      "category": "lipid_profile",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "ldl-cholesterol",
+      "canonicalName": "LDL Cholesterol",
+      "names": {
+        "en": "LDL Cholesterol",
+        "es": "Colesterol LDL"
+      },
+      "descriptions": {
+        "en": "Known as 'bad' cholesterol, as high levels can build up on artery walls (plaque), increasing the risk of heart attacks and strokes.",
+        "es": "Conocido como colesterol 'malo', ya que en niveles altos puede acumularse en las paredes de las arterias (placa), aumentando el riesgo de ataques cardíacos y derrames cerebrales."
+      },
+      "aliases": [
+        "LDL Cholesterol",
+        "Colesterol LDL"
+      ],
+      "category": "lipid_profile",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "uric-acid",
+      "canonicalName": "Uric Acid",
+      "names": {
+        "en": "Uric Acid",
+        "es": "Ácido Úrico"
+      },
+      "descriptions": {
+        "en": "Waste product created when breaking down purines. If it accumulates, it can form crystals in joints causing gout, or develop kidney stones.",
+        "es": "Producto de desecho creado al descomponer purinas. Si se acumula, puede formar cristales en las articulaciones causando gota, o desarrollar cálculos renales."
+      },
+      "aliases": [
+        "Uric Acid",
+        "Ácido Úrico"
+      ],
+      "category": "kidney_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "creatinine",
+      "canonicalName": "Creatinine",
+      "names": {
+        "en": "Creatinine",
+        "es": "Creatinina"
+      },
+      "descriptions": {
+        "en": "A byproduct of normal muscle wear and tear filtered by the kidneys. A rise in blood levels is one of the clearest signs that kidney function is declining.",
+        "es": "Un subproducto del desgaste muscular normal filtrado por los riñones. Un aumento en sangre es una de las señales más claras de que la función renal está disminuyendo."
+      },
+      "aliases": [
+        "Creatinine",
+        "Creatinina"
+      ],
+      "category": "kidney_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "blood-urea-nitrogen",
+      "canonicalName": "Blood Urea Nitrogen (BUN)",
+      "names": {
+        "en": "Blood Urea Nitrogen (BUN)",
+        "es": "Urea (BUN)"
+      },
+      "descriptions": {
+        "en": "Measures the amount of nitrogen in the blood that comes from urea, a waste product of protein metabolism. Used to evaluate kidney function and hydration.",
+        "es": "Mide la cantidad de nitrógeno en la sangre que proviene de la urea, un producto de desecho del metabolismo de las proteínas. Se usa para evaluar la función renal y la hidratación."
+      },
+      "aliases": [
+        "Blood Urea Nitrogen (BUN)",
+        "Blood Urea Nitrogen",
+        "BUN",
+        "Urea (BUN)",
+        "Urea"
+      ],
+      "category": "kidney_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "estimated-glomerular-filtration-rate",
+      "canonicalName": "Estimated Glomerular Filtration Rate (eGFR)",
+      "names": {
+        "en": "Estimated Glomerular Filtration Rate (eGFR)",
+        "es": "Tasa de Filtración Glomerular (eGFR)"
+      },
+      "descriptions": {
+        "en": "A mathematical calculation that estimates how well kidneys filter waste. It is the best indicator for classifying stages of chronic kidney disease.",
+        "es": "Un cálculo matemático que estima qué tan bien los riñones filtran los desechos. Es el mejor indicador para clasificar las etapas de la enfermedad renal crónica."
+      },
+      "aliases": [
+        "Estimated Glomerular Filtration Rate (eGFR)",
+        "Estimated Glomerular Filtration Rate",
+        "eGFR",
+        "Tasa de Filtración Glomerular (eGFR)",
+        "Tasa de Filtración Glomerular"
+      ],
+      "category": "kidney_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "fasting-blood-glucose",
+      "canonicalName": "Fasting Blood Glucose",
+      "names": {
+        "en": "Fasting Blood Glucose",
+        "es": "Glucosa en Ayunas"
+      },
+      "descriptions": {
+        "en": "Measures free sugar in the blood after at least 8 hours of fasting. The primary tool for diagnosing diabetes and prediabetes.",
+        "es": "Mide la cantidad de azúcar libre en sangre tras al menos 8 horas de ayuno. Principal herramienta para diagnosticar diabetes y prediabetes."
+      },
+      "aliases": [
+        "Fasting Blood Glucose",
+        "Glucosa en Ayunas"
+      ],
+      "category": "glucose_metabolism",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "glycated-hemoglobin",
+      "canonicalName": "Glycated Hemoglobin",
+      "names": {
+        "en": "Glycated Hemoglobin",
+        "es": "Hemoglobina Glicosilada (HbA1c)"
+      },
+      "descriptions": {
+        "en": "Reveals the percentage of sugar-coated hemoglobin, providing an average of glucose levels over the past two to three months. It is the gold standard for diabetic control.",
+        "es": "Revela el porcentaje de hemoglobina recubierta de azúcar, proporcionando un promedio de la glucosa de los últimos dos o tres meses. Es el estándar de oro para el control diabético."
+      },
+      "aliases": [
+        "Glycated Hemoglobin",
+        "Hemoglobina Glicosilada (HbA1c)",
+        "Hemoglobina Glicosilada",
+        "HbA1c"
+      ],
+      "category": "glucose_metabolism",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "insulin",
+      "canonicalName": "Insulin",
+      "names": {
+        "en": "Insulin",
+        "es": "Insulina"
+      },
+      "descriptions": {
+        "en": "Measures the level of the hormone that regulates glucose entry into cells. Useful for evaluating insulin resistance and diagnosing causes of hypoglycemia.",
+        "es": "Mide el nivel de la hormona que regula la entrada de glucosa a las células. Útil para evaluar la resistencia a la insulina y diagnosticar causas de hipoglucemia."
+      },
+      "aliases": [
+        "Insulin",
+        "Insulina"
+      ],
+      "category": "glucose_metabolism",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "bilirubin",
+      "canonicalName": "Bilirubin",
+      "names": {
+        "en": "Bilirubin",
+        "es": "Bilirrubina"
+      },
+      "descriptions": {
+        "en": "Yellow pigment produced during red blood cell breakdown. Its excessive accumulation causes jaundice and indicates liver or biliary problems.",
+        "es": "Pigmento amarillo producido durante la descomposición de glóbulos rojos. Su acumulación excesiva causa ictericia e indica problemas hepáticos o biliares."
+      },
+      "aliases": [
+        "Bilirubin",
+        "Bilirrubina"
+      ],
+      "category": "liver_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "alanine-aminotransferase",
+      "canonicalName": "Alanine Aminotransferase (ALT)",
+      "names": {
+        "en": "Alanine Aminotransferase (ALT)",
+        "es": "Alanina Aminotransferasa (ALT)"
+      },
+      "descriptions": {
+        "en": "An enzyme found primarily in the liver. The release of this enzyme into the bloodstream is a specific and early indicator of liver damage.",
+        "es": "Una enzima que se encuentra principalmente en el hígado. La liberación de esta enzima al torrente sanguíneo es un indicador específico y temprano de daño hepático."
+      },
+      "aliases": [
+        "Alanine Aminotransferase (ALT)",
+        "Alanine Aminotransferase",
+        "ALT",
+        "Alanina Aminotransferasa (ALT)",
+        "Alanina Aminotransferasa"
+      ],
+      "category": "liver_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "aspartate-aminotransferase",
+      "canonicalName": "Aspartate Aminotransferase (AST)",
+      "names": {
+        "en": "Aspartate Aminotransferase (AST)",
+        "es": "Aspartato Aminotransferasa (AST)"
+      },
+      "descriptions": {
+        "en": "Enzyme present in the liver, heart, and muscles. Its elevation suggests cellular damage in these tissues and is usually evaluated alongside ALT.",
+        "es": "Enzima presente en el hígado, corazón y músculos. Su elevación sugiere daño celular en estos tejidos y suele evaluarse junto con la ALT."
+      },
+      "aliases": [
+        "Aspartate Aminotransferase (AST)",
+        "Aspartate Aminotransferase",
+        "AST",
+        "Aspartato Aminotransferasa (AST)",
+        "Aspartato Aminotransferasa"
+      ],
+      "category": "liver_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "alkaline-phosphatase",
+      "canonicalName": "Alkaline Phosphatase (ALP)",
+      "names": {
+        "en": "Alkaline Phosphatase (ALP)",
+        "es": "Fosfatasa Alcalina (ALP)"
+      },
+      "descriptions": {
+        "en": "Enzyme present in high concentrations in the liver and bones. Elevated levels may indicate bile duct obstructions or bone diseases.",
+        "es": "Enzima presente en altas concentraciones en el hígado y los huesos. Niveles elevados pueden indicar obstrucciones de las vías biliares o enfermedades óseas."
+      },
+      "aliases": [
+        "Alkaline Phosphatase (ALP)",
+        "Alkaline Phosphatase",
+        "ALP",
+        "Fosfatasa Alcalina (ALP)",
+        "Fosfatasa Alcalina"
+      ],
+      "category": "liver_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "albumin",
+      "canonicalName": "Albumin",
+      "names": {
+        "en": "Albumin",
+        "es": "Albúmina"
+      },
+      "descriptions": {
+        "en": "The most abundant protein produced by the liver. It maintains osmotic pressure; low levels can warn of malnutrition, kidney disease, or liver failure.",
+        "es": "La proteína más abundante producida por el hígado. Mantiene la presión osmótica; niveles bajos pueden advertir sobre desnutrición, enfermedades renales o insuficiencia hepática."
+      },
+      "aliases": [
+        "Albumin",
+        "Albúmina"
+      ],
+      "category": "liver_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "gamma-glutamyl-transferase",
+      "canonicalName": "Gamma-Glutamyl Transferase (GGT)",
+      "names": {
+        "en": "Gamma-Glutamyl Transferase (GGT)",
+        "es": "Gamma Glutamil Transferasa (GGT)"
+      },
+      "descriptions": {
+        "en": "A very sensitive liver enzyme. Its levels usually rise rapidly due to excessive alcohol consumption or bile duct obstructions.",
+        "es": "Enzima hepática muy sensible. Sus niveles suelen elevarse rápidamente por consumo excesivo de alcohol o debido a obstrucciones en los conductos biliares."
+      },
+      "aliases": [
+        "Gamma-Glutamyl Transferase (GGT)",
+        "Gamma-Glutamyl Transferase",
+        "GGT",
+        "Gamma Glutamil Transferasa (GGT)",
+        "Gamma Glutamil Transferasa"
+      ],
+      "category": "liver_function",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "sodium",
+      "canonicalName": "Sodium",
+      "names": {
+        "en": "Sodium",
+        "es": "Sodio"
+      },
+      "descriptions": {
+        "en": "Essential mineral for nerve impulse transmission, muscle contraction, and fluid volume regulation in the body.",
+        "es": "Mineral esencial para la transmisión de impulsos nerviosos, la contracción muscular y la regulación del volumen de líquidos en el organismo."
+      },
+      "aliases": [
+        "Sodium",
+        "Sodio"
+      ],
+      "category": "electrolytes",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "potassium",
+      "canonicalName": "Potassium",
+      "names": {
+        "en": "Potassium",
+        "es": "Potasio"
+      },
+      "descriptions": {
+        "en": "Crucial for the electrical functioning of the heart and muscles. Both excess and deficiency can cause severe arrhythmias and weakness.",
+        "es": "Crucial para el funcionamiento eléctrico del corazón y músculos. Tanto su exceso como su deficiencia pueden causar arritmias graves y debilidad."
+      },
+      "aliases": [
+        "Potassium",
+        "Potasio"
+      ],
+      "category": "electrolytes",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "chloride",
+      "canonicalName": "Chloride",
+      "names": {
+        "en": "Chloride",
+        "es": "Cloro"
+      },
+      "descriptions": {
+        "en": "Works together with sodium and potassium to maintain fluid balance and the body's acid-base balance (pH).",
+        "es": "Trabaja en conjunto con el sodio y el potasio para mantener el equilibrio de líquidos y el balance ácido-base (pH) del cuerpo."
+      },
+      "aliases": [
+        "Chloride",
+        "Cloro"
+      ],
+      "category": "electrolytes",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "calcium",
+      "canonicalName": "Calcium",
+      "names": {
+        "en": "Calcium",
+        "es": "Calcio"
+      },
+      "descriptions": {
+        "en": "Fundamental not only for strong bones and teeth but also for blood clotting, and proper heart and nerve function.",
+        "es": "Fundamental no solo para huesos y dientes fuertes, sino también para la coagulación sanguínea, y el correcto funcionamiento del corazón y los nervios."
+      },
+      "aliases": [
+        "Calcium",
+        "Calcio"
+      ],
+      "category": "electrolytes",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "magnesium",
+      "canonicalName": "Magnesium",
+      "names": {
+        "en": "Magnesium",
+        "es": "Magnesio"
+      },
+      "descriptions": {
+        "en": "Participates in over 300 biochemical reactions. Vital for muscle function, protein synthesis, and blood pressure and glucose control.",
+        "es": "Participa en más de 300 reacciones bioquímicas. Es vital para la función muscular, la síntesis de proteínas y el control de la glucosa y la presión arterial."
+      },
+      "aliases": [
+        "Magnesium",
+        "Magnesio"
+      ],
+      "category": "electrolytes",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "thyroid-stimulating-hormone",
+      "canonicalName": "Thyroid-Stimulating Hormone (TSH)",
+      "names": {
+        "en": "Thyroid-Stimulating Hormone (TSH)",
+        "es": "Hormona Estimulante de la Tiroides (TSH)"
+      },
+      "descriptions": {
+        "en": "Produced by the pituitary gland, it regulates thyroid function. It is the most sensitive initial test for detecting hypothyroidism or hyperthyroidism.",
+        "es": "Producida por la glándula pituitaria, regula el trabajo de la tiroides. Es la prueba inicial más sensible para detectar hipotiroidismo o hipertiroidismo."
+      },
+      "aliases": [
+        "Thyroid-Stimulating Hormone (TSH)",
+        "Thyroid-Stimulating Hormone",
+        "TSH",
+        "Hormona Estimulante de la Tiroides (TSH)",
+        "Hormona Estimulante de la Tiroides"
+      ],
+      "category": "thyroid",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "free-thyroxine",
+      "canonicalName": "Free Thyroxine (Free T4)",
+      "names": {
+        "en": "Free Thyroxine (Free T4)",
+        "es": "Tiroxina Libre (T4 Libre)"
+      },
+      "descriptions": {
+        "en": "The main hormone secreted by the thyroid gland. Its measurement in a free state (unbound to proteins) accurately reflects thyroid metabolism.",
+        "es": "La principal hormona secretada por la glándula tiroides. Su medición en estado libre (no unida a proteínas) refleja con precisión el metabolismo tiroideo."
+      },
+      "aliases": [
+        "Free Thyroxine (Free T4)",
+        "Free Thyroxine",
+        "Free T4",
+        "Tiroxina Libre (T4 Libre)",
+        "Tiroxina Libre",
+        "T4 Libre"
+      ],
+      "category": "thyroid",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "free-triiodothyronine",
+      "canonicalName": "Free Triiodothyronine (Free T3)",
+      "names": {
+        "en": "Free Triiodothyronine (Free T3)",
+        "es": "Triyodotironina Libre (T3 Libre)"
+      },
+      "descriptions": {
+        "en": "The most active form of thyroid hormones. Usually measured when TSH is abnormal but T4 is normal, helping to confirm hyperthyroidism.",
+        "es": "La forma más activa de las hormonas tiroideas. Suele medirse cuando la TSH es anormal pero la T4 es normal, ayudando a confirmar el hipertiroidismo."
+      },
+      "aliases": [
+        "Free Triiodothyronine (Free T3)",
+        "Free Triiodothyronine",
+        "Free T3",
+        "Triyodotironina Libre (T3 Libre)",
+        "Triyodotironina Libre",
+        "T3 Libre"
+      ],
+      "category": "thyroid",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "c-reactive-protein",
+      "canonicalName": "C-Reactive Protein (CRP)",
+      "names": {
+        "en": "C-Reactive Protein (CRP)",
+        "es": "Proteína C Reactiva (PCR)"
+      },
+      "descriptions": {
+        "en": "Protein released by the liver during acute inflammation. Used to detect bacterial infections, autoimmune diseases, and cardiovascular risk (high-sensitivity CRP).",
+        "es": "Proteína liberada por el hígado ante inflamaciones agudas. Se usa para detectar infecciones bacterianas, enfermedades autoinmunes y riesgo cardiovascular (PCR ultrasensible)."
+      },
+      "aliases": [
+        "C-Reactive Protein (CRP)",
+        "C-Reactive Protein",
+        "CRP",
+        "Proteína C Reactiva (PCR)",
+        "Proteína C Reactiva",
+        "PCR"
+      ],
+      "category": "inflammation",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "erythrocyte-sedimentation-rate",
+      "canonicalName": "Erythrocyte Sedimentation Rate (ESR)",
+      "names": {
+        "en": "Erythrocyte Sedimentation Rate (ESR)",
+        "es": "Velocidad de Sedimentación Globular (VSG)"
+      },
+      "descriptions": {
+        "en": "Measures how quickly red blood cells settle in a test tube. A rapid fall indicates systemic inflammation in the body.",
+        "es": "Mide qué tan rápido se asientan los glóbulos rojos en un tubo de ensayo. Una caída rápida indica inflamación sistémica en el cuerpo."
+      },
+      "aliases": [
+        "Erythrocyte Sedimentation Rate (ESR)",
+        "Erythrocyte Sedimentation Rate",
+        "ESR",
+        "Velocidad de Sedimentación Globular (VSG)",
+        "Velocidad de Sedimentación Globular",
+        "VSG"
+      ],
+      "category": "inflammation",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "vitamin-d",
+      "canonicalName": "Vitamin D",
+      "names": {
+        "en": "Vitamin D",
+        "es": "Vitamina D"
+      },
+      "descriptions": {
+        "en": "Crucial for calcium absorption and maintaining healthy bones. It also plays an important role in the immune system and chronic disease prevention.",
+        "es": "Crucial para absorber calcio y mantener huesos saludables. También juega un rol importante en el sistema inmunológico y la prevención de enfermedades crónicas."
+      },
+      "aliases": [
+        "Vitamin D",
+        "Vitamina D"
+      ],
+      "category": "vitamins",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "vitamin-b12",
+      "canonicalName": "Vitamin B12",
+      "names": {
+        "en": "Vitamin B12",
+        "es": "Vitamina B12"
+      },
+      "descriptions": {
+        "en": "Essential for red blood cell production, cellular metabolism, and nervous system function. Deficiency causes pernicious anemia and neurological damage.",
+        "es": "Esencial para la producción de glóbulos rojos, el metabolismo celular y la función del sistema nervioso. Su deficiencia causa anemia perniciosa y daño neuronal."
+      },
+      "aliases": [
+        "Vitamin B12",
+        "Vitamina B12"
+      ],
+      "category": "vitamins",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "serum-iron",
+      "canonicalName": "Serum Iron",
+      "names": {
+        "en": "Serum Iron",
+        "es": "Hierro Sérico"
+      },
+      "descriptions": {
+        "en": "Measures the total amount of circulating iron in the blood. Essential for diagnosing nutritional deficiencies, anemias, or iron overload (hemochromatosis).",
+        "es": "Mide la cantidad total de hierro circulando en la sangre. Esencial para diagnosticar deficiencias nutricionales, anemias o sobrecarga de hierro (hemocromatosis)."
+      },
+      "aliases": [
+        "Serum Iron",
+        "Hierro Sérico"
+      ],
+      "category": "vitamins",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    },
+    {
+      "id": "ferritin",
+      "canonicalName": "Ferritin",
+      "names": {
+        "en": "Ferritin",
+        "es": "Ferritina"
+      },
+      "descriptions": {
+        "en": "The main protein that stores iron in cells. Its blood level accurately reflects the size of the body's iron reserves.",
+        "es": "La principal proteína que almacena el hierro en las células. Su nivel en sangre refleja con precisión el tamaño de las reservas de hierro en el cuerpo."
+      },
+      "aliases": [
+        "Ferritin",
+        "Ferritina"
+      ],
+      "category": "vitamins",
+      "defaultUnit": null,
+      "origin": "catalog",
+      "needsEnrichment": false
+    }
+  ]
+}
