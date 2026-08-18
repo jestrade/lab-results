@@ -61,7 +61,7 @@ export const es: Messages = {
 
   // ── Navigation ────────────────────────────────────────────────────────
   'nav.upload': 'Subir reporte',
-  'nav.reports': 'Reportes',
+  'nav.files': 'Archivos',
   'nav.variables': 'Inicio',
   'nav.account': 'Cuenta',
   'nav.profile': 'Perfil',
@@ -69,6 +69,7 @@ export const es: Messages = {
   'nav.administration': 'Administración',
   'nav.adminOverview': 'Resumen de administración',
   'nav.adminUsers': 'Usuarios',
+  'nav.adminVariables': 'Catálogo de variables',
   'nav.adminJobs': 'Trabajos de procesamiento',
   'nav.main': 'Principal',
   'nav.navigation': 'Navegación',
@@ -186,8 +187,6 @@ export const es: Messages = {
   'comingSoon.body': '{description} Esta pantalla la construye {ticket}.',
   'comingSoon.adminOverviewBody':
     'Métricas de todo el sistema: usuarios, reportes, fallos y tiempo medio de procesamiento.',
-  'comingSoon.adminUsersBody':
-    'Busca cuentas, revisa su actividad y desactívalas o vuelve a activarlas.',
   'comingSoon.adminJobsBody':
     'Trabajos de extracción en curso y fallidos, con sus duraciones y controles de reintento.',
 
@@ -375,7 +374,7 @@ export const es: Messages = {
     '{file} se ha subido correctamente. Puedes salir de esta página: el procesamiento continúa y tu reporte aparecerá en Reportes cuando termine.',
   'upload.storedBodyMany':
     'Los {count} reportes se han subido correctamente. Puedes salir de esta página: el procesamiento continúa y cada uno aparecerá en Reportes cuando termine.',
-  'upload.goToReports': 'Ir a los reportes',
+  'upload.goToFiles': 'Ir a los archivos',
   'upload.uploaded': 'Reporte subido. El procesamiento empieza automáticamente.',
   'upload.cancelled': 'Subida cancelada.',
   'upload.queueHeading': 'Tus archivos',
@@ -415,7 +414,7 @@ export const es: Messages = {
   'detail.openFailed': 'No se ha podido abrir ese archivo.',
   'detail.missingTitle': 'Ese reporte no existe',
   'detail.missingBody': 'Puede que se haya eliminado o que el enlace sea incorrecto.',
-  'detail.backToReports': 'Volver a los reportes',
+  'detail.backToFiles': 'Volver a los archivos',
   'detail.reprocessing': 'Reprocesando…',
   'detail.tryAgain': 'Intentar procesarlo de nuevo',
   'detail.reportOf': 'Reporte del {date}',
@@ -868,4 +867,218 @@ export const es: Messages = {
   'legal.notYetPublished': 'todavía sin publicar',
   'legal.readingTime': 'tiempo de lectura: {time}',
   'legal.doc.dataRetention': 'Política de Conservación de Datos',
+
+  // ── Administración: catálogo de variables (KAN-49) ────────────────────
+  'adminVariables.intro':
+    'La lista canónica de estudios de laboratorio. Todos los lectores ven estos nombres y explicaciones, y el proceso de extracción compara con ellos los nombres impresos.',
+  'adminVariables.countOne': '{count} variable',
+  'adminVariables.countMany': '{count} variables',
+  'adminVariables.search': 'Buscar en el catálogo',
+  'adminVariables.searchPlaceholder': 'Nombre, sinónimo o id',
+  'adminVariables.loadingLabel': 'Cargando el catálogo',
+  'adminVariables.loadFailed': 'No se pudo cargar el catálogo.',
+  'adminVariables.emptyTitle': 'El catálogo está vacío',
+  'adminVariables.emptyBody':
+    'Importa la hoja de cálculo mantenida, o añade a mano la primera entrada.',
+  'adminVariables.noMatchTitle': 'Ninguna variable coincide',
+  'adminVariables.noMatchBody': 'Quita un filtro, o busca otro nombre.',
+  'adminVariables.showing': 'Mostrando {visible} de {total}.',
+  'adminVariables.filterCategory': 'Filtrar por grupo',
+  'adminVariables.allCategories': 'Todos los grupos',
+  'adminVariables.filterOrigin': 'Filtrar por origen',
+  'adminVariables.originAll': 'Cualquier origen',
+  'adminVariables.originCatalog': 'Curada',
+  'adminVariables.originDiscovered': 'Descubierta',
+  'adminVariables.needsReview': 'Falta revisar ({count})',
+  'adminVariables.tableCaption': 'Variables de laboratorio del catálogo',
+  'adminVariables.columnName': 'Nombre',
+  'adminVariables.columnId': 'Id del documento',
+  'adminVariables.columnCategory': 'Grupo',
+  'adminVariables.columnUnit': 'Unidad',
+  'adminVariables.columnAliases': 'Sinónimos',
+  'adminVariables.columnState': 'Estado',
+  'adminVariables.columnActions': 'Acciones',
+  'adminVariables.noUnit': 'Ninguna',
+  'adminVariables.noDescription': 'Todavía sin explicación',
+  'adminVariables.stateReviewed': 'Revisada',
+  'adminVariables.stateNeedsReview': 'Falta revisar',
+  'adminVariables.new': 'Nueva variable',
+  'adminVariables.edit': 'Editar',
+  'adminVariables.editLabel': 'Editar {name}',
+  'adminVariables.delete': 'Eliminar',
+  'adminVariables.deleteLabel': 'Eliminar {name}',
+  'adminVariables.newTitle': 'Nueva variable',
+  'adminVariables.editTitle': 'Editar {name}',
+  'adminVariables.fieldId': 'Id del documento',
+  'adminVariables.fieldIdHint':
+    'Minúsculas, dígitos y guiones. Se sugiere a partir del nombre en inglés; cámbialo antes de guardar si necesitas otro.',
+  'adminVariables.fieldIdFixed':
+    'El id no se puede cambiar después de crear la entrada: ya hay resultados que apuntan a él.',
+  'adminVariables.fieldCanonicalName': 'Nombre canónico',
+  'adminVariables.fieldCanonicalNameHint':
+    'El nombre en inglés con el que se comparan los nombres impresos.',
+  'adminVariables.fieldName': 'Nombre visible ({language})',
+  'adminVariables.fieldDescription': 'Explicación ({language})',
+  'adminVariables.fieldDescriptionHint':
+    'En lenguaje sencillo; se muestra en la página de la variable. Déjala vacía antes que inventarla.',
+  'adminVariables.fieldAliases': 'Sinónimos',
+  'adminVariables.fieldAliasesHint':
+    'Uno por línea: las grafías que imprimen los reportes reales, en cualquier idioma. Las comas se conservan.',
+  'adminVariables.fieldCategory': 'Grupo',
+  'adminVariables.fieldUnit': 'Unidad por omisión',
+  'adminVariables.fieldUnitHint':
+    'Se usa cuando un reporte imprime un valor sin unidad. La unidad del propio reporte siempre gana.',
+  'adminVariables.reviewNote':
+    'Al guardar, la entrada queda marcada como curada y revisada, de modo que el proceso de enriquecimiento no la reescribirá.',
+  'adminVariables.errorRequired': 'Este campo es obligatorio.',
+  'adminVariables.errorInvalidId':
+    'Usa minúsculas, dígitos y guiones, empezando por una letra o un dígito.',
+  'adminVariables.errorIdTaken': 'Otra variable ya usa este id.',
+  'adminVariables.duplicateWarning':
+    'Uno de estos nombres coincide con {id}, que ya está en el catálogo. Dos entradas para un mismo estudio parten en dos el historial de quien lo sigue: compruébalo antes de guardar.',
+  'adminVariables.create': 'Crear variable',
+  'adminVariables.creating': 'Creando…',
+  'adminVariables.created': 'Se añadió {name} al catálogo.',
+  'adminVariables.updated': 'Se actualizó {name}.',
+  'adminVariables.saveFailed': 'No se pudo guardar la variable.',
+  'adminVariables.existsFailed':
+    'Ese id se ocupó mientras editabas. Elige otro.',
+  'adminVariables.deleteTitle': '¿Eliminar {name}?',
+  'adminVariables.deleteBody':
+    'Se elimina la entrada del catálogo: este nombre, sus traducciones y su explicación dejan de mostrarse a todos los lectores.',
+  'adminVariables.deleteKeeps':
+    'Ningún resultado se ve afectado. Quien siga este estudio conserva sus valores y su historial, encabezados con lo que imprimió su propio laboratorio.',
+  'adminVariables.deleteReturns':
+    'Puede volver por su cuenta: el siguiente reporte que imprima este estudio no encontrará coincidencia y el proceso creará un marcador sin revisar. Casi siempre es mejor corregir una entrada que eliminarla.',
+  'adminVariables.deleteConfirm': 'Eliminar variable',
+  'adminVariables.deleting': 'Eliminando…',
+  'adminVariables.deleted': 'Se eliminó {name} del catálogo.',
+  'adminVariables.deleteFailed': 'No se pudo eliminar la variable.',
+
+  // ── Administración: usuarios (KAN-50) ─────────────────────────────────
+  'adminUsers.intro':
+    'Todas las cuentas del sistema. Aquí se cambian los roles y el acceso; los resultados de laboratorio no se pueden leer desde esta pantalla.',
+  'adminUsers.countOne': '{count} cuenta',
+  'adminUsers.countMany': '{count} cuentas',
+  'adminUsers.search': 'Buscar cuentas',
+  'adminUsers.searchPlaceholder': 'Correo, nombre o id de usuario',
+  'adminUsers.loadingLabel': 'Cargando cuentas',
+  'adminUsers.loadFailed': 'No se pudieron cargar las cuentas.',
+  'adminUsers.emptyTitle': 'Todavía no hay cuentas',
+  'adminUsers.emptyBody': 'Las cuentas aparecen aquí en cuanto alguien se registra.',
+  'adminUsers.noMatchTitle': 'Ninguna cuenta coincide',
+  'adminUsers.noMatchBody': 'Quita un filtro, o busca otra dirección.',
+  'adminUsers.showing': 'Mostrando {visible} de {total}.',
+  'adminUsers.filterRole': 'Filtrar por rol',
+  'adminUsers.roleAll': 'Cualquier rol',
+  'adminUsers.roleUser': 'Usuario',
+  'adminUsers.roleAdmin': 'Administrador',
+  'adminUsers.filterStatus': 'Filtrar por acceso',
+  'adminUsers.statusAll': 'Cualquier acceso',
+  'adminUsers.statusActive': 'Activa',
+  'adminUsers.statusDisabled': 'Desactivada',
+  'adminUsers.tableCaption': 'Cuentas registradas en el sistema',
+  'adminUsers.columnAccount': 'Cuenta',
+  'adminUsers.columnRole': 'Rol',
+  'adminUsers.columnStatus': 'Acceso',
+  'adminUsers.columnJoined': 'Registro',
+  'adminUsers.columnActions': 'Acciones',
+  'adminUsers.noName': 'Sin nombre',
+  'adminUsers.you': 'Tú',
+  'adminUsers.unknownDate': 'Desconocida',
+  'adminUsers.loadMore': 'Cargar más cuentas',
+  'adminUsers.limitNote':
+    'Mostrando las {count} cuentas registradas más recientemente. La búsqueda abarca las cuentas cargadas hasta ahora.',
+  'adminUsers.changeRole': 'Cambiar rol',
+  'adminUsers.changeRoleLabel': 'Cambiar el rol de {name}',
+  'adminUsers.roleTitle': 'Cambiar el rol de {name}',
+  'adminUsers.promoteBody':
+    'Un administrador puede leer todas las cuentas del sistema, cambiar roles, desactivar cuentas y editar el catálogo de variables.',
+  'adminUsers.demoteBody':
+    'Esta cuenta pierde el acceso a las pantallas de administración y a las demás cuentas.',
+  'adminUsers.roleClaimNote':
+    'El cambio se escribe en el token de la cuenta y llega a sus sesiones abiertas la próxima vez que se renueve: dentro de una hora, o de inmediato si vuelve a iniciar sesión.',
+  'adminUsers.promoteConfirm': 'Hacer administrador',
+  'adminUsers.demoteConfirm': 'Hacer usuario',
+  'adminUsers.roleSaving': 'Guardando…',
+  'adminUsers.roleChanged': '{name} ahora es {role}.',
+  'adminUsers.roleFailed': 'No se pudo cambiar el rol.',
+  'adminUsers.selfActions': 'No puedes cambiar tu propio rol ni tu acceso.',
+  'adminUsers.disable': 'Desactivar',
+  'adminUsers.disableLabel': 'Desactivar {name}',
+  'adminUsers.enable': 'Reactivar',
+  'adminUsers.enableLabel': 'Reactivar {name}',
+  'adminUsers.disableTitle': '¿Desactivar {name}?',
+  'adminUsers.disableBody':
+    'No podrá volver a iniciar sesión hasta que un administrador reactive la cuenta, y ninguna sesión abierta podrá renovarse.',
+  'adminUsers.disableWindow':
+    'Una sesión abierta en este momento sigue leyendo sus propios datos hasta que su token caduque: como mucho, una hora. Para cortar el acceso de inmediato, elimina la cuenta.',
+  'adminUsers.disableKeeps':
+    'No se elimina nada. Sus reportes, resultados e historial quedan tal cual, y vuelven intactos si se reactiva la cuenta.',
+  'adminUsers.disableReason': 'Motivo (opcional)',
+  'adminUsers.disableReasonHint':
+    'Se registra en la bitácora de auditoría junto a quién lo hizo y cuándo. No se le muestra al titular de la cuenta.',
+  'adminUsers.disableConfirm': 'Desactivar cuenta',
+  'adminUsers.disabling': 'Desactivando…',
+  'adminUsers.disabledToast': '{name} ya no puede iniciar sesión.',
+  'adminUsers.enableTitle': '¿Reactivar {name}?',
+  'adminUsers.enableBody':
+    'Podrá iniciar sesión de inmediato y encontrará sus reportes e historial tal como los dejó.',
+  'adminUsers.enableConfirm': 'Reactivar cuenta',
+  'adminUsers.enabling': 'Reactivando…',
+  'adminUsers.enabledToast': '{name} ya puede iniciar sesión.',
+  'adminUsers.accessFailed': 'No se pudo cambiar el acceso de la cuenta.',
+
+
+  // ── Administración: panorama (KAN-18) ─────────────────────────────────
+  'adminOverview.intro':
+    'El estado del sistema en conjunto. Solo conteos y capacidad: en esta pantalla no aparece ningún valor de laboratorio ni los resultados de ninguna cuenta.',
+  'adminOverview.loadingLabel': 'Cargando el panorama del sistema',
+  'adminOverview.loadFailed': 'No se pudo cargar el panorama.',
+  'adminOverview.healthOk': 'Funcionamiento normal',
+  'adminOverview.healthAttention': 'Requiere atención',
+  'adminOverview.healthBlocked': 'Las cargas están desactivadas',
+  'adminOverview.healthBlockedBody':
+    'El interruptor general está activado, así que ninguna cuenta puede subir un reporte. Se libera cuando el almacenamiento vuelve a estar por debajo del límite.',
+  'adminOverview.healthAttentionBody':
+    'Nada está bloqueado, pero algo de lo siguiente pide una revisión.',
+  'adminOverview.healthOkBody':
+    'Ningún reporte falló y el almacenamiento está holgado dentro de su límite.',
+  'adminOverview.accountsHeading': 'Cuentas',
+  'adminOverview.accountsTotal': 'Registradas',
+  'adminOverview.accountsAdmins': 'Con acceso de administrador',
+  'adminOverview.accountsDisabled': 'Desactivadas',
+  'adminOverview.accountsLink': 'Administrar cuentas',
+  'adminOverview.reportsHeading': 'Reportes',
+  'adminOverview.reportsTotal': 'Subidos',
+  'adminOverview.reportsProcessed': 'Procesados',
+  'adminOverview.reportsFailed': 'Fallidos',
+  'adminOverview.reportsFailedNote':
+    'Cada falla es una persona cuyo reporte nunca regresó. {ticket} construye la cola de reintentos.',
+  'adminOverview.catalogHeading': 'Catálogo de variables',
+  'adminOverview.catalogTotal': 'Entradas',
+  'adminOverview.catalogNeedsReview': 'Pendientes de revisión',
+  'adminOverview.catalogLink': 'Abrir el catálogo',
+  'adminOverview.storageHeading': 'Almacenamiento',
+  'adminOverview.storageUsed': '{used} de {limit} en uso',
+  'adminOverview.storageUploadsOn': 'Se aceptan cargas',
+  'adminOverview.storageUploadsOff': 'Se rechazan cargas',
+  'adminOverview.auditHeading': 'Acciones administrativas recientes',
+  'adminOverview.auditEmpty': 'Todavía no se ha hecho nada.',
+  'adminOverview.auditNote':
+    'Las escribe el servidor, nunca el navegador. El registro completo vive en la colección auditLogs.',
+  'adminOverview.auditRoleChanged': 'Cambio de rol',
+  'adminOverview.auditUserDisabled': 'Cuenta desactivada',
+  'adminOverview.auditUserEnabled': 'Cuenta reactivada',
+  'adminOverview.auditAccountDeleted': 'Cuenta eliminada por su titular',
+  'adminOverview.auditUnknown': 'Acción registrada',
+  'adminOverview.auditActor': 'por {actor}',
+  'adminOverview.auditActorRedacted': 'por una cuenta eliminada',
+  'adminOverview.auditTarget': 'sobre {target}',
+  'adminOverview.auditNoTarget': 'sin cuenta señalada',
+  'adminOverview.refresh': 'Actualizar',
+  'adminOverview.refreshing': 'Actualizando…',
+  'common.admin': 'Administrador',
+  'common.adminAccessLabel': 'Tienes acceso de administrador',
+
 };

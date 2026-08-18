@@ -1699,3 +1699,169 @@ dialog.dialog {
   top: 18px;
   right: 20px;
 }
+
+/* ── administration (KAN-49, KAN-50) ───────────────────────────────────── */
+
+/* The sentence under the heading that says what the screen governs and, on
+   /admin/users, what it deliberately does not show. Held to the measure the
+   rest of the app reads at rather than run to the width of a wide table. */
+.admin-intro {
+  max-width: 68ch;
+  margin: 0;
+  font-size: 13px;
+}
+
+/* A table cell carrying more than one fact: the name with its translation
+   under it, or the address with the account's name and uid. Stacked rather
+   than split across columns because they are one identity, and a row that
+   spread them would be read as four unrelated fields. */
+.admin-cell-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-cell-title {
+  font-weight: 600;
+}
+.admin-cell-sub {
+  font-size: 12px;
+}
+
+/* Identifiers — document ids and uids — in the face that makes an O and a 0
+   distinguishable. These get copied into logs and support tickets, where
+   transcribing one wrong is the whole cost. */
+.admin-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+/* The id of an entry that already exists, shown in the editor where the input
+   would be. Text, not a disabled field: a control that can never be used is
+   still a control to tab past. */
+.admin-static-value {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-100);
+}
+
+.admin-row-actions {
+  display: inline-flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* The truncation notice and its button. Kept together on one row so the
+   sentence explaining that the list is cut short cannot be read without the
+   control that uncuts it. */
+.admin-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-divider);
+}
+
+/* The overview's figure cards. Auto-fit rather than a fixed column count: the
+   four cards carry different amounts, and a grid that forced them into a row
+   would set every card's height by the tallest. */
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.admin-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-stat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-stat-head .card-title {
+  margin: 0;
+}
+.admin-stat-line {
+  margin: 0;
+  font-size: 14px;
+}
+.admin-stat-note {
+  margin: 0;
+  font-size: 12px;
+}
+.admin-stat-link {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Label left, figure right, on one baseline — so a column of them can be read
+   down either side without the eye tracking across a gap. */
+.admin-figure {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-figure-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.admin-figure-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* A non-zero failure count is the one figure on this page that means somebody
+   is waiting on a report that never came back. */
+.admin-figure-value[data-alarming] {
+  color: var(--feedback-danger-ink);
+}
+
+.admin-section-heading {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+.admin-audit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.admin-audit-row {
+  display: grid;
+  grid-template-columns: minmax(160px, auto) 1fr auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.admin-audit-row:last-child {
+  border-bottom: 0;
+}
+.admin-audit-action {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  /* Three columns cannot hold a uid pair and a date on a phone; stacked, each
+     line keeps its own row rather than wrapping into the next one's. */
+  .admin-audit-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

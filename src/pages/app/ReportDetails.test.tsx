@@ -83,7 +83,7 @@ const emitResults = (r: ReportResult[]) =>
   (subscribeToResults.mock.calls.at(-1)?.[1] as (v: ReportResult[]) => void)(r);
 
 const render = () =>
-  renderWithProviders(<ReportDetails />, { auth: signedInAuth(), route: '/reports/r1' });
+  renderWithProviders(<ReportDetails />, { auth: signedInAuth(), route: '/files/r1' });
 
 describe('ReportDetails', () => {
   beforeEach(() => {
@@ -181,7 +181,7 @@ describe('ReportDetails', () => {
     expect(screen.getByText(/nothing was removed or merged/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /open the other report/i })).toHaveAttribute(
       'href',
-      '/reports/r9',
+      '/files/r9',
     );
   });
 

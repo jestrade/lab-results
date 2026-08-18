@@ -68,6 +68,13 @@ export const useEmulators = flag(import.meta.env.VITE_USE_FIREBASE_EMULATORS);
 export const functionsRegion =
   (import.meta.env.VITE_FUNCTIONS_REGION as string | undefined) || 'us-east1';
 export const sentryDsn = (import.meta.env.VITE_SENTRY_DSN as string | undefined) ?? '';
+/**
+ * GA4 measurement id (`G-XXXXXXXXXX`). Blank disables analytics outright — see
+ * `lib/analytics.ts`, which also declines to load for a reader who has asked
+ * not to be tracked.
+ */
+export const gaMeasurementId =
+  (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() ?? '';
 export const sentryEnvironment =
   (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) ?? 'development';
 export const appVersion = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'dev';

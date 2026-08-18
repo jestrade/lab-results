@@ -349,7 +349,7 @@ export function Reports() {
           ) : null}
           {hasResults(report) ? (
             <ButtonLink
-              to={`/reports/${report.id}`}
+              to={`/files/${report.id}`}
               variant="ghost"
               aria-label={t('reports.viewDetailsLabel', { file: report.originalFileName })}
             >
@@ -393,7 +393,7 @@ export function Reports() {
                     : []),
                 ].join(' · ')}
           </div>
-          <h1>{t('nav.reports')}</h1>
+          <h1>{t('nav.files')}</h1>
         </div>
         <div className="spacer" />
         <ButtonLink to="/upload" variant="primary" icon="upload-simple">

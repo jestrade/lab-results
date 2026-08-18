@@ -115,8 +115,8 @@ export function ReportDetails() {
         icon="file-x"
         title={t('detail.missingTitle')}
         action={
-          <ButtonLink to="/reports" variant="primary">
-            {t('detail.backToReports')}
+          <ButtonLink to="/files" variant="primary">
+            {t('detail.backToFiles')}
           </ButtonLink>
         }
       >
@@ -145,8 +145,8 @@ export function ReportDetails() {
       <div className="page-head">
         <div>
           <div className="kicker">
-            <ButtonLink to="/reports" variant="ghost">
-              <Icon name="arrow-left" size={13} /> {t('nav.reports')}
+            <ButtonLink to="/files" variant="ghost">
+              <Icon name="arrow-left" size={13} /> {t('nav.files')}
             </ButtonLink>
           </div>
           <h1>
@@ -194,7 +194,7 @@ export function ReportDetails() {
           tone="info"
           title={t('detail.duplicateTitle')}
           actions={
-            <ButtonLink to={`/reports/${report.duplicateOf}`}>
+            <ButtonLink to={`/files/${report.duplicateOf}`}>
               {t('detail.duplicateCompare')}
             </ButtonLink>
           }

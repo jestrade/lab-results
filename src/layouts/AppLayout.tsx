@@ -37,7 +37,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { to: '/variables', label: 'nav.variables', icon: 'house' },
   { to: '/upload', label: 'nav.upload', icon: 'upload-simple' },
-  { to: '/reports', label: 'nav.reports', icon: 'files' },
+  { to: '/files', label: 'nav.files', icon: 'files' },
 ];
 
 const ACCOUNT_NAV: NavItem[] = [
@@ -48,6 +48,7 @@ const ACCOUNT_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { to: '/admin', label: 'nav.adminOverview', icon: 'shield-check' },
   { to: '/admin/users', label: 'nav.adminUsers', icon: 'users-three' },
+  { to: '/admin/variables', label: 'nav.adminVariables', icon: 'flask' },
   { to: '/admin/jobs', label: 'nav.adminJobs', icon: 'queue' },
 ];
 
@@ -143,6 +144,17 @@ export function AppLayout() {
           <div className="spacer" />
           <LanguageSwitcher />
           <span style={{ fontSize: 13 }}>{user?.email}</span>
+          {/* Admin access, stated where the account is named (KAN-2).
+              Someone holding a token that can read every account in the system
+              should be able to see that they are holding it — a privilege
+              visible only as an extra sidebar group is one it is easy to
+              forget you have, and easy not to notice you were granted. */}
+          {isAdmin ? (
+            <Tag tone="accent">
+              <Icon name="shield-check" size={13} />
+              <span style={{ marginLeft: 5 }}>{t('common.admin')}</span>
+            </Tag>
+          ) : null}
           {isEmailVerified ? (
             <Tag tone="neutral">
               <Icon name="seal-check" size={13} />

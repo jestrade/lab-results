@@ -473,8 +473,8 @@ export function Upload() {
             count: stored.length,
           })}
           actions={
-            <Button variant="primary" onClick={() => navigate('/reports')}>
-              {t('upload.goToReports')}
+            <Button variant="primary" onClick={() => navigate('/files')}>
+              {t('upload.goToFiles')}
             </Button>
           }
         >

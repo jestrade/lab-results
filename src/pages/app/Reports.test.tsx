@@ -63,7 +63,7 @@ function emit(reports: Report[]) {
 }
 
 function renderPage() {
-  return renderWithProviders(<Reports />, { auth: signedInAuth(), route: '/reports' });
+  return renderWithProviders(<Reports />, { auth: signedInAuth(), route: '/files' });
 }
 
 describe('Reports', () => {
@@ -74,6 +74,20 @@ describe('Reports', () => {
     getReportDownloadUrl.mockReset();
     retryReport.mockReset();
     deleteReports.mockReset();
+  });
+
+  it('is titled "Files", matching the /files route and the sidebar', () => {
+    renderPage();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Files');
+  });
+
+  it('is titled "Archivos" in Spanish', () => {
+    renderWithProviders(<Reports />, {
+      auth: signedInAuth(),
+      route: '/files',
+      locale: 'es',
+    });
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Archivos');
   });
 
   it('subscribes for the signed-in user only', () => {
@@ -174,7 +188,7 @@ describe('Reports', () => {
 
     expect(within(doneRow).getByRole('link', { name: /view details/i })).toHaveAttribute(
       'href',
-      '/reports/a',
+      '/files/a',
     );
     expect(within(workingRow).queryByRole('link', { name: /view details/i })).toBeNull();
   });

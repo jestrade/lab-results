@@ -5,13 +5,14 @@ one is called in English and Spanish, what it measures, and which panel it
 belongs to. It is reference data — readable by any signed-in user, written only
 by the Admin SDK.
 
-Three things put entries in it:
+Four things put entries in it, and only the last may change one:
 
 | Source | What it writes | When |
 | --- | --- | --- |
 | `import-variables.mjs` | Curated entries from the maintained spreadsheet | By hand, when the sheet changes |
 | The processing pipeline | Placeholders for tests seen on a report but absent from the catalog | Automatically, per upload |
 | `backfill-variables.mjs` | Entries for variables analysed before the catalog existed | By hand, once |
+| `/admin/variables` | Corrections, translations and explanations — the only writer allowed to edit | By an admin, deliberately |
 
 ## The two rules
 
@@ -33,9 +34,23 @@ write. A curated entry never carries the flag, so enrichment can never reach
 reviewed content.
 
 To change an entry that is already live, change the spreadsheet and edit the
-document by hand or through the admin console. That is intentionally not
-something a script does, because there is no way for a script to tell a
-correction from a regression.
+entry at **/admin/variables** (KAN-49). That is intentionally not something a
+script does, because there is no way for a script to tell a correction from a
+regression.
+
+The console is the fourth writer, and the only one allowed to edit. Two of its
+behaviours follow from the rules above rather than from taste:
+
+* **Saving marks the entry reviewed** — `origin: catalog`, `needsEnrichment:
+  false`. A person has now read it, so the interface must stop captioning its
+  explanation as unreviewed, and the enrichment pass must stop treating it as
+  a placeholder it may complete.
+* **It warns about a probable duplicate rather than refusing one.** Every name
+  the draft would be known by is compared against every name each existing
+  entry is known by. This is an exact-match check and deliberately not a second
+  copy of `matching.ts` — two implementations of the one rule that must never
+  disagree. A near-identical pair of genuinely distinct tests is a judgement,
+  and the console is the place with a person on it.
 
 ## How a printed name is matched
 

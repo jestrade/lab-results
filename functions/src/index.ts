@@ -29,6 +29,7 @@ initializeApp();
 export { onReportUploaded, onReportDeleted } from './usage';
 export { reconcileUsage } from './reconcile';
 export { setUserRole } from './roles';
+export { setUserDisabled } from './userAdmin';
 export { deleteAccount } from './deleteAccount';
 export { clearVariableData } from './clearVariables';
 export { retryReport } from './retry';

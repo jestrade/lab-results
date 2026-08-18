@@ -72,7 +72,7 @@ export const en = {
 
   // ── Navigation ────────────────────────────────────────────────────────
   'nav.upload': 'Upload report',
-  'nav.reports': 'Reports',
+  'nav.files': 'Files',
   'nav.variables': 'Home',
   'nav.account': 'Account',
   'nav.profile': 'Profile',
@@ -80,6 +80,7 @@ export const en = {
   'nav.administration': 'Administration',
   'nav.adminOverview': 'Admin overview',
   'nav.adminUsers': 'Users',
+  'nav.adminVariables': 'Variable catalog',
   'nav.adminJobs': 'Processing jobs',
   'nav.main': 'Main',
   'nav.navigation': 'Navigation',
@@ -193,8 +194,6 @@ export const en = {
   'comingSoon.body': '{description} This screen is built by {ticket}.',
   'comingSoon.adminOverviewBody':
     'System-wide metrics: users, reports, failures and average processing time.',
-  'comingSoon.adminUsersBody':
-    'Search accounts, review their activity, and disable or re-enable them.',
   'comingSoon.adminJobsBody':
     'Live and failed extraction jobs, with durations and retry controls.',
 
@@ -375,7 +374,7 @@ export const en = {
     '{file} was uploaded successfully. You can leave this page — processing continues and your report appears under Reports when it finishes.',
   'upload.storedBodyMany':
     'All {count} reports were uploaded successfully. You can leave this page — processing continues and they appear under Reports as each one finishes.',
-  'upload.goToReports': 'Go to reports',
+  'upload.goToFiles': 'Go to files',
   'upload.uploaded': 'Report uploaded. Processing starts automatically.',
   'upload.cancelled': 'Upload cancelled.',
   'upload.queueHeading': 'Your files',
@@ -415,7 +414,7 @@ export const en = {
   'detail.openFailed': 'That file could not be opened.',
   'detail.missingTitle': 'That report does not exist',
   'detail.missingBody': 'It may have been deleted, or the link may be wrong.',
-  'detail.backToReports': 'Back to reports',
+  'detail.backToFiles': 'Back to files',
   'detail.reprocessing': 'Reprocessing…',
   'detail.tryAgain': 'Try processing again',
   'detail.reportOf': 'Report of {date}',
@@ -857,4 +856,217 @@ export const en = {
   'legal.notYetPublished': 'not yet published',
   'legal.readingTime': 'reading time {time}',
   'legal.doc.dataRetention': 'Data Retention Policy',
+
+  // ── Administration: variable catalog (KAN-49) ─────────────────────────
+  'adminVariables.intro':
+    'The canonical list of laboratory tests. Every reader sees these names and explanations, and the extraction pipeline matches printed names against them.',
+  'adminVariables.countOne': '{count} variable',
+  'adminVariables.countMany': '{count} variables',
+  'adminVariables.search': 'Search the catalog',
+  'adminVariables.searchPlaceholder': 'Name, alias or id',
+  'adminVariables.loadingLabel': 'Loading the catalog',
+  'adminVariables.loadFailed': 'The catalog could not be loaded.',
+  'adminVariables.emptyTitle': 'The catalog is empty',
+  'adminVariables.emptyBody':
+    'Import the maintained spreadsheet, or add the first entry by hand.',
+  'adminVariables.noMatchTitle': 'No variable matches',
+  'adminVariables.noMatchBody': 'Clear a filter, or search for a different name.',
+  'adminVariables.showing': 'Showing {visible} of {total}.',
+  'adminVariables.filterCategory': 'Filter by panel',
+  'adminVariables.allCategories': 'All panels',
+  'adminVariables.filterOrigin': 'Filter by origin',
+  'adminVariables.originAll': 'Any origin',
+  'adminVariables.originCatalog': 'Curated',
+  'adminVariables.originDiscovered': 'Discovered',
+  'adminVariables.needsReview': 'Needs review ({count})',
+  'adminVariables.tableCaption': 'Laboratory variables in the catalog',
+  'adminVariables.columnName': 'Name',
+  'adminVariables.columnId': 'Document id',
+  'adminVariables.columnCategory': 'Panel',
+  'adminVariables.columnUnit': 'Unit',
+  'adminVariables.columnAliases': 'Aliases',
+  'adminVariables.columnState': 'State',
+  'adminVariables.columnActions': 'Actions',
+  'adminVariables.noUnit': 'None',
+  'adminVariables.noDescription': 'No explanation yet',
+  'adminVariables.stateReviewed': 'Reviewed',
+  'adminVariables.stateNeedsReview': 'Needs review',
+  'adminVariables.new': 'New variable',
+  'adminVariables.edit': 'Edit',
+  'adminVariables.editLabel': 'Edit {name}',
+  'adminVariables.delete': 'Delete',
+  'adminVariables.deleteLabel': 'Delete {name}',
+  'adminVariables.newTitle': 'New variable',
+  'adminVariables.editTitle': 'Edit {name}',
+  'adminVariables.fieldId': 'Document id',
+  'adminVariables.fieldIdHint':
+    'Lower case, digits and hyphens. Suggested from the English name; change it before saving if you need a different one.',
+  'adminVariables.fieldIdFixed':
+    'An id cannot be changed after the entry is created — results already point at it.',
+  'adminVariables.fieldCanonicalName': 'Canonical name',
+  'adminVariables.fieldCanonicalNameHint':
+    'The English name the matcher compares printed names against.',
+  'adminVariables.fieldName': 'Display name ({language})',
+  'adminVariables.fieldDescription': 'Explanation ({language})',
+  'adminVariables.fieldDescriptionHint':
+    'Plain language, shown on the variable page. Leave empty rather than guessing.',
+  'adminVariables.fieldAliases': 'Aliases',
+  'adminVariables.fieldAliasesHint':
+    'One per line — the spellings real reports print, in any language. Commas are kept.',
+  'adminVariables.fieldCategory': 'Panel',
+  'adminVariables.fieldUnit': 'Default unit',
+  'adminVariables.fieldUnitHint':
+    'Used when a report prints a value without one. A report’s own unit always wins.',
+  'adminVariables.reviewNote':
+    'Saving marks this entry as curated and reviewed, so the enrichment pass will not rewrite it.',
+  'adminVariables.errorRequired': 'This field is required.',
+  'adminVariables.errorInvalidId':
+    'Use lower-case letters, digits and hyphens, starting with a letter or digit.',
+  'adminVariables.errorIdTaken': 'Another variable already uses this id.',
+  'adminVariables.duplicateWarning':
+    'A name here matches {id}, which is already in the catalog. Two entries for one test split a reader’s history in half — check before saving.',
+  'adminVariables.create': 'Create variable',
+  'adminVariables.creating': 'Creating…',
+  'adminVariables.created': '{name} was added to the catalog.',
+  'adminVariables.updated': '{name} was updated.',
+  'adminVariables.saveFailed': 'The variable could not be saved.',
+  'adminVariables.existsFailed':
+    'That id was taken while you were editing. Choose another one.',
+  'adminVariables.deleteTitle': 'Delete {name}?',
+  'adminVariables.deleteBody':
+    'The catalog entry goes: this name, its translations and its explanation stop being shown to every reader.',
+  'adminVariables.deleteKeeps':
+    'No results are affected. Anyone tracking this test keeps their values and their history, headed with whatever their own laboratory printed.',
+  'adminVariables.deleteReturns':
+    'It can come back on its own: the next report printing this test finds no match, and the pipeline creates an unreviewed placeholder for it. Correcting an entry usually beats deleting it.',
+  'adminVariables.deleteConfirm': 'Delete variable',
+  'adminVariables.deleting': 'Deleting…',
+  'adminVariables.deleted': '{name} was deleted from the catalog.',
+  'adminVariables.deleteFailed': 'The variable could not be deleted.',
+
+  // ── Administration: users (KAN-50) ────────────────────────────────────
+  'adminUsers.intro':
+    'Every account in the system. Roles and access are changed here; laboratory results are not readable from this screen.',
+  'adminUsers.countOne': '{count} account',
+  'adminUsers.countMany': '{count} accounts',
+  'adminUsers.search': 'Search accounts',
+  'adminUsers.searchPlaceholder': 'Email, name or user id',
+  'adminUsers.loadingLabel': 'Loading accounts',
+  'adminUsers.loadFailed': 'The accounts could not be loaded.',
+  'adminUsers.emptyTitle': 'No accounts yet',
+  'adminUsers.emptyBody': 'Accounts appear here as soon as somebody registers.',
+  'adminUsers.noMatchTitle': 'No account matches',
+  'adminUsers.noMatchBody': 'Clear a filter, or search for a different address.',
+  'adminUsers.showing': 'Showing {visible} of {total}.',
+  'adminUsers.filterRole': 'Filter by role',
+  'adminUsers.roleAll': 'Any role',
+  'adminUsers.roleUser': 'User',
+  'adminUsers.roleAdmin': 'Admin',
+  'adminUsers.filterStatus': 'Filter by access',
+  'adminUsers.statusAll': 'Any access',
+  'adminUsers.statusActive': 'Active',
+  'adminUsers.statusDisabled': 'Disabled',
+  'adminUsers.tableCaption': 'Accounts registered in the system',
+  'adminUsers.columnAccount': 'Account',
+  'adminUsers.columnRole': 'Role',
+  'adminUsers.columnStatus': 'Access',
+  'adminUsers.columnJoined': 'Registered',
+  'adminUsers.columnActions': 'Actions',
+  'adminUsers.noName': 'No name given',
+  'adminUsers.you': 'You',
+  'adminUsers.unknownDate': 'Unknown',
+  'adminUsers.loadMore': 'Load more accounts',
+  'adminUsers.limitNote':
+    'Showing the {count} most recently registered accounts. Search covers the accounts loaded so far.',
+  'adminUsers.changeRole': 'Change role',
+  'adminUsers.changeRoleLabel': 'Change the role of {name}',
+  'adminUsers.roleTitle': 'Change the role of {name}',
+  'adminUsers.promoteBody':
+    'An admin can read every account in the system, change roles, disable accounts and edit the variable catalog.',
+  'adminUsers.demoteBody':
+    'This account loses access to the administration screens and to every other account.',
+  'adminUsers.roleClaimNote':
+    'The change is written to the account’s token, and reaches their open sessions the next time it refreshes — within the hour, or immediately if they sign in again.',
+  'adminUsers.promoteConfirm': 'Make admin',
+  'adminUsers.demoteConfirm': 'Make user',
+  'adminUsers.roleSaving': 'Saving…',
+  'adminUsers.roleChanged': '{name} is now {role}.',
+  'adminUsers.roleFailed': 'The role could not be changed.',
+  'adminUsers.selfActions': 'You cannot change your own role or access.',
+  'adminUsers.disable': 'Disable',
+  'adminUsers.disableLabel': 'Disable {name}',
+  'adminUsers.enable': 'Enable',
+  'adminUsers.enableLabel': 'Re-enable {name}',
+  'adminUsers.disableTitle': 'Disable {name}?',
+  'adminUsers.disableBody':
+    'They cannot sign in again until an admin re-enables the account, and no open session can renew itself.',
+  'adminUsers.disableWindow':
+    'A session that is open right now keeps reading its own data until its token expires — an hour at the outside. To end access immediately, delete the account instead.',
+  'adminUsers.disableKeeps':
+    'Nothing is deleted. Their reports, results and history stay exactly as they are, and come back untouched if the account is re-enabled.',
+  'adminUsers.disableReason': 'Reason (optional)',
+  'adminUsers.disableReasonHint':
+    'Recorded in the audit log beside who did it and when. Not shown to the account holder.',
+  'adminUsers.disableConfirm': 'Disable account',
+  'adminUsers.disabling': 'Disabling…',
+  'adminUsers.disabledToast': '{name} can no longer sign in.',
+  'adminUsers.enableTitle': 'Re-enable {name}?',
+  'adminUsers.enableBody':
+    'They can sign in again immediately, and find their reports and history as they left them.',
+  'adminUsers.enableConfirm': 'Re-enable account',
+  'adminUsers.enabling': 'Re-enabling…',
+  'adminUsers.enabledToast': '{name} can sign in again.',
+  'adminUsers.accessFailed': 'The account’s access could not be changed.',
+
+
+  // ── Administration: overview (KAN-18) ─────────────────────────────────
+  'adminOverview.intro':
+    'The state of the system as a whole. Counts and capacity only — no laboratory value and no account’s results appear on this screen.',
+  'adminOverview.loadingLabel': 'Loading the system overview',
+  'adminOverview.loadFailed': 'The overview could not be loaded.',
+  'adminOverview.healthOk': 'Operating normally',
+  'adminOverview.healthAttention': 'Needs attention',
+  'adminOverview.healthBlocked': 'Uploads are switched off',
+  'adminOverview.healthBlockedBody':
+    'The project-wide kill switch is on, so no account can upload a report. It clears when storage is back under the ceiling.',
+  'adminOverview.healthAttentionBody':
+    'Nothing is blocked, but something below is asking to be looked at.',
+  'adminOverview.healthOkBody': 'No failed reports, and storage is well inside its ceiling.',
+  'adminOverview.accountsHeading': 'Accounts',
+  'adminOverview.accountsTotal': 'Registered',
+  'adminOverview.accountsAdmins': 'With admin access',
+  'adminOverview.accountsDisabled': 'Disabled',
+  'adminOverview.accountsLink': 'Manage accounts',
+  'adminOverview.reportsHeading': 'Reports',
+  'adminOverview.reportsTotal': 'Uploaded',
+  'adminOverview.reportsProcessed': 'Processed',
+  'adminOverview.reportsFailed': 'Failed',
+  'adminOverview.reportsFailedNote':
+    'Each failure is one person whose report never came back. {ticket} builds the retry queue.',
+  'adminOverview.catalogHeading': 'Variable catalog',
+  'adminOverview.catalogTotal': 'Entries',
+  'adminOverview.catalogNeedsReview': 'Awaiting review',
+  'adminOverview.catalogLink': 'Open the catalog',
+  'adminOverview.storageHeading': 'Storage',
+  'adminOverview.storageUsed': '{used} of {limit} used',
+  'adminOverview.storageUploadsOn': 'Uploads accepted',
+  'adminOverview.storageUploadsOff': 'Uploads refused',
+  'adminOverview.auditHeading': 'Recent administrative actions',
+  'adminOverview.auditEmpty': 'Nothing has been done yet.',
+  'adminOverview.auditNote':
+    'Written by the server, never by the browser. The full trail lives in the auditLogs collection.',
+  'adminOverview.auditRoleChanged': 'Role changed',
+  'adminOverview.auditUserDisabled': 'Account disabled',
+  'adminOverview.auditUserEnabled': 'Account re-enabled',
+  'adminOverview.auditAccountDeleted': 'Account deleted by its owner',
+  'adminOverview.auditUnknown': 'Recorded action',
+  'adminOverview.auditActor': 'by {actor}',
+  'adminOverview.auditActorRedacted': 'by a deleted account',
+  'adminOverview.auditTarget': 'on {target}',
+  'adminOverview.auditNoTarget': 'no account named',
+  'adminOverview.refresh': 'Refresh',
+  'adminOverview.refreshing': 'Refreshing…',
+  'common.admin': 'Admin',
+  'common.adminAccessLabel': 'You have admin access',
+
 } as const;

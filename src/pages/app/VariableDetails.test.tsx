@@ -172,11 +172,11 @@ describe('VariableDetails', () => {
     // Newest first, and each row links to the report that printed it.
     expect(within(rows[1]!).getByRole('link', { name: 'june.pdf' })).toHaveAttribute(
       'href',
-      '/reports/r1',
+      '/files/r1',
     );
     expect(within(rows[3]!).getByRole('link', { name: 'june-2025.pdf' })).toHaveAttribute(
       'href',
-      '/reports/r3',
+      '/files/r3',
     );
   });
 
@@ -224,7 +224,7 @@ describe('VariableDetails', () => {
     expect(within(tip).getByText('118')).toBeInTheDocument();
     expect(within(tip).getByRole('link', { name: /june\.pdf/ })).toHaveAttribute(
       'href',
-      '/reports/r1',
+      '/files/r1',
     );
   });
 
@@ -240,7 +240,7 @@ describe('VariableDetails', () => {
     const tip = await screen.findByText('1 June 2025').then((node) => node.parentElement!);
     expect(within(tip).getByRole('link', { name: /june-2025\.pdf/ })).toHaveAttribute(
       'href',
-      '/reports/r3',
+      '/files/r3',
     );
   });
 

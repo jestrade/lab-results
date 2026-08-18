@@ -520,7 +520,7 @@ function MeasurementRow({
         </div>
       </td>
       <td>
-        <Link to={`/reports/${measurement.reportId}`}>
+        <Link to={`/files/${measurement.reportId}`}>
           {measurement.reportFileName || t('variable.openReport')}
         </Link>
       </td>

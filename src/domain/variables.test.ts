@@ -6,14 +6,20 @@ import { describe, expect, it } from 'vitest';
 import {
   CATEGORY_LABEL,
   CATEGORY_ORDER,
+  DEFAULT_FILTERS,
   describeSparkline,
+  filterParams,
   formatReferenceRange,
   groupByCategory,
+  hasActiveFilters,
   matchesQuery,
   MIN_POINTS_FOR_TREND,
+  PERIODS,
+  readFilters,
   seriesInWindow,
   seriesName,
   sortSeries,
+  SORTS,
   sparklinePath,
   summariseSeries,
   withCatalog,
@@ -548,5 +554,99 @@ describe('MIN_POINTS_FOR_TREND', () => {
     const declared = /MIN_POINTS_FOR_TREND = (\d+)/.exec(engine)?.[1];
     expect(declared).toBeDefined();
     expect(Number(declared)).toBe(MIN_POINTS_FOR_TREND);
+  });
+});
+
+describe('readFilters', () => {
+  it('gives the unfiltered grid for a bare URL', () => {
+    expect(readFilters(new URLSearchParams(''))).toEqual(DEFAULT_FILTERS);
+  });
+
+  it('reads every control back out of the query string', () => {
+    expect(
+      readFilters(new URLSearchParams('q=iron&category=thyroid&flagged=1&sort=recent&period=12m')),
+    ).toEqual({
+      query: 'iron',
+      category: 'thyroid',
+      outOfRangeOnly: true,
+      sort: 'recent',
+      period: '12m',
+    });
+  });
+
+  it('falls back per field, so one bad value does not discard the rest', () => {
+    const filters = readFilters(new URLSearchParams('q=iron&period=zzz&sort=nonsense'));
+    // A hand-edited or stale URL should still open the page it was aimed at.
+    expect(filters.query).toBe('iron');
+    expect(filters.period).toBe('all');
+    expect(filters.sort).toBe('category');
+  });
+
+  it('rejects a category that is not in the catalog', () => {
+    expect(readFilters(new URLSearchParams('category=made_up')).category).toBe('all');
+  });
+
+  it('accepts every category the grid can group by', () => {
+    // The chips render from CATEGORY_ORDER; a category this refused would be
+    // one the user can select and never link to.
+    for (const category of CATEGORY_ORDER) {
+      expect(readFilters(new URLSearchParams(`category=${category}`)).category).toBe(category);
+    }
+  });
+
+  it('accepts every period and sort the chips offer', () => {
+    for (const { id } of PERIODS) {
+      expect(readFilters(new URLSearchParams(`period=${id}`)).period).toBe(id);
+    }
+    for (const { id } of SORTS) {
+      expect(readFilters(new URLSearchParams(`sort=${id}`)).sort).toBe(id);
+    }
+  });
+
+  it('reads the flag as off unless it is explicitly on', () => {
+    // `?flagged=0` reads as "off" to anyone who writes it, so honouring mere
+    // presence would turn the filter on against the URL's plain meaning.
+    expect(readFilters(new URLSearchParams('flagged=1')).outOfRangeOnly).toBe(true);
+    expect(readFilters(new URLSearchParams('flagged=0')).outOfRangeOnly).toBe(false);
+    expect(readFilters(new URLSearchParams('flagged')).outOfRangeOnly).toBe(false);
+  });
+});
+
+describe('filterParams', () => {
+  it('writes nothing for an untouched grid', () => {
+    // A bare /variables in the address bar, rather than a line of defaults
+    // spelled out in the one place the user is most likely to read and share.
+    expect(filterParams(DEFAULT_FILTERS).toString()).toBe('');
+  });
+
+  it('omits a search that is only whitespace', () => {
+    expect(filterParams({ ...DEFAULT_FILTERS, query: '   ' }).toString()).toBe('');
+  });
+
+  it('survives a round trip through the query string', () => {
+    const filters = {
+      query: 'vitamin d',
+      category: 'vitamins',
+      outOfRangeOnly: true,
+      sort: 'flagged',
+      period: '3y',
+    } as const;
+    expect(readFilters(new URLSearchParams(filterParams(filters).toString()))).toEqual(filters);
+  });
+});
+
+describe('hasActiveFilters', () => {
+  it('counts anything that removes a card from the grid', () => {
+    expect(hasActiveFilters(DEFAULT_FILTERS)).toBe(false);
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, query: 'iron' })).toBe(true);
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, category: 'thyroid' })).toBe(true);
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, outOfRangeOnly: true })).toBe(true);
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, period: '12m' })).toBe(true);
+  });
+
+  it('does not count the sort, which hides nothing', () => {
+    // "Showing 2 of 2" under a reordered grid would be explaining an absence
+    // that is not there.
+    expect(hasActiveFilters({ ...DEFAULT_FILTERS, sort: 'recent' })).toBe(false);
   });
 });

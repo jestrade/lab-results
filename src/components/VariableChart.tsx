@@ -477,7 +477,7 @@ export function VariableChart({
             </div>
             {/* The report is the evidence for the number above it, so the way
                 to it is part of the answer rather than a nicety. */}
-            <Link to={`/reports/${activePoint.point.reportId}`} className="variable-chart-tip-link">
+            <Link to={`/files/${activePoint.point.reportId}`} className="variable-chart-tip-link">
               <Icon name="file-text" size={13} />{' '}
               {activePoint.point.reportFileName || t('variableChart.openReport')}
             </Link>

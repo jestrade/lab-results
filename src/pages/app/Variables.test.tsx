@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useLocation } from 'react-router-dom';
 
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
 import { expectNoA11yViolations } from '@/test/axe';
@@ -69,8 +70,29 @@ function emit(series: VariableSeries[]) {
   (subscribeToVariableSeries.mock.calls.at(-1)?.[1] as (s: VariableSeries[]) => void)(series);
 }
 
-function renderPage() {
-  return renderWithProviders(<Variables />, { auth: signedInAuth(), route: '/variables' });
+/**
+ * Reports the query string the page has put in the address bar.
+ *
+ * The filters are held in the URL and nowhere else, so this is what the
+ * assertions about persistence actually have to read — the rendered grid says
+ * what is on screen now, not what a refresh would bring back.
+ */
+function Search() {
+  return <output data-testid="search">{useLocation().search}</output>;
+}
+
+function search() {
+  return screen.getByTestId('search').textContent;
+}
+
+function renderPage(route = '/variables') {
+  return renderWithProviders(
+    <>
+      <Variables />
+      <Search />
+    </>,
+    { auth: signedInAuth(), route },
+  );
 }
 
 describe('Variables', () => {
@@ -441,6 +463,140 @@ describe('Variables', () => {
       expect(await screen.findByText(/could not be cleared/i)).toBeInTheDocument();
       // The dialog stays open, so the retry is one click rather than three.
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * The filters live in the query string, so the grid survives a refresh, a
+   * back button and a pasted link. Every test here is about that URL, not
+   * about the filtering itself — which the blocks above already cover.
+   */
+  describe('filters in the URL', () => {
+    it('leaves the address bar alone until something is filtered', async () => {
+      renderPage();
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      // An untouched page is a bare /variables. A URL spelling out every
+      // default is noise in the place the user is most likely to copy.
+      expect(search()).toBe('');
+    });
+
+    it('opens on the filters the URL asks for', async () => {
+      renderPage('/variables?category=electrolytes');
+      emit([potassium, makeSeries()]);
+
+      expect(await screen.findByRole('link', { name: /potassium/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /hemoglobin/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Electrolytes' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+
+    it('opens on the sort, search and window the URL asks for', async () => {
+      renderPage('/variables?q=potassium&sort=recent&period=12m&flagged=1');
+      emit([potassium, makeSeries()]);
+
+      await screen.findByRole('link', { name: /potassium/i });
+      expect(screen.getByLabelText(/search/i)).toHaveValue('potassium');
+      expect(screen.getByRole('button', { name: /most recent first/i })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByRole('button', { name: /last 12 months/i })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByRole('button', { name: /outside range only/i })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+
+    it('writes each control to the query string as it is used', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      await user.click(screen.getByRole('button', { name: 'Electrolytes' }));
+      expect(search()).toBe('?category=electrolytes');
+
+      await user.click(screen.getByRole('button', { name: /last 12 months/i }));
+      await user.click(screen.getByRole('button', { name: /outside range first/i }));
+      await user.click(screen.getByRole('button', { name: /outside range only/i }));
+
+      const params = new URLSearchParams(search() ?? '');
+      expect(Object.fromEntries(params)).toEqual({
+        category: 'electrolytes',
+        period: '12m',
+        sort: 'flagged',
+        flagged: '1',
+      });
+    });
+
+    it('carries the search box into the URL', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      await user.type(screen.getByLabelText(/search/i), 'Hgb');
+
+      expect(search()).toBe('?q=Hgb');
+    });
+
+    it('drops a filter from the URL when it is turned off again', async () => {
+      const user = userEvent.setup();
+      renderPage('/variables?category=electrolytes&flagged=1');
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /potassium/i });
+
+      await user.click(screen.getByRole('button', { name: /outside range only/i }));
+      await user.click(screen.getByRole('button', { name: /all categories/i }));
+
+      // Back to the URL it would have had if neither had ever been pressed —
+      // not a trail of the filters the reader has since undone.
+      expect(search()).toBe('');
+    });
+
+    it('shows the same grid after a refresh', async () => {
+      const user = userEvent.setup();
+      const { unmount } = renderPage();
+      emit([potassium, makeSeries()]);
+      await screen.findByRole('link', { name: /hemoglobin/i });
+
+      await user.click(screen.getByRole('button', { name: 'Electrolytes' }));
+      await user.click(screen.getByRole('button', { name: /most recent first/i }));
+      const url = `/variables${search()}`;
+
+      // What a reload is: the page mounted again at the URL it left behind,
+      // with nothing carried over in memory.
+      unmount();
+      renderPage(url);
+      emit([potassium, makeSeries()]);
+
+      expect(await screen.findByRole('link', { name: /potassium/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /hemoglobin/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /most recent first/i })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+
+    it('renders the page rather than an error when the URL is nonsense', async () => {
+      renderPage('/variables?category=made_up&sort=zzz&period=99y');
+      emit([potassium, makeSeries()]);
+
+      // A stale link or a hand-edited address bar should land the reader on
+      // the unfiltered grid, not on a broken page.
+      expect(await screen.findByRole('link', { name: /hemoglobin/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /potassium/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /all categories/i })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
   });
 

@@ -399,6 +399,18 @@ export interface CategoryGroup {
  */
 export type VariableSort = 'category' | 'recent' | 'flagged';
 
+/**
+ * The orderings offered, defined once — the same shape as `PERIODS`, and here
+ * for the same reason: the chips render from this list and `readFilters`
+ * validates against it, so a new ordering cannot appear in one without the
+ * other learning to accept it.
+ */
+export const SORTS: { id: VariableSort; label: MessageKey }[] = [
+  { id: 'category', label: 'variables.sort.category' },
+  { id: 'recent', label: 'variables.sort.recent' },
+  { id: 'flagged', label: 'variables.sort.flagged' },
+];
+
 /** Worst first. Ties inside a rank fall through to the next comparison. */
 const STATUS_RANK: Record<ResultStatus, number> = {
   critical: 0,
@@ -473,4 +485,116 @@ export function groupByCategory(
       .slice()
       .sort((a, b) => collator.compare(seriesName(a, locale), seriesName(b, locale))),
   }));
+}
+
+/** Everything the home grid's controls decide about what is on screen. */
+export interface VariableFilters {
+  query: string;
+  category: VariableCategory | 'all';
+  outOfRangeOnly: boolean;
+  sort: VariableSort;
+  period: Period;
+}
+
+/**
+ * What the grid shows before anyone touches a control.
+ *
+ * `all` for both the category and the period: a grid that opened narrowed
+ * would be hiding results before the reader knew a filter existed. `category`
+ * for the sort because it is the layout of the report they are holding.
+ */
+export const DEFAULT_FILTERS: VariableFilters = {
+  query: '',
+  category: 'all',
+  outOfRangeOnly: false,
+  sort: 'category',
+  period: 'all',
+};
+
+/**
+ * The query-string names. Short because this ends up in a URL people copy into
+ * a message, and stable because links already sent stop working if they change.
+ */
+const PARAM = {
+  query: 'q',
+  category: 'category',
+  outOfRangeOnly: 'flagged',
+  sort: 'sort',
+  period: 'period',
+} as const;
+
+/**
+ * The filters a URL asks for, with anything unrecognised falling back to its
+ * default.
+ *
+ * Every value here arrives from outside the application — a hand-edited
+ * address bar, a link from a build where a sort had a different name, a URL
+ * truncated by whatever pasted it. None of those should be an error the reader
+ * sees. Falling back per field rather than per URL means `?period=zzz&q=iron`
+ * still honours the search: one unreadable field is not a reason to discard
+ * the ones next to it.
+ *
+ * The category is checked against the catalog's own list, not against the
+ * categories this account has results in. Those are not known until the
+ * subscription delivers, and validating against them here would drop a
+ * legitimate `?category=thyroid` on the first render, before the data it
+ * refers to had arrived.
+ */
+export function readFilters(params: URLSearchParams): VariableFilters {
+  const category = params.get(PARAM.category);
+  const sort = params.get(PARAM.sort);
+  const period = params.get(PARAM.period);
+
+  return {
+    query: params.get(PARAM.query) ?? DEFAULT_FILTERS.query,
+    category: CATEGORY_ORDER.includes(category as VariableCategory)
+      ? (category as VariableCategory)
+      : DEFAULT_FILTERS.category,
+    // Present and "1" — not merely present. `?flagged=0` reads as off to
+    // anyone who writes it, and honouring presence alone would turn it on.
+    outOfRangeOnly: params.get(PARAM.outOfRangeOnly) === '1',
+    sort: SORTS.some((option) => option.id === sort)
+      ? (sort as VariableSort)
+      : DEFAULT_FILTERS.sort,
+    period: PERIODS.some((option) => option.id === period)
+      ? (period as Period)
+      : DEFAULT_FILTERS.period,
+  };
+}
+
+/**
+ * The query string for a set of filters.
+ *
+ * Defaults are omitted rather than written out, so an untouched grid has a
+ * bare `/variables` in the address bar. A URL carrying `?q=&category=all&
+ * sort=category` for a page nobody has filtered is noise in the one place the
+ * user is most likely to read and share.
+ *
+ * A whitespace-only search is dropped for the same reason: it filters nothing,
+ * so it should not be in a link.
+ */
+export function filterParams(filters: VariableFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.query.trim() !== '') params.set(PARAM.query, filters.query);
+  if (filters.category !== 'all') params.set(PARAM.category, filters.category);
+  if (filters.outOfRangeOnly) params.set(PARAM.outOfRangeOnly, '1');
+  if (filters.sort !== DEFAULT_FILTERS.sort) params.set(PARAM.sort, filters.sort);
+  if (filters.period !== DEFAULT_FILTERS.period) params.set(PARAM.period, filters.period);
+  return params;
+}
+
+/**
+ * Whether anything is being hidden — the cue for the "showing N of M" line.
+ *
+ * The sort is deliberately not counted. It reorders the grid and removes
+ * nothing from it, so a line explaining an absence would be explaining one
+ * that is not there.
+ */
+export function hasActiveFilters(filters: VariableFilters): boolean {
+  return (
+    filters.query.trim() !== '' ||
+    filters.category !== 'all' ||
+    filters.outOfRangeOnly ||
+    filters.period !== 'all'
+  );
 }

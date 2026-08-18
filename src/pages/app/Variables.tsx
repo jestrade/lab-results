@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '@/auth/useAuth';
 import { Alert } from '@/components/Alert';
@@ -15,25 +15,27 @@ import { useToast } from '@/components/useToast';
 import { Trans } from '@/i18n/Trans';
 import { useI18n } from '@/i18n/useI18n';
 import type { I18nContextValue } from '@/i18n/I18nContext';
-import type { MessageKey } from '@/i18n/messages';
 import type { Locale } from '@/domain/locales';
 import { isOutOfRange } from '@/domain/status';
-import type { LabVariable, VariableCategory, VariableSeries } from '@/domain/types';
+import type { LabVariable, VariableSeries } from '@/domain/types';
 import {
   categoryLabel,
   describeSparkline,
+  filterParams,
   groupByCategory,
+  hasActiveFilters,
   matchesQuery,
   monthsFor,
   PERIODS,
+  readFilters,
   seriesInWindow,
   seriesName,
   sortSeries,
+  SORTS,
   summariseSeries,
   timeWindow,
   withCatalog,
-  type Period,
-  type VariableSort,
+  type VariableFilters,
 } from '@/domain/variables';
 import {
   clearVariableData,
@@ -53,12 +55,19 @@ import {
  * is empty and this page shows its empty state. That is deliberate: the
  * alternative is deriving trends in the browser from raw results, which would
  * put the classification logic in two places and let them disagree.
+ *
+ * ── Why the filters live in the URL ───────────────────────────────────────
+ *
+ * Every control on this page writes to the query string, and the query string
+ * is the only place their state is kept. Nothing is mirrored into React state,
+ * because two copies of "which category is selected" is two things that can
+ * disagree — and the one the address bar shows would be the one that loses.
+ *
+ * What that buys, in the order people hit it: a refresh keeps the view; the
+ * back button undoes a filter instead of leaving the page; and a narrowed grid
+ * can be bookmarked or sent to someone, which is the difference between "look
+ * at your potassium" and a link that opens on it.
  */
-const SORTS: { id: VariableSort; label: MessageKey }[] = [
-  { id: 'category', label: 'variables.sort.category' },
-  { id: 'recent', label: 'variables.sort.recent' },
-  { id: 'flagged', label: 'variables.sort.flagged' },
-];
 
 export function Variables() {
   const { user } = useAuth();
@@ -67,17 +76,30 @@ export function Variables() {
   const [series, setSeries] = useState<VariableSeries[] | null>(null);
   const [catalog, setCatalog] = useState<Map<string, LabVariable> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<VariableCategory | 'all'>('all');
-  const [outOfRangeOnly, setOutOfRangeOnly] = useState(false);
-  // Grouped by panel by default: it is how a laboratory report is laid out, so
-  // it is where the reader expects to find a test when they are not looking for
-  // anything in particular.
-  const [sort, setSort] = useState<VariableSort>('category');
-  // All time by default. A grid that opened on a narrowed window would be
-  // hiding results the moment the page loaded, and the reader has no reason
-  // yet to know a window exists.
-  const [period, setPeriod] = useState<Period>('all');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { query, category, outOfRangeOnly, sort, period } = useMemo(
+    () => readFilters(searchParams),
+    [searchParams],
+  );
+
+  /**
+   * Writes one control's change back to the address bar.
+   *
+   * `replace` rather than push, because these are adjustments to one view
+   * rather than moves between views. Pushing would put an entry in the history
+   * for every keystroke in the search box, and leave the back button needing a
+   * dozen presses to get out of a page the user typed one word into.
+   */
+  const updateFilters = useCallback(
+    (change: Partial<VariableFilters>) => {
+      setSearchParams(
+        (current) => filterParams({ ...readFilters(current), ...change }),
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -182,8 +204,7 @@ export function Variables() {
   const groups = useMemo(() => groupByCategory(visible, locale), [visible, locale]);
   /** The flat orderings. Only read when `sort` is not `category`. */
   const ordered = useMemo(() => sortSeries(visible, sort, locale), [visible, sort, locale]);
-  const hasFilters =
-    query.trim() !== '' || category !== 'all' || outOfRangeOnly || period !== 'all';
+  const hasFilters = hasActiveFilters({ query, category, outOfRangeOnly, sort, period });
 
   return (
     <>
@@ -207,7 +228,7 @@ export function Variables() {
                 type="search"
                 placeholder={t('variables.searchPlaceholder')}
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => updateFilters({ query: event.target.value })}
               />
             )}
           </Field>
@@ -252,7 +273,7 @@ export function Variables() {
                 type="button"
                 className="chip"
                 aria-pressed={category === 'all'}
-                onClick={() => setCategory('all')}
+                onClick={() => updateFilters({ category: 'all' })}
               >
                 {t('variables.allCategories')}
               </button>
@@ -262,7 +283,7 @@ export function Variables() {
                   type="button"
                   className="chip"
                   aria-pressed={category === option}
-                  onClick={() => setCategory(option)}
+                  onClick={() => updateFilters({ category: option })}
                 >
                   {categoryLabel(option, locale)}
                 </button>
@@ -283,7 +304,7 @@ export function Variables() {
                   type="button"
                   className="chip"
                   aria-pressed={period === option.id}
-                  onClick={() => setPeriod(option.id)}
+                  onClick={() => updateFilters({ period: option.id })}
                 >
                   {t(option.label)}
                 </button>
@@ -305,7 +326,7 @@ export function Variables() {
                   type="button"
                   className="chip"
                   aria-pressed={sort === option.id}
-                  onClick={() => setSort(option.id)}
+                  onClick={() => updateFilters({ sort: option.id })}
                 >
                   {t(option.label)}
                 </button>
@@ -316,7 +337,7 @@ export function Variables() {
               type="button"
               className="chip"
               aria-pressed={outOfRangeOnly}
-              onClick={() => setOutOfRangeOnly((current) => !current)}
+              onClick={() => updateFilters({ outOfRangeOnly: !outOfRangeOnly })}
             >
               {t('variables.outOfRangeOnly', { count: outOfRangeCount })}
             </button>

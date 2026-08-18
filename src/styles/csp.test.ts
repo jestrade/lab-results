@@ -29,12 +29,28 @@ describe('content security policy', () => {
     expect(productionCsp).not.toMatch(/script-src[^;]*unsafe-(inline|eval)/);
   });
 
-  it('allows exactly the script hosts Google sign-in requires, and no others', () => {
+  it('allows exactly the script hosts sign-in and analytics require, and no others', () => {
     // Pinned as an explicit list so widening it is a deliberate edit with a
     // test to justify, not something that accretes. apis.google.com is where
     // the Firebase Auth SDK loads gapi from; without it the popup flow dies.
+    // www.googletagmanager.com serves gtag.js — the loader only; everything it
+    // then sends goes out over connect-src.
     const scriptSrc = productionCsp.match(/script-src ([^;]*)/)![1]!.trim();
-    expect(scriptSrc.split(/\s+/).sort()).toEqual(["'self'", 'https://apis.google.com']);
+    expect(scriptSrc.split(/\s+/).sort()).toEqual([
+      "'self'",
+      'https://apis.google.com',
+      'https://www.googletagmanager.com',
+    ]);
+  });
+
+  it('does not allow a Tag Manager container to be loaded', () => {
+    // gtag.js is a fixed script we ask for by measurement id. A GTM container
+    // (`/gtm.js`) is a different thing: it injects whatever a web console says
+    // to, which in a health application is an open door to third-party
+    // scripts nobody reviewed. Nothing in the app requests one, and this is
+    // the reminder not to start.
+    expect(productionCsp).not.toContain('gtm.js');
+    expect(productionCsp).not.toContain('https://tagmanager.google.com');
   });
 
   it('frames the auth handler and the Google account chooser', () => {

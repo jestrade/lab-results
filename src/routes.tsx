@@ -1,9 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import { RedirectIfSignedIn, RequireAuth, RequireRole } from '@/auth/guards';
+import { LandingRedirect, RedirectIfSignedIn, RequireAuth, RequireRole } from '@/auth/guards';
+import { usePageViews } from '@/hooks/usePageViews';
 import { AppLayout } from '@/layouts/AppLayout';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { AccountSettings } from '@/pages/app/AccountSettings';
+import { AdminOverview } from '@/pages/app/admin/AdminOverview';
+import { AdminUsers } from '@/pages/app/admin/AdminUsers';
+import { AdminVariables } from '@/pages/app/admin/AdminVariables';
 import { ComingSoon } from '@/pages/app/ComingSoon';
 import { ReportDetails } from '@/pages/app/ReportDetails';
 import { NotFound } from '@/pages/app/NotFound';
@@ -32,6 +36,11 @@ import { VerifyEmail } from '@/pages/public/VerifyEmail';
  * signed in, but the sidebar would offer them a lot they cannot use yet.
  */
 export function AppRoutes() {
+  // Here rather than in `App`, because this is the component that knows what a
+  // route is: the analytics page view is named after the pattern below, not
+  // after the URL the browser is showing (see lib/analytics.ts).
+  usePageViews();
+
   return (
     <Routes>
       <Route element={<PublicLayout />}>
@@ -60,10 +69,15 @@ export function AppRoutes() {
               and any link already sent to a user all point at /dashboard, and
               answering those with "page not found" would be a worse outcome
               than one extra hop. */}
-          <Route path="dashboard" element={<Navigate to="/variables" replace />} />
+          {/* Now the role-aware front door as well as the legacy redirect:
+              an admin lands on /admin and a reader on /variables. Sign-in
+              sends anyone without a stashed destination here, because the
+              role is not readable until the token has resolved — see
+              `LandingRedirect`. */}
+          <Route path="dashboard" element={<LandingRedirect />} />
           <Route path="upload" element={<Upload />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="reports/:reportId" element={<ReportDetails />} />
+          <Route path="files" element={<Reports />} />
+          <Route path="files/:reportId" element={<ReportDetails />} />
           <Route path="variables" element={<Variables />} />
           <Route path="variables/:variableId" element={<VariableDetails />} />
           {/* Trend analysis lived here. Every chart on it is now on the
@@ -78,30 +92,9 @@ export function AppRoutes() {
           <Route path="settings" element={<AccountSettings />} />
 
           <Route element={<RequireRole role="admin" />}>
-            <Route
-              path="admin"
-              element={
-                <ComingSoon
-                  kickerKey="nav.administration"
-                  titleKey="nav.adminOverview"
-                  ticket="KAN-18 / KAN-49"
-                  icon="shield-check"
-                  descriptionKey="comingSoon.adminOverviewBody"
-                />
-              }
-            />
-            <Route
-              path="admin/users"
-              element={
-                <ComingSoon
-                  kickerKey="nav.administration"
-                  titleKey="nav.adminUsers"
-                  ticket="KAN-19 / KAN-50"
-                  icon="users-three"
-                  descriptionKey="comingSoon.adminUsersBody"
-                />
-              }
-            />
+            <Route path="admin" element={<AdminOverview />} />
+            <Route path="admin/users" element={<AdminUsers />} />
+            <Route path="admin/variables" element={<AdminVariables />} />
             <Route
               path="admin/jobs"
               element={
