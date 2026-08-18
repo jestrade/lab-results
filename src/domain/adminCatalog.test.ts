@@ -251,9 +251,22 @@ describe('filters in the address bar', () => {
       category: 'vitamins' as const,
       origin: 'discovered' as const,
       needsReview: true,
+      page: 3,
     };
 
     expect(readFilters(filterParams(filters))).toEqual(filters);
+  });
+
+  it('leaves page one out of the URL, so a pristine view has a clean one', () => {
+    const filters = readFilters(new URLSearchParams());
+    expect(filters.page).toBe(1);
+    expect(filterParams({ ...filters, page: 1 }).toString()).toBe('');
+    expect(filterParams({ ...filters, page: 4 }).toString()).toBe('page=4');
+  });
+
+  it('does not count the page as a narrowing of the view', () => {
+    // Moving through a result does not change what is in it.
+    expect(hasActiveFilters(readFilters(new URLSearchParams('page=5')))).toBe(false);
   });
 
   it('leaves defaults out of the URL', () => {

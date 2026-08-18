@@ -88,9 +88,19 @@ export function AdminVariables() {
   // to one view, and pushing would put a history entry behind every keystroke.
   const updateFilters = useCallback(
     (change: Partial<CatalogFilters>) => {
-      setSearchParams((current) => filterParams({ ...readFilters(current), ...change }), {
-        replace: true,
-      });
+      setSearchParams(
+        (current) =>
+          filterParams({
+            ...readFilters(current),
+            ...change,
+            // Any change other than the page itself returns to the first page.
+            // Without this, narrowing a 178-entry catalog to three results
+            // while sitting on page six leaves a table that is empty, has
+            // working controls, and says nothing about why.
+            page: change.page ?? 1,
+          }),
+        { replace: true },
+      );
     },
     [setSearchParams],
   );
@@ -314,12 +324,22 @@ export function AdminVariables() {
             </FilterChip>
           </div>
 
+          {/* Paged for reading only. The whole catalog stays loaded above,
+              because the duplicate check in the editor compares a draft
+              against every entry that exists — narrowing that to the
+              twenty-five on screen would leave it rendering, silent, and
+              wrong exactly when it mattered. */}
           <DataTable
             caption={t('adminVariables.tableCaption')}
             columns={columns}
             rows={rows}
             rowKey={(row) => row.id}
             initialSort={{ key: 'name', direction: 'ascending' }}
+            pagination={{
+              page: filters.page,
+              onPageChange: (page) => updateFilters({ page }),
+              label: t('pagination.catalogPages'),
+            }}
             empty={
               <EmptyState icon="funnel" title={t('adminVariables.noMatchTitle')}>
                 {t('adminVariables.noMatchBody')}

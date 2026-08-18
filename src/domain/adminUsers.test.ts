@@ -147,8 +147,20 @@ describe('sortAccounts', () => {
 
 describe('filters in the address bar', () => {
   it('round-trips through the query string', () => {
-    const filters = { query: 'ana', role: 'admin' as const, access: 'disabled' as const };
+    const filters = {
+      query: 'ana',
+      role: 'admin' as const,
+      access: 'disabled' as const,
+      page: 2,
+    };
     expect(readFilters(filterParams(filters))).toEqual(filters);
+  });
+
+  it('leaves page one out of the URL', () => {
+    const filters = readFilters(new URLSearchParams());
+    expect(filters.page).toBe(1);
+    expect(filterParams({ ...filters, page: 1 }).toString()).toBe('');
+    expect(filterParams({ ...filters, page: 6 }).toString()).toBe('page=6');
   });
 
   it('leaves defaults out of the URL', () => {

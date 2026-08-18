@@ -11,6 +11,7 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+import { readPage } from './pagination';
 import type { UserProfile, UserRole } from './types';
 
 /**
@@ -57,6 +58,8 @@ export interface AccountFilters {
   query: string;
   role: RoleFilter;
   access: AccessFilter;
+  /** Which page of the filtered list is on screen — see `adminCatalog`. */
+  page: number;
 }
 
 /**
@@ -72,6 +75,7 @@ export function readFilters(params: URLSearchParams): AccountFilters {
     query: params.get('q') ?? '',
     role: role === 'admin' || role === 'user' ? role : 'all',
     access: access === 'active' || access === 'disabled' ? access : 'all',
+    page: readPage(params),
   };
 }
 
@@ -80,6 +84,7 @@ export function filterParams(filters: AccountFilters): URLSearchParams {
   if (filters.query.trim()) params.set('q', filters.query);
   if (filters.role !== 'all') params.set('role', filters.role);
   if (filters.access !== 'all') params.set('access', filters.access);
+  if (filters.page > 1) params.set('page', String(filters.page));
   return params;
 }
 

@@ -1865,3 +1865,92 @@ dialog.dialog {
     gap: 2px;
   }
 }
+
+/* ── pagination (KAN-49, KAN-50) ───────────────────────────────────────── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+}
+/* The count sentence stays put whether or not the controls are drawn, so a
+   result that fits on one page still says how big it is. */
+.pagination-count {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pagination-page,
+.pagination-step {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.pagination-page:hover:not([aria-current]),
+.pagination-step:hover:not(:disabled) {
+  background: var(--color-neutral-100);
+}
+/* The page you are on is a state, not a control — it reads as pressed and
+   `aria-current` says the same thing to a screen reader. */
+.pagination-page[aria-current='page'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+  cursor: default;
+}
+.pagination-step:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.pagination-gap {
+  padding: 0 2px;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+@media (max-width: 560px) {
+  /* The arrows carry the meaning on a narrow screen; the words are what wrap
+     the control onto three lines. */
+  .pagination-step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pagination-step {
+    min-width: 34px;
+    padding: 0 8px;
+  }
+}

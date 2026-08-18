@@ -30,6 +30,7 @@
  */
 
 import { LOCALES, type Locale } from './locales';
+import { readPage } from './pagination';
 import type { LabVariable, VariableCategory, VariableOrigin } from './types';
 import { CATEGORY_ORDER } from './variables';
 
@@ -314,6 +315,16 @@ export interface CatalogFilters {
   origin: OriginFilter;
   /** Only entries the pipeline created and nobody has reviewed. */
   needsReview: boolean;
+  /**
+   * Which page of the filtered list is on screen.
+   *
+   * Here with the filters rather than in React state, because it is the same
+   * kind of thing: part of what the reader is currently looking at, and no
+   * more use to them after a refresh than the search box would be. It also
+   * keeps the two in one place, which is what lets a filter change reset the
+   * page in a single write instead of two that can disagree.
+   */
+  page: number;
 }
 
 /**
@@ -332,6 +343,7 @@ export function readFilters(params: URLSearchParams): CatalogFilters {
     category: isCategory(category) ? category : 'all',
     origin: origin === 'catalog' || origin === 'discovered' ? origin : 'all',
     needsReview: params.get('review') === '1',
+    page: readPage(params),
   };
 }
 
@@ -341,6 +353,8 @@ export function filterParams(filters: CatalogFilters): URLSearchParams {
   if (filters.category !== 'all') params.set('category', filters.category);
   if (filters.origin !== 'all') params.set('origin', filters.origin);
   if (filters.needsReview) params.set('review', '1');
+  // Page one is the absence of a page, so a pristine view has a clean URL.
+  if (filters.page > 1) params.set('page', String(filters.page));
   return params;
 }
 
@@ -373,6 +387,13 @@ export function filterCatalog(
   });
 }
 
+/**
+ * Whether the view is narrowed.
+ *
+ * `page` is deliberately not consulted: it moves through a result without
+ * changing what is in it, and counting it would make the "showing 25 of 178"
+ * line appear merely because somebody clicked Next.
+ */
 export function hasActiveFilters(filters: CatalogFilters): boolean {
   return (
     filters.query.trim() !== '' ||

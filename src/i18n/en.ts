@@ -1069,4 +1069,13 @@ export const en = {
   'common.admin': 'Admin',
   'common.adminAccessLabel': 'You have admin access',
 
+
+  // ── Pagination ────────────────────────────────────────────────────────
+  'pagination.showing': 'Showing {from}–{to} of {total}',
+  'pagination.previous': 'Previous',
+  'pagination.next': 'Next',
+  'pagination.goToPage': 'Go to page {page}',
+  'pagination.catalogPages': 'Catalog pages',
+  'pagination.accountPages': 'Account pages',
+
 } as const;

@@ -339,3 +339,80 @@ describe('the page limit', () => {
     expect(screen.queryByRole('button', { name: 'Load more accounts' })).not.toBeInTheDocument();
   });
 });
+
+describe('paging the accounts', () => {
+  /** 30 accounts — enough to need a second page at 25 per page. */
+  function manyAccounts() {
+    return Array.from({ length: 30 }, (_, index) =>
+      makeAccount({
+        uid: `u${String(index + 1).padStart(2, '0')}`,
+        email: `person${String(index + 1).padStart(2, '0')}@example.com`,
+        // Descending registration order matches the table's initial sort, so
+        // the assertions below are about the page and not about the sort.
+        createdAt: stamp(`2026-06-${String(30 - index).padStart(2, '0')}T00:00:00Z`),
+      }),
+    );
+  }
+
+  it('shows one page at a time and says how much of the list that is', async () => {
+    renderPage();
+    emit(manyAccounts());
+
+    expect(await screen.findByText('person01@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('person26@example.com')).not.toBeInTheDocument();
+    expect(screen.getByText('Showing 1–25 of 30')).toBeInTheDocument();
+  });
+
+  it('puts the page in the address bar', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(manyAccounts());
+
+    await user.click(await screen.findByRole('button', { name: 'Go to page 2' }));
+
+    expect(screen.getByText('person26@example.com')).toBeInTheDocument();
+    expect(screen.getByTestId('search')).toHaveTextContent('page=2');
+  });
+
+  it('opens on the page a URL carries', async () => {
+    renderPage('/admin/users?page=2');
+    emit(manyAccounts());
+
+    expect(await screen.findByText('person26@example.com')).toBeInTheDocument();
+  });
+
+  it('returns to the first page when a filter changes', async () => {
+    const user = userEvent.setup();
+    renderPage('/admin/users?page=2');
+    emit(manyAccounts());
+
+    await user.type(await screen.findByLabelText('Search accounts'), 'person01');
+
+    await waitFor(() => expect(screen.getByTestId('search')).not.toHaveTextContent('page=2'));
+    expect(screen.getByText('person01@example.com')).toBeInTheDocument();
+  });
+
+  it('pages what is loaded, while Load more widens what is loaded at all', async () => {
+    // Two different bounds: one makes a long list readable, the other reaches
+    // accounts the query has not fetched yet.
+    const user = userEvent.setup();
+    renderPage();
+    emit(Array.from({ length: 100 }, (_, index) =>
+      makeAccount({ uid: `u${index}`, email: `u${index}@example.com` })));
+
+    expect(await screen.findByText('Showing 1–25 of 100')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Account pages' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Load more accounts' }));
+    await waitFor(() => expect(subscribeToAccounts.mock.calls.at(-1)?.[0]).toBe(200));
+  });
+
+  it('does not draw a control when every account fits on one page', async () => {
+    renderPage();
+    emit([makeAccount(), bruno]);
+
+    await screen.findByText('ana@example.com');
+    expect(screen.queryByRole('navigation', { name: 'Account pages' })).not.toBeInTheDocument();
+    expect(screen.getByText('Showing 1–2 of 2')).toBeInTheDocument();
+  });
+});

@@ -81,9 +81,17 @@ export function AdminUsers() {
 
   const updateFilters = useCallback(
     (change: Partial<AccountFilters>) => {
-      setSearchParams((current) => filterParams({ ...readFilters(current), ...change }), {
-        replace: true,
-      });
+      setSearchParams(
+        (current) =>
+          filterParams({
+            ...readFilters(current),
+            ...change,
+            // Any change other than the page itself returns to the first page
+            // — see the same note on the catalog screen.
+            page: change.page ?? 1,
+          }),
+        { replace: true },
+      );
     },
     [setSearchParams],
   );
@@ -270,12 +278,21 @@ export function AdminUsers() {
             </div>
           </div>
 
+          {/* Two bounds, and they answer different questions. This one pages
+              what has been loaded, so a long list is readable; `Load more`
+              below widens what is loaded at all, because accounts grow without
+              limit and the search only reaches what has been fetched. */}
           <DataTable
             caption={t('adminUsers.tableCaption')}
             columns={columns}
             rows={rows}
             rowKey={(row) => row.uid}
             initialSort={{ key: 'joined', direction: 'descending' }}
+            pagination={{
+              page: filters.page,
+              onPageChange: (page) => updateFilters({ page }),
+              label: t('pagination.accountPages'),
+            }}
             empty={
               <EmptyState icon="funnel" title={t('adminUsers.noMatchTitle')}>
                 {t('adminUsers.noMatchBody')}

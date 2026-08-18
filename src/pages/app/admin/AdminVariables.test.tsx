@@ -380,3 +380,87 @@ describe('deleting a variable', () => {
     expect(screen.getByText('Hemoglobin')).toBeInTheDocument();
   });
 });
+
+describe('paging the catalog', () => {
+  /** 30 entries — enough to need a second page at 25 per page. */
+  function manyVariables() {
+    return Array.from({ length: 30 }, (_, index) =>
+      makeVariable({
+        id: `var-${String(index + 1).padStart(2, '0')}`,
+        canonicalName: `Variable ${String(index + 1).padStart(2, '0')}`,
+        names: { en: `Variable ${String(index + 1).padStart(2, '0')}` },
+      }),
+    );
+  }
+
+  it('shows one page at a time and says how much of the list that is', async () => {
+    renderPage();
+    emit(manyVariables());
+
+    expect(await screen.findByText('Variable 01')).toBeInTheDocument();
+    expect(screen.queryByText('Variable 26')).not.toBeInTheDocument();
+    expect(screen.getByText('Showing 1–25 of 30')).toBeInTheDocument();
+  });
+
+  it('puts the page in the address bar, so a refresh keeps it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(manyVariables());
+
+    await user.click(await screen.findByRole('button', { name: 'Go to page 2' }));
+
+    expect(screen.getByText('Variable 26')).toBeInTheDocument();
+    expect(screen.queryByText('Variable 01')).not.toBeInTheDocument();
+    expect(screen.getByTestId('search')).toHaveTextContent('page=2');
+  });
+
+  it('opens on the page a URL carries', async () => {
+    renderPage('/admin/variables?page=2');
+    emit(manyVariables());
+
+    expect(await screen.findByText('Variable 26')).toBeInTheDocument();
+  });
+
+  it('returns to the first page when a filter changes', async () => {
+    // Otherwise narrowing the list while on page two leaves an empty table
+    // with working controls and no explanation.
+    const user = userEvent.setup();
+    renderPage('/admin/variables?page=2');
+    emit(manyVariables());
+
+    await user.type(await screen.findByLabelText('Search the catalog'), 'Variable 01');
+
+    await waitFor(() => expect(screen.getByTestId('search')).not.toHaveTextContent('page=2'));
+    expect(screen.getByText('Variable 01')).toBeInTheDocument();
+  });
+
+  it('falls back to the last page rather than rendering blank', async () => {
+    renderPage('/admin/variables?page=99');
+    emit(manyVariables());
+
+    expect(await screen.findByText('Variable 26')).toBeInTheDocument();
+    expect(screen.getByText('Showing 26–30 of 30')).toBeInTheDocument();
+  });
+
+  it('leaves the duplicate check reading the whole catalog, not the page', async () => {
+    // The entry it must find is on page two; the editor is opened from page
+    // one. A check narrowed to the visible rows would say nothing here.
+    const user = userEvent.setup();
+    renderPage();
+    emit([...manyVariables(), makeVariable({ id: 'hemoglobin', canonicalName: 'Hemoglobin' })]);
+
+    await user.click(screen.getByRole('button', { name: 'New variable' }));
+    await user.type(screen.getByLabelText('Canonical name'), 'HEMOGLOBINA');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('hemoglobin');
+  });
+
+  it('does not draw a control when the catalog fits on one page', async () => {
+    renderPage();
+    emit([makeVariable(), ferritin]);
+
+    await screen.findByText('Hemoglobin');
+    expect(screen.queryByRole('navigation', { name: 'Catalog pages' })).not.toBeInTheDocument();
+    expect(screen.getByText('Showing 1–2 of 2')).toBeInTheDocument();
+  });
+});

@@ -1081,4 +1081,13 @@ export const es: Messages = {
   'common.admin': 'Administrador',
   'common.adminAccessLabel': 'Tienes acceso de administrador',
 
+
+  // ── Paginación ────────────────────────────────────────────────────────
+  'pagination.showing': 'Mostrando {from}–{to} de {total}',
+  'pagination.previous': 'Anterior',
+  'pagination.next': 'Siguiente',
+  'pagination.goToPage': 'Ir a la página {page}',
+  'pagination.catalogPages': 'Páginas del catálogo',
+  'pagination.accountPages': 'Páginas de cuentas',
+
 };
