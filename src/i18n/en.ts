@@ -1078,4 +1078,10 @@ export const en = {
   'pagination.catalogPages': 'Catalog pages',
   'pagination.accountPages': 'Account pages',
 
+
+  // ── Account menu ──────────────────────────────────────────────────────
+  'account.menuLabel': 'Account menu — {email}',
+  'account.signedInAs': 'Signed in as',
+  'account.verifyEmail': 'Verify your email address',
+
 } as const;

@@ -14,9 +14,8 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/auth/useAuth';
+import { AccountMenu } from '@/components/AccountMenu';
 import { Icon } from '@/components/Icon';
-import { LanguageSwitcher } from '@/components/LanguagePicker';
-import { Tag } from '@/components/Tag';
 import { formatWeekdayDate } from '@/i18n/dates';
 import { useI18n } from '@/i18n/useI18n';
 import type { MessageKey } from '@/i18n/messages';
@@ -53,7 +52,7 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 export function AppLayout() {
-  const { user, isEmailVerified, isAdmin, signOutUser } = useAuth();
+  const { isAdmin, signOutUser } = useAuth();
   const { t, locale } = useI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
@@ -142,33 +141,12 @@ export function AppLayout() {
 
           <span className="app-topbar-date">{formatWeekdayDate(new Date(), locale)}</span>
           <div className="spacer" />
-          <LanguageSwitcher />
-          <span style={{ fontSize: 13 }}>{user?.email}</span>
-          {/* Admin access, stated where the account is named (KAN-2).
-              Someone holding a token that can read every account in the system
-              should be able to see that they are holding it — a privilege
-              visible only as an extra sidebar group is one it is easy to
-              forget you have, and easy not to notice you were granted. */}
-          {isAdmin ? (
-            <Tag tone="accent">
-              <Icon name="shield-check" size={13} />
-              <span style={{ marginLeft: 5 }}>{t('common.admin')}</span>
-            </Tag>
-          ) : null}
-          {isEmailVerified ? (
-            <Tag tone="neutral">
-              <Icon name="seal-check" size={13} />
-              <span style={{ marginLeft: 5 }}>{t('common.verified')}</span>
-            </Tag>
-          ) : (
-            <Tag tone="accent-2">
-              <Icon name="warning" size={13} />
-              <span style={{ marginLeft: 5 }}>{t('common.unverified')}</span>
-            </Tag>
-          )}
-          <button type="button" className="btn btn-ghost" onClick={handleSignOut}>
-            {t('common.signOut')}
-          </button>
+          {/* The address, the role, the verification state, the language and
+              the way out all live in here now. Five controls spread across the
+              bar wrapped onto a second row on a narrow screen and competed
+              with the page on a wide one; what they have in common is that
+              they are all about the account rather than about the page. */}
+          <AccountMenu onSignOut={() => void handleSignOut()} />
         </div>
         <div className="app-topbar-rule" />
 

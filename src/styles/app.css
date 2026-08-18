@@ -1954,3 +1954,133 @@ dialog.dialog {
     padding: 0 8px;
   }
 }
+
+/* ── account menu (KAN-25) ─────────────────────────────────────────────── */
+
+.account-menu {
+  position: relative;
+}
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.account-trigger:hover,
+.account-trigger[aria-expanded='true'] {
+  border-color: var(--color-divider);
+  background: var(--color-neutral-100);
+}
+.account-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* The one thing that stays visible when the panel is shut: an unverified
+   address is a task the account has to finish before it can upload, and a
+   warning nobody sees until they go looking is not a warning. */
+.account-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--feedback-danger-ink);
+  box-shadow: 0 0 0 2px var(--panel-bg);
+}
+
+.account-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 248px;
+  max-width: min(90vw, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-md);
+}
+.account-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.account-panel-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+.account-panel-email {
+  font-size: 13px;
+  font-weight: 600;
+  /* Addresses are long and this panel is narrow; breaking is better than a
+     row that pushes the panel wider than the viewport. */
+  overflow-wrap: anywhere;
+}
+.account-panel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.account-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.account-panel-rule {
+  height: 1px;
+  background: var(--color-divider);
+}
+.account-panel-row {
+  display: flex;
+  align-items: center;
+}
+.account-panel-action {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  margin: -3px -4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+.account-panel-action:hover {
+  background: var(--color-neutral-100);
+}
+
+/* No narrow-screen override. `position: fixed` was tried here and is a trap:
+   the base rule offsets the panel with `top: calc(100% + 8px)`, and on a fixed
+   element that 100% resolves against the viewport rather than the trigger, so
+   the panel lands just below the fold and reads as a menu that does not open.
+   Anchoring to the trigger and capping at 90vw keeps it on screen at every
+   width without a second positioning scheme to keep in step. */

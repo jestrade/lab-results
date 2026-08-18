@@ -1090,4 +1090,10 @@ export const es: Messages = {
   'pagination.catalogPages': 'Páginas del catálogo',
   'pagination.accountPages': 'Páginas de cuentas',
 
+
+  // ── Menú de la cuenta ─────────────────────────────────────────────────
+  'account.menuLabel': 'Menú de la cuenta — {email}',
+  'account.signedInAs': 'Sesión iniciada como',
+  'account.verifyEmail': 'Verifica tu correo electrónico',
+
 };
