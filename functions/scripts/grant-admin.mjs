@@ -147,8 +147,39 @@ await auth.setCustomUserClaims(user.uid, { ...user.customClaims, role });
 // The display mirror. `firestore.rules` forbids the account itself from
 // writing this field, and /admin/users reads it — an admin granted the claim
 // without it is an admin the console cannot see, and the overview cannot count.
-await db.collection('users').doc(user.uid).set(
-  { role, email, updatedAt: FieldValue.serverTimestamp() },
+//
+// ── Why this writes more than the role ───────────────────────────────────
+//
+// An earlier version wrote `{ role, email, updatedAt }` and nothing else. For
+// an account this script had just created there was no profile to merge into,
+// so it minted a partial one — no `createdAt`, no `uid`, no display name. The
+// console ordered its query by `createdAt`, Firestore omits documents that
+// lack the ordered field entirely, and the result was that the first admin of
+// a project could not see their own account in the list of accounts. The
+// query no longer orders on a field it cannot guarantee, and this no longer
+// writes a profile that is missing one.
+//
+// `createdAt` comes from the Auth record rather than from now(), because when
+// the account came into being is a fact about the account and not about when
+// somebody got around to running this.
+const profileRef = db.collection('users').doc(user.uid);
+const existingProfile = (await profileRef.get()).data() ?? {};
+
+await profileRef.set(
+  {
+    role,
+    email,
+    uid: user.uid,
+    updatedAt: FieldValue.serverTimestamp(),
+    // Filled in, never restated: a profile that already carries these belongs
+    // to a real sign-up and this script has no business rewriting it.
+    ...(existingProfile.createdAt
+      ? {}
+      : { createdAt: new Date(user.metadata.creationTime) }),
+    ...(existingProfile.displayName === undefined
+      ? { displayName: user.displayName ?? null }
+      : {}),
+  },
   { merge: true },
 );
 

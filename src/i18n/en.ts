@@ -977,7 +977,7 @@ export const en = {
   'adminUsers.unknownDate': 'Unknown',
   'adminUsers.loadMore': 'Load more accounts',
   'adminUsers.limitNote':
-    'Showing the {count} most recently registered accounts. Search covers the accounts loaded so far.',
+    'Showing {count} accounts. Search covers the accounts loaded so far — load more to reach the rest.',
   'adminUsers.changeRole': 'Change role',
   'adminUsers.changeRoleLabel': 'Change the role of {name}',
   'adminUsers.roleTitle': 'Change the role of {name}',

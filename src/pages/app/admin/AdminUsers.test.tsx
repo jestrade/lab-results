@@ -318,7 +318,10 @@ describe('the page limit', () => {
     renderPage();
     emit(Array.from({ length: 100 }, (_, index) => makeAccount({ uid: `u${index}`, email: `u${index}@example.com` })));
 
-    expect(await screen.findByText(/Showing the 100 most recently registered/)).toBeInTheDocument();
+    // The wording no longer promises "most recent": the query stopped ordering
+    // on `createdAt`, because ordering on a field a document can lack is what
+    // made an account invisible in the first place.
+    expect(await screen.findByText(/Showing 100 accounts/)).toBeInTheDocument();
   });
 
   it('asks for a larger page rather than paging with a cursor', async () => {
@@ -414,5 +417,64 @@ describe('paging the accounts', () => {
     await screen.findByText('ana@example.com');
     expect(screen.queryByRole('navigation', { name: 'Account pages' })).not.toBeInTheDocument();
     expect(screen.getByText('Showing 1–2 of 2')).toBeInTheDocument();
+  });
+});
+
+describe('an account whose profile has no registration date', () => {
+  /**
+   * The regression this exists for.
+   *
+   * `grant-admin.mjs` wrote the profile mirror directly, so the first admin of
+   * a project had a `users/{uid}` document with no `createdAt`. The list query
+   * ordered by that field, Firestore omits documents that lack the ordered
+   * field entirely, and the account that could not be seen was the one
+   * belonging to the person looking at the screen.
+   */
+  const dateless = makeAccount({
+    uid: 'no-date',
+    email: 'bootstrap@example.com',
+    role: 'admin',
+    createdAt: null,
+  });
+
+  it('is listed rather than omitted', async () => {
+    renderPage();
+    emit([makeAccount(), dateless]);
+
+    expect(await screen.findByText('bootstrap@example.com')).toBeInTheDocument();
+  });
+
+  it('says the date is unknown instead of inventing one', async () => {
+    renderPage();
+    emit([dateless]);
+
+    const row = (await screen.findByText('bootstrap@example.com')).closest('tr')!;
+    expect(within(row).getByText('Unknown')).toBeInTheDocument();
+  });
+
+  it('sorts last rather than first, and still carries its actions', async () => {
+    // Treating a missing date as epoch zero would jump it to the top under a
+    // newest-first sort; treating it as absent must not cost it its row.
+    renderPage();
+    emit([dateless, makeAccount()]);
+
+    await screen.findByText('ana@example.com');
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(within(rows[0]!).getByText('ana@example.com')).toBeInTheDocument();
+    expect(within(rows[1]!).getByText('bootstrap@example.com')).toBeInTheDocument();
+    expect(
+      within(rows[1]!).getByRole('button', { name: /Change the role/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('is reachable by search like any other account', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit([makeAccount(), dateless]);
+
+    await user.type(await screen.findByLabelText('Search accounts'), 'bootstrap');
+
+    expect(screen.getByText('bootstrap@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('ana@example.com')).not.toBeInTheDocument();
   });
 });

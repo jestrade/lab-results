@@ -15,7 +15,6 @@ import {
   collection,
   limit as limitTo,
   onSnapshot,
-  orderBy,
   query,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -31,7 +30,7 @@ const USERS = 'users';
 export const ACCOUNT_PAGE_SIZE = 100;
 
 /**
- * Accounts, newest registration first, live.
+ * Accounts, live.
  *
  * Bounded, unlike the variable catalog subscription next door. The catalog is
  * reference data with a known ceiling; this collection grows with the product,
@@ -40,16 +39,30 @@ export const ACCOUNT_PAGE_SIZE = 100;
  * page rather than fixed, so "show more" costs one larger query instead of
  * cursor state that has to survive a live snapshot reordering itself.
  *
- * Ordered in the query rather than in the client, because the limit has to cut
- * the list at the same place the ordering does — sorting a page after the fact
- * would order an arbitrary hundred accounts rather than the newest hundred.
+ * ── Why this does not order by `createdAt` in the query ──────────────────
  *
- * One consequence of ordering in the query is worth knowing: Firestore omits a
- * document that has no `createdAt` field at all from an `orderBy` on it. Every
- * profile `ensureUserProfile` writes carries one, so this is not reachable
- * today — but a profile hand-written without the field would be invisible here
- * rather than merely last, and that is a search coming back empty for an
- * account that exists. `sortAccounts` handles a null date for the same reason.
+ * It used to, so that the limit and the ordering cut the list at the same
+ * place and the window was the *newest* hundred rather than an arbitrary
+ * hundred. That is the better window, and it cost an account its visibility.
+ *
+ * Firestore omits a document that lacks the ordered field entirely — not
+ * sorts it last, omits it. A profile written without `createdAt` therefore
+ * did not appear in this console at all: no row, no count, and a search for
+ * the address coming back empty for an account that demonstrably exists.
+ * That is the one wrong answer this screen must not give, and it is worse by
+ * a wide margin than showing a hundred accounts in an unhelpful order.
+ *
+ * The comment that used to sit here said such a profile was unreachable
+ * because `ensureUserProfile` always writes the field. Then
+ * `grant-admin.mjs` created an admin by writing the mirror directly, and the
+ * account that could not be seen was the one belonging to the person looking.
+ * An invariant that depends on every future writer remembering is not an
+ * invariant; ordering on a field every document is guaranteed to have — the
+ * implicit `__name__` this query now falls back on — is.
+ *
+ * The ordering the reader sees is `sortAccounts`, applied in the page over
+ * whatever has been loaded, and it puts a dateless account last rather than
+ * nowhere.
  */
 export function subscribeToAccounts(
   count: number,
@@ -57,7 +70,7 @@ export function subscribeToAccounts(
   onError?: (error: Error) => void,
 ): Unsubscribe {
   return onSnapshot(
-    query(collection(getDb(), USERS), orderBy('createdAt', 'desc'), limitTo(count)),
+    query(collection(getDb(), USERS), limitTo(count)),
     (snapshot) =>
       onChange(
         snapshot.docs.map((entry) =>

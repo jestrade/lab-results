@@ -988,7 +988,7 @@ export const es: Messages = {
   'adminUsers.unknownDate': 'Desconocida',
   'adminUsers.loadMore': 'Cargar más cuentas',
   'adminUsers.limitNote':
-    'Mostrando las {count} cuentas registradas más recientemente. La búsqueda abarca las cuentas cargadas hasta ahora.',
+    'Mostrando {count} cuentas. La búsqueda abarca las cuentas cargadas hasta ahora; carga más para alcanzar el resto.',
   'adminUsers.changeRole': 'Cambiar rol',
   'adminUsers.changeRoleLabel': 'Cambiar el rol de {name}',
   'adminUsers.roleTitle': 'Cambiar el rol de {name}',
