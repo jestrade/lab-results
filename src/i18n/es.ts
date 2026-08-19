@@ -416,9 +416,11 @@ export const es: Messages = {
   'upload.dateFuture':
     'Esa fecha todavía no ha llegado. Comprueba la fecha impresa en el reporte.',
   'upload.dateTooOld': 'Esa fecha parece un error de tecleo. Comprueba el año.',
+  'upload.preview': 'Ver el PDF',
+  'upload.previewLabel': 'Ver el PDF de {file}',
   'upload.startOne': 'Subir archivo',
-  'upload.startMany': 'Subir {count} archivos',
-  'upload.startHint': 'Nada sale de tu computadora hasta que pulses aquí.',
+  'upload.startLabel': 'Subir archivo — {file}',
+  'upload.startHint': 'Nada sale de tu computadora hasta que pulses subir en su fila.',
   'upload.state.draft': 'Esperándote: indica la fecha y pulsa subir.',
   'upload.step.dateFirst': '{count} a la espera de una fecha',
   'upload.cancelLabel': 'Cancelar la subida de {file}',

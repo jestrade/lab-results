@@ -234,7 +234,7 @@ export function Profile() {
       {profile === undefined ? (
         <Skeleton height={200} radius="var(--r-card)" />
       ) : (
-        <>
+        <div className="profile-columns">
           <IdentitySection
             profile={profile}
             email={user.email ?? ''}
@@ -257,8 +257,8 @@ export function Profile() {
             onClear={() => clearIdentityDocument(user.uid)}
             t={t}
           />
-
-          <PasswordSection canChange={hasPasswordSignIn(user)} user={user} t={t} locale={locale} />
+          
+          <DataSection user={user} t={t} locale={locale} />
 
           <HealthContextSection
             profile={profile}
@@ -268,8 +268,9 @@ export function Profile() {
             locale={locale}
           />
 
-          <DataSection user={user} t={t} locale={locale} />
-        </>
+          <PasswordSection canChange={hasPasswordSignIn(user)} user={user} t={t} locale={locale} />
+
+        </div>
       )}
     </>
   );

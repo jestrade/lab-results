@@ -70,6 +70,15 @@ describe('content security policy', () => {
     expect(developmentCsp).toMatch(/frame-src[^;]*127\.0\.0\.1:9199/);
   });
 
+  it('frames the blob URL the upload page previews a chosen PDF from', () => {
+    // The file being staged is on the user's machine and nowhere else, so
+    // `URL.createObjectURL` is the only src that dialog can have. Drop this
+    // and the preview is a blank rectangle in production only.
+    expect(productionCsp).toMatch(/frame-src[^;]*\bblob:/);
+    // It buys a frame and not a plugin.
+    expect(productionCsp).toContain("object-src 'none'");
+  });
+
   it('keeps font-src locked to self, which requires fonts never be inlined', () => {
     // If this ever needs `data:`, the real fix is build.assetsInlineLimit in
     // vite.config.ts, not loosening the policy.

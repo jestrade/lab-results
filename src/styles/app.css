@@ -766,9 +766,17 @@
 }
 /* A row still waiting for its date is the one thing on the page asking the
    reader for something, so it is the one row that says so without colour
-   alone — the field and its label are inside it. */
+   alone — the field, its label and its own upload button are inside it. */
 .upload-row[data-state='draft'] {
   border-color: var(--color-accent);
+}
+/* The row is a stretching column, so without this the buttons would run the
+   full width of the card and read as the page's actions rather than the row's. */
+.upload-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-self: flex-start;
 }
 
 /* A control that is only an icon: used where the label would repeat text
@@ -1704,6 +1712,35 @@ dialog.dialog-wide .dialog-body {
 }
 
 /* ── Profile (KAN-27 / KAN-48) ───────────────────────────────────────────── */
+
+/* Two columns once there is room for them. The page is five self-contained
+   sections; stacked, the last of them sits a long scroll below the first for
+   no reason other than the width going unused. `align-items: start` keeps each
+   panel its own height — stretching them to match their row would leave a
+   short section padded with empty space next to a tall one. */
+.profile-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 24px;
+}
+@media (min-width: 1024px) {
+  .profile-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+  }
+  /* Data and deletion run the full width rather than ending the grid as a
+     lone half-panel with a hole beside it. It is also the section that was
+     always meant to be read last and on its own. */
+  .profile-columns .settings-section-wide {
+    grid-column: 1 / -1;
+  }
+}
+/* The 760px cap exists to keep a full-width section readable; inside a column
+   the column is already the constraint. */
+.profile-columns .settings-section {
+  max-width: none;
+}
 
 .profile-form {
   display: flex;

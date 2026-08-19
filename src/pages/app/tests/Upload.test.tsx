@@ -17,6 +17,14 @@ const quotaState = vi.hoisted(() => ({ value: null as unknown }));
 const consentState = vi.hoisted(() => ({ value: null as unknown }));
 const grantConsent = vi.hoisted(() => vi.fn());
 
+// jsdom implements neither, and the preview dialog is built on both. Installed
+// as mocks rather than as a polyfill so the revoke can be asserted: a blob URL
+// that is never released holds the whole file for the life of the page.
+const objectUrls = vi.hoisted(() => ({
+  create: vi.fn(() => 'blob:preview-url'),
+  revoke: vi.fn(),
+}));
+
 // Consent is a live Firestore subscription; stub at the hook so these tests
 // stay about the page.
 vi.mock('@/hooks/useAiConsent', () => ({
@@ -49,21 +57,36 @@ function drop(...files: File[]) {
   fireEvent.drop(zone, { dataTransfer: { files, types: ['Files'] } });
 }
 
+/** Every row's own upload button — the page has no batch button (KAN-3). */
+function startButtons() {
+  return screen.queryAllByRole('button', { name: /^upload file — /i });
+}
+
 /**
- * Dates every staged file and presses upload — the two steps a real user now
- * takes between choosing a file and it being sent (KAN-3).
+ * Dates every staged file and presses each row's upload button — the steps a
+ * real user now takes between choosing files and them being sent (KAN-3).
  *
  * A helper rather than repetition through twenty tests, because those tests
  * are about what happens *after* an upload starts. The tests that are about
  * the date field itself do these steps by hand.
  */
 async function dateAndUpload(date = '2026-07-12') {
-  for (const input of screen.queryAllByLabelText(/date these tests were taken/i)) {
+  const fields = screen.queryAllByLabelText(/date these tests were taken/i);
+  for (const input of fields) {
     fireEvent.change(input, { target: { value: date } });
   }
-  await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /^upload (file|\d+ files)$/i }));
-  });
+
+  // Re-queried each time rather than pressed from one list: a pressed row
+  // leaves `draft` and takes its button out of the document with it. Bounded
+  // by the number of fields so a row that refuses its own date cannot spin
+  // this into an endless loop.
+  for (let pressed = 0; pressed < fields.length; pressed += 1) {
+    const [next] = startButtons();
+    if (!next) break;
+    await act(async () => {
+      fireEvent.click(next);
+    });
+  }
 }
 
 function stamp(iso: string) {
@@ -156,6 +179,10 @@ describe('Upload', () => {
     hashFile.mockResolvedValue('hash-a');
     fetchDuplicateCandidates.mockReset();
     fetchDuplicateCandidates.mockResolvedValue([]);
+    objectUrls.create.mockClear();
+    objectUrls.revoke.mockClear();
+    URL.createObjectURL = objectUrls.create;
+    URL.revokeObjectURL = objectUrls.revoke;
     quotaState.value = makeQuota();
     // Granted by default: most tests are about upload behaviour, and the gate
     // has its own tests below.
@@ -351,7 +378,7 @@ describe('Upload', () => {
       drop(pdf());
 
       await act(async () => {
-        fireEvent.click(await screen.findByRole('button', { name: /^upload file$/i }));
+        fireEvent.click(await screen.findByRole('button', { name: /^upload file — panel\.pdf$/i }));
       });
 
       expect(screen.getByText(/choose the date these tests were taken/i)).toBeInTheDocument();
@@ -365,14 +392,27 @@ describe('Upload', () => {
       const field = await screen.findByLabelText(/date these tests were taken/i);
       fireEvent.change(field, { target: { value: '2999-01-01' } });
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /^upload file$/i }));
+        fireEvent.click(screen.getByRole('button', { name: /^upload file — panel\.pdf$/i }));
       });
 
       expect(screen.getByText(/has not happened yet/i)).toBeInTheDocument();
       expect(uploadReport).not.toHaveBeenCalled();
     });
 
-    it('holds back the whole batch when one file is undated', async () => {
+    it('gives every staged file its own upload button', async () => {
+      renderWithProviders(<Upload />, { auth: signedInAuth() });
+      drop(pdf('january.pdf'), pdf('february.pdf'));
+
+      await screen.findAllByLabelText(/date these tests were taken/i);
+      // Named per file, not "Upload 2 files": each button sends the one row it
+      // sits on, and a screen reader has to be able to tell them apart.
+      expect(startButtons().map((button) => button.getAttribute('aria-label'))).toEqual([
+        'Upload file — january.pdf',
+        'Upload file — february.pdf',
+      ]);
+    });
+
+    it('sends the dated file without waiting for the undated one', async () => {
       uploadReport.mockReturnValue({ done: Promise.resolve('report-1'), cancel: vi.fn() });
 
       renderWithProviders(<Upload />, { auth: signedInAuth() });
@@ -381,13 +421,18 @@ describe('Upload', () => {
       const fields = await screen.findAllByLabelText(/date these tests were taken/i);
       fireEvent.change(fields[0]!, { target: { value: '2026-01-31' } });
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /^upload 2 files$/i }));
+        fireEvent.click(screen.getByRole('button', { name: /^upload file — january\.pdf$/i }));
       });
 
-      // The button said two. Sending one of them would be doing something
-      // other than what it said.
-      expect(uploadReport).not.toHaveBeenCalled();
-      expect(screen.getByText(/choose the date these tests were taken/i)).toBeInTheDocument();
+      // One button, one file. The empty field on the other row is that row's
+      // business, and holding January back for it would be the batch button's
+      // behaviour under a different shape.
+      await waitFor(() => expect(uploadReport).toHaveBeenCalledTimes(1));
+      expect((uploadReport.mock.calls[0]![0] as { file: File }).file.name).toBe('january.pdf');
+      expect(
+        screen.getByRole('button', { name: /^upload file — february\.pdf$/i }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/choose the date these tests were taken/i)).not.toBeInTheDocument();
     });
 
     it('sends the declared date as UTC midnight of that day', async () => {
@@ -414,7 +459,10 @@ describe('Upload', () => {
       fireEvent.change(fields[0]!, { target: { value: '2026-01-31' } });
       fireEvent.change(fields[1]!, { target: { value: '2026-02-28' } });
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /^upload 2 files$/i }));
+        fireEvent.click(screen.getByRole('button', { name: /^upload file — january\.pdf$/i }));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /^upload file — february\.pdf$/i }));
       });
 
       await waitFor(() => expect(uploadReport).toHaveBeenCalledTimes(2));
@@ -435,7 +483,64 @@ describe('Upload', () => {
       expect(await screen.findByText(/isn't a PDF/i)).toBeInTheDocument();
       // Nothing is going to be uploaded, so there is nothing to date.
       expect(screen.queryByLabelText(/date these tests were taken/i)).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^upload file$/i })).not.toBeInTheDocument();
+      expect(startButtons()).toHaveLength(0);
+    });
+  });
+
+  describe('reading the date off the report (KAN-3)', () => {
+    it('frames the chosen PDF without sending it anywhere', async () => {
+      renderWithProviders(<Upload />, { auth: signedInAuth() });
+      drop(pdf());
+
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^preview the pdf of panel\.pdf$/i }),
+        );
+      });
+
+      // The bytes are already in the page. Looking at the report to find the
+      // date printed on it must not require uploading it first — that is the
+      // order this page exists to reverse.
+      expect(screen.getByTitle(/original pdf of panel\.pdf/i)).toHaveAttribute(
+        'src',
+        'blob:preview-url',
+      );
+      expect(uploadReport).not.toHaveBeenCalled();
+    });
+
+    it('releases the file when the dialog closes', async () => {
+      renderWithProviders(<Upload />, { auth: signedInAuth() });
+      drop(pdf());
+
+      await act(async () => {
+        fireEvent.click(
+          await screen.findByRole('button', { name: /^preview the pdf of panel\.pdf$/i }),
+        );
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /^close$/i }));
+      });
+
+      // Unrevoked, the blob pins the file until the page is left — and this
+      // page is built to be dropped nine reports at a time.
+      expect(objectUrls.revoke).toHaveBeenCalledWith('blob:preview-url');
+    });
+
+    it('offers the preview on every staged row', async () => {
+      renderWithProviders(<Upload />, { auth: signedInAuth() });
+      drop(pdf('january.pdf'), pdf('february.pdf'));
+
+      await screen.findAllByLabelText(/date these tests were taken/i);
+      expect(screen.queryAllByRole('button', { name: /^preview the pdf of /i })).toHaveLength(2);
+    });
+
+    it('does not offer a preview of a file it has already refused', async () => {
+      renderWithProviders(<Upload />, { auth: signedInAuth() });
+      drop(new File(['x'], 'notes.docx', { type: 'application/msword' }));
+
+      expect(await screen.findByText(/isn't a PDF/i)).toBeInTheDocument();
+      // There is no PDF to frame, and the row is not going anywhere.
+      expect(screen.queryAllByRole('button', { name: /^preview the pdf of /i })).toHaveLength(0);
     });
   });
 

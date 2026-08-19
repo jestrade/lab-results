@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/auth/useAuth';
@@ -8,6 +8,7 @@ import { Field, TextInput } from '@/components/Field';
 import { FileDropzone } from '@/components/FileDropzone';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
+import { PdfViewerModal } from '@/components/PdfViewerModal';
 import { ProgressBar } from '@/components/ProgressBar';
 import { StepIndicator, type Step } from '@/components/StepIndicator';
 import { QuotaMeter } from '@/components/QuotaMeter';
@@ -130,6 +131,23 @@ export function Upload() {
   const handles = useRef(new Map<string, UploadHandle>());
   /** Resolves when the user answers the duplicate dialog. */
   const answer = useRef<((decision: 'upload' | 'skip') => void) | null>(null);
+
+  /**
+   * The staged file being looked at, and the blob URL its frame reads.
+   *
+   * One piece of state for both because they have one lifetime: the URL exists
+   * so this dialog can point at it, and the moment the dialog closes it is a
+   * handle pinning the whole file in memory until it is revoked.
+   */
+  const [preview, setPreview] = useState<{ item: QueueItem; url: string } | null>(null);
+
+  // Revoked in a cleanup rather than by the close handler: a handler cannot run
+  // when the page unmounts, and a reader who navigates away with the dialog
+  // open would leave the file held.
+  useEffect(() => {
+    const url = preview?.url;
+    return url ? () => URL.revokeObjectURL(url) : undefined;
+  }, [preview]);
 
   const publish = useCallback(() => setItems([...itemsRef.current]), []);
 
@@ -290,41 +308,46 @@ export function Upload() {
   }
 
   /**
-   * Starts the upload for every staged file, once each one has a date.
+   * Starts the upload for one staged file.
    *
-   * All or nothing, deliberately. The button names a number — "Upload 3 files"
-   * — and sending two of them while the third sits there with an empty date
-   * field would be doing something other than what the button said. So an
-   * invalid date marks its own row and stops the batch, which also puts the
-   * error next to the field that has to change.
+   * Per row rather than per batch. A single button naming a number — "Upload 3
+   * files" — has to be all or nothing, so one empty date field holds back two
+   * files that were ready; and the thing the user has to fix is somewhere in a
+   * list, while the button they pressed is at the bottom of it. A button on
+   * each row removes both problems: it sits beside the date it depends on, and
+   * a row that is not ready is the only row that waits.
+   *
+   * The queue behind it is unchanged — files still go up one at a time (see
+   * `pump`), so pressing three buttons quickly stages three files rather than
+   * starting three transfers.
    */
-  function handleUploadDrafts() {
-    const today = localToday();
-    const drafts = itemsRef.current.filter((item) => item.state === 'draft');
-    if (drafts.length === 0) return;
+  function handleUploadDraft(item: QueueItem) {
+    // Read from the ref, not the row the button closed over: the date the user
+    // typed after this render is in the ref and not in that closure.
+    const current = itemsRef.current.find((entry) => entry.id === item.id);
+    if (!current || current.state !== 'draft') return;
 
-    const problems = new Map(
-      drafts
-        .map((item) => [item.id, checkReportDate(item.reportDate, today)] as const)
-        .filter(([, problem]) => problem !== null),
-    );
-
-    if (problems.size > 0) {
-      // Every bad date is marked, not just the first: a user who left three
-      // fields empty should see three fields marked and fix them in one pass.
-      itemsRef.current = itemsRef.current.map((item) =>
-        problems.has(item.id) ? { ...item, dateProblem: problems.get(item.id)! } : item,
-      );
-      publish();
+    const problem = checkReportDate(current.reportDate, localToday());
+    if (problem) {
+      patch(current.id, { dateProblem: problem });
       return;
     }
 
-    const staged = new Set(drafts.map((item) => item.id));
-    itemsRef.current = itemsRef.current.map((item) =>
-      staged.has(item.id) ? { ...item, state: 'waiting', dateProblem: undefined } : item,
-    );
-    publish();
+    patch(current.id, { state: 'waiting', dateProblem: undefined });
     void pump();
+  }
+
+  /**
+   * Shows the chosen file, so the date can be read off the report itself.
+   *
+   * The date field asks for something only the document knows, and until now
+   * the only way to look it up was to leave the page and open the file from
+   * wherever it was downloaded to. The bytes are already here — they are a
+   * `File` the user handed over — so `createObjectURL` is all that stands
+   * between the field and the page it is asking about.
+   */
+  function handlePreview(item: QueueItem) {
+    setPreview({ item, url: URL.createObjectURL(item.file) });
   }
 
   function handleDateChange(item: QueueItem, value: string) {
@@ -572,6 +595,8 @@ export function Upload() {
                   locale={locale}
                   today={today}
                   onDateChange={(value) => handleDateChange(item, value)}
+                  onPreview={() => handlePreview(item)}
+                  onUpload={() => handleUploadDraft(item)}
                   onCancel={() => handleCancel(item)}
                   onRemove={() => handleRemove(item)}
                 />
@@ -579,21 +604,13 @@ export function Upload() {
             ))}
           </ul>
 
-          {/* Nothing is sent until this is pressed. The count is on the button
-              because it is the last thing the user reads before their health
-              records leave their computer, and "upload" alone does not say how
-              many. */}
+          {/* The buttons are on the rows; this is the one line that belongs to
+              the page. Repeating it under nine of them would be nine times the
+              reading and not one bit more reassuring. */}
           {drafts.length > 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <Button variant="primary" icon="upload-simple" onClick={handleUploadDrafts}>
-                {t(drafts.length === 1 ? 'upload.startOne' : 'upload.startMany', {
-                  count: drafts.length,
-                })}
-              </Button>
-              <span className="muted" style={{ fontSize: 13 }}>
-                {t('upload.startHint')}
-              </span>
-            </div>
+            <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+              {t('upload.startHint')}
+            </p>
           ) : null}
         </section>
       ) : null}
@@ -625,6 +642,19 @@ export function Upload() {
         </p>
       </section>
 
+      {/* The same dialog the reports list uses, on a file that is not stored
+          yet — hence a blob URL where that one has a download URL. Same act,
+          same dialog: a reader should not have to learn it twice. There is no
+          error branch because there is no round trip to fail; the bytes are
+          already in the page. */}
+      <PdfViewerModal
+        open={preview !== null}
+        fileName={preview?.item.file.name ?? ''}
+        src={preview?.url ?? null}
+        error={null}
+        onClose={() => setPreview(null)}
+      />
+
       <DuplicateDialog
         item={pending ?? null}
         t={t}
@@ -641,6 +671,8 @@ function QueueRow({
   locale,
   today,
   onDateChange,
+  onPreview,
+  onUpload,
   onCancel,
   onRemove,
 }: {
@@ -650,6 +682,8 @@ function QueueRow({
   /** The latest day the date field will accept — see `localToday`. */
   today: string;
   onDateChange: (value: string) => void;
+  onPreview: () => void;
+  onUpload: () => void;
   onCancel: () => void;
   onRemove: () => void;
 }) {
@@ -691,23 +725,52 @@ function QueueRow({
           trap, and this field exists precisely because a wrong date is
           invisible once it is stored. */}
       {item.state === 'draft' ? (
-        <Field
-          label={t('upload.dateLabel', { file: item.file.name })}
-          hint={t('upload.dateHint')}
-          error={item.dateProblem ? t(DATE_PROBLEM[item.dateProblem]) : null}
-        >
-          {(field) => (
-            <TextInput
-              {...field}
-              type="date"
-              required
-              value={item.reportDate}
-              max={today}
-              style={{ maxWidth: 220 }}
-              onChange={(event) => onDateChange(event.target.value)}
-            />
-          )}
-        </Field>
+        <>
+          <Field
+            label={t('upload.dateLabel', { file: item.file.name })}
+            hint={t('upload.dateHint')}
+            error={item.dateProblem ? t(DATE_PROBLEM[item.dateProblem]) : null}
+          >
+            {(field) => (
+              <TextInput
+                {...field}
+                type="date"
+                required
+                value={item.reportDate}
+                max={today}
+                style={{ maxWidth: 220 }}
+                onChange={(event) => onDateChange(event.target.value)}
+              />
+            )}
+          </Field>
+
+          {/* Directly under the field they belong to, so the refusal the
+              second one can produce lands next to the thing that has to
+              change, and the first sits beside the question it answers.
+
+              Reading order is the order of the work: look at the report, then
+              send it. Both accessible names carry the file name, because a
+              queue of nine rows is eighteen buttons that would otherwise share
+              two labels between them; each visible label stays a prefix of its
+              name so voice control still works (WCAG 2.5.3). */}
+          <div className="upload-row-actions">
+            <Button
+              icon="file-pdf"
+              onClick={onPreview}
+              aria-label={t('upload.previewLabel', { file: item.file.name })}
+            >
+              {t('upload.preview')}
+            </Button>
+            <Button
+              variant="primary"
+              icon="upload-simple"
+              onClick={onUpload}
+              aria-label={t('upload.startLabel', { file: item.file.name })}
+            >
+              {t('upload.startOne')}
+            </Button>
+          </div>
+        </>
       ) : null}
 
       {item.state === 'uploading' ? (

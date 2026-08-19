@@ -87,8 +87,17 @@ const STRICT = {
   // PDF viewer renders it. It is not a wildcard: only the Firebase Storage
   // download endpoint, which already only answers for a URL carrying the
   // object's token.
+  //
+  // blob: is the same dialog before the file is stored. The upload page lets
+  // the reader look at a chosen PDF to find the date printed on it, and that
+  // file exists nowhere but their own machine — `URL.createObjectURL` is the
+  // only src there is. A blob URL is minted by same-origin script and readable
+  // by nobody else, so this admits nothing an injected script could not
+  // already do; `object-src 'none'` still stands, so it buys a frame and not
+  // a plugin.
   'frame-src': [
     "'self'",
+    'blob:',
     'https://accounts.google.com',
     'https://*.firebaseapp.com',
     'https://firebasestorage.googleapis.com',
