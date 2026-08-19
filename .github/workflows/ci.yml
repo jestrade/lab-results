@@ -190,6 +190,12 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_SENTRY_ENVIRONMENT: production
+          # Vite inlines this at build time, so a measurement id that is only
+          # in a developer's .env never reaches the deployed bundle: the tag
+          # is skipped entirely and the property stays empty. Analytics is
+          # deliberately production-only — the staging build below leaves it
+          # unset so preview traffic cannot pollute the real property.
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
           VITE_APP_VERSION: ${{ github.sha }}
 
       - name: Write deploy credentials

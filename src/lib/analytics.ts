@@ -40,8 +40,13 @@ import { gaMeasurementId } from './env';
 
 const SCRIPT_ID = 'ga4';
 
-/** `gtag` pushes to this array; the loaded script drains it. */
-type DataLayerEntry = unknown[];
+/**
+ * `gtag` pushes to this array; the loaded script drains it.
+ *
+ * The entries are `arguments` objects, not arrays — see `gtag` below for why
+ * the distinction is the difference between analytics working and not.
+ */
+type DataLayerEntry = IArguments | unknown[];
 
 declare global {
   interface Window {
@@ -113,9 +118,18 @@ export function redactPath(pathname: string): string {
 }
 
 function gtag(...args: unknown[]): void {
-  // Pushing `arguments`-shaped entries is what gtag.js expects; a helper that
-  // pushed an array of the args would break the tag's own parsing.
-  window.dataLayer?.push(args);
+  // `arguments`, NOT `args`. gtag.js only treats a data layer entry as a
+  // command when `Object.prototype.toString` says `[object Arguments]`;
+  // anything else — a plain array included — is merged into its model and
+  // silently ignored. Pushing `args` here loaded the tag, queued `js`,
+  // `config` and every `page_view`, and sent Google nothing at all: no
+  // /g/collect request was ever made, and the property stayed empty.
+  //
+  // The rest parameter is kept because it types the call sites; it is
+  // deliberately unused.
+  void args;
+  // eslint-disable-next-line prefer-rest-params
+  window.dataLayer?.push(arguments);
 }
 
 let started = false;

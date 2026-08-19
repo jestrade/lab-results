@@ -157,6 +157,13 @@ Dependabot (`.github/dependabot.yml`) opens grouped dependency PRs weekly.
 | `VITE_FIREBASE_*` | production build |
 | `VITE_STAGING_FIREBASE_*` | preview build |
 | `VITE_SENTRY_DSN` | production build |
+| `VITE_GA_MEASUREMENT_ID` | production build |
+
+Analytics is production-only: the preview build leaves `VITE_GA_MEASUREMENT_ID`
+unset so staging traffic never reaches the real property. Because Vite inlines
+the value at build time, an id that exists only in a local `.env` produces a
+deployed bundle with analytics switched off — which is not visible anywhere
+except an empty GA property.
 
 The `verify` job builds with dummy values instead — a build must never depend on
 production secrets. Previews point at the staging project, never production, so

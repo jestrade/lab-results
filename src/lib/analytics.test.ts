@@ -92,6 +92,20 @@ describe('trackPageView', () => {
     ]);
   });
 
+  it('queues commands as `arguments`, which is the only shape gtag.js runs', () => {
+    trackPageView('/variables');
+
+    // A plain array here loads the tag and queues everything, then does
+    // nothing: gtag.js dispatches on `[object Arguments]` and merges anything
+    // else into its model without sending a hit. This shipped once and the
+    // property stayed empty for weeks — nothing else in this file catches it,
+    // because every other assertion reads the queue rather than the tag.
+    expect(dataLayer().length).toBeGreaterThan(0);
+    for (const entry of dataLayer()) {
+      expect(Object.prototype.toString.call(entry)).toBe('[object Arguments]');
+    }
+  });
+
   it('turns the tag’s own page views off', () => {
     trackPageView('/variables');
 

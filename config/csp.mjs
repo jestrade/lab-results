@@ -60,7 +60,13 @@ const STRICT = {
     'https://*.firebaseio.com',
     'https://*.cloudfunctions.net',
     'https://*.run.app',
-    'https://*.ingest.sentry.io',
+    // Sentry's ingest hosts are regional — a DSN points at
+    // `o<org>.ingest.us.sentry.io`, not `o<org>.ingest.sentry.io`. A CSP
+    // wildcard matches the labels to its right, so `*.ingest.sentry.io` does
+    // not cover the regional form and blocked every report this project ever
+    // tried to send. `*.sentry.io` covers each region without enumerating
+    // them, which is what Sentry's own CSP guidance recommends.
+    'https://*.sentry.io',
     'wss://*.firebaseio.com',
     // Where the measurement hits go. Both hosts are needed: GA4 collects on
     // google-analytics.com and, for some regions and consent modes, on
