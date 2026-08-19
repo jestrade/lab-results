@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-import { ButtonLink } from '@/components/Button';
+import { NavButton } from '@/components/NavButton';
 import { DisclaimerBanner } from '@/components/DisclaimerBanner';
 import { Icon } from '@/components/Icon';
 import { Tag } from '@/components/Tag';
@@ -32,12 +32,12 @@ export function Landing() {
           <h1>{t('landing.heading')}</h1>
           <p className="hero-lede">{t('landing.lede')}</p>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <ButtonLink to="/register" variant="primary">
+            <NavButton to="/register" variant="primary">
               {t('landing.uploadFirst')}
-            </ButtonLink>
-            <ButtonLink to="/sign-in" variant="secondary">
+            </NavButton>
+            <NavButton to="/sign-in" variant="secondary">
               {t('common.signIn')}
-            </ButtonLink>
+            </NavButton>
           </div>
           <div className="hero-assurances">
             {ASSURANCES.map((item) => (

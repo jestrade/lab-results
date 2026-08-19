@@ -44,6 +44,7 @@ export const en = {
   'common.unexpectedError': 'An unexpected error occurred. Reloading the page usually helps.',
   'common.reload': 'Reload the page',
   'common.uploadReport': 'Upload a report',
+  'common.actions': 'Actions',
 
   // ── Language ──────────────────────────────────────────────────────────
   'lang.heading': 'Language',
@@ -72,7 +73,7 @@ export const en = {
 
   // ── Navigation ────────────────────────────────────────────────────────
   'nav.upload': 'Upload report',
-  'nav.reports': 'Reports',
+  'nav.files': 'Files',
   'nav.variables': 'Home',
   'nav.account': 'Account',
   'nav.profile': 'Profile',
@@ -80,6 +81,7 @@ export const en = {
   'nav.administration': 'Administration',
   'nav.adminOverview': 'Admin overview',
   'nav.adminUsers': 'Users',
+  'nav.adminVariables': 'Variable catalog',
   'nav.adminJobs': 'Processing jobs',
   'nav.main': 'Main',
   'nav.navigation': 'Navigation',
@@ -109,7 +111,8 @@ export const en = {
   'dropzone.release': 'Release to upload',
   'dropzone.unavailable': 'Uploading is not available yet',
   'dropzone.prompt': 'Drag your laboratory PDFs here',
-  'dropzone.hint': 'or choose files from your computer — PDF only, up to 25 MB each',
+  'dropzone.hint':
+    'or choose files from your computer — PDF only, up to 25 MB each. You’ll date each one before it is sent.',
   'password.show': 'Show password',
   'password.hide': 'Hide password',
   'google.waiting': 'Waiting for Google…',
@@ -185,18 +188,10 @@ export const en = {
   'sparkline.fell': '{name} fell from {from} to {to} across {count} measurements.',
   'sparkline.steady': '{name} changed little from {from} to {to} across {count} measurements.',
 
-  // ── Not found / coming soon ───────────────────────────────────────────
+  // ── Not found ─────────────────────────────────────────────────────────
   'notFound.title': 'That page does not exist',
   'notFound.body': 'The link may be out of date, or the page may have moved.',
   'notFound.back': 'Back to the start',
-  'comingSoon.title': 'Not built yet',
-  'comingSoon.body': '{description} This screen is built by {ticket}.',
-  'comingSoon.adminOverviewBody':
-    'System-wide metrics: users, reports, failures and average processing time.',
-  'comingSoon.adminUsersBody':
-    'Search accounts, review their activity, and disable or re-enable them.',
-  'comingSoon.adminJobsBody':
-    'Live and failed extraction jobs, with durations and retry controls.',
 
   // ── Account settings ──────────────────────────────────────────────────
   'settings.aiHeading': 'AI processing',
@@ -252,6 +247,17 @@ export const en = {
   'reports.col.outOfRange': 'Out of range',
   'reports.col.actions': 'Actions',
   'reports.uploadDateNote': 'upload date',
+  'reports.changeDateLabel': 'Change the report date for {file}',
+  'reports.editDateTitle': 'Change the report date',
+  'reports.editDateBody':
+    'Set the date the tests on {file} were taken — the date printed on the report itself.',
+  'reports.editDateField': 'Date these tests were taken',
+  'reports.editDateSave': 'Save the date',
+  'reports.editDateReprocessNote':
+    'The results already extracted from this report keep the day they were filed under until the report is processed again. Use Retry on this row to move them to the corrected date.',
+  'reports.dateRequired': 'Choose the date these tests were taken.',
+  'reports.dateSaved': 'Report date updated.',
+  'reports.dateSaveFailed': 'That date could not be saved. Please try again.',
   'reports.retry': 'Retry',
   'reports.retrying': 'Retrying…',
   'reports.retryLabel': 'Retry processing for {file}',
@@ -259,6 +265,10 @@ export const en = {
   'reports.viewDetailsLabel': 'View details for {file}',
   'reports.originalPdf': 'Original PDF',
   'reports.originalPdfLabel': 'Open the original PDF for {file}',
+  'reports.pdfLoading': 'Opening the PDF…',
+  'reports.pdfFrameTitle': 'Original PDF of {file}',
+  'reports.openInNewTab': 'Open in a new tab',
+  'reports.openInNewTabLabel': 'Open {file} in a new browser tab',
   'reports.delete': 'Delete',
   'reports.deleteLabel': 'Delete {file}',
   'reports.caption': 'Your laboratory reports',
@@ -301,6 +311,39 @@ export const en = {
   'reports.extracting': 'Extracting results…',
   'reports.pageOne': '{count} page',
   'reports.pageMany': '{count} pages',
+
+  // ── Why a report failed (KAN-7) ───────────────────────────────────────
+  //
+  // Keyed by the warning code the pipeline writes, and shown instead of the
+  // pipeline's own English sentence. Each one names the cause, because the
+  // next thing the reader decides is whether to wait, to press retry, or to
+  // upload a different file.
+  'warning.consent.missing':
+    'This report was not processed because you have not agreed to AI processing. Agree on the upload page and it will be processed without spending another upload.',
+  'warning.extraction.noTextLayer':
+    'This looks like a scan or a photograph: the file carries images of the pages, not text we can read. Upload the PDF as the laboratory issued it.',
+  'warning.extraction.unreadable':
+    'This PDF could not be opened. It may be password-protected or damaged. Upload an unprotected copy.',
+  'warning.extraction.rateLimited':
+    'Our AI provider is over its request limit right now, so nothing could be read from this report. Nothing is wrong with your file — wait a few minutes and try again.',
+  'warning.extraction.timeout':
+    'Our AI provider did not answer in time, so nothing could be read from this report. This usually clears on its own — try again in a few minutes.',
+  'warning.extraction.unavailable':
+    'Our AI provider is unavailable right now, so nothing could be read from this report. Try again in a few minutes.',
+  'warning.extraction.unauthenticated':
+    'Our AI provider rejected our credentials, so nothing could be read from this report. This is a fault on our side, not with your file, and retrying will not help until we fix it.',
+  'warning.extraction.blocked':
+    "Our AI provider's safety filters stopped part-way through this report, so nothing was extracted. This is usually a false alarm on clinical wording; trying again may work.",
+  'warning.extraction.truncated':
+    'This report holds more results than one reading pass allows: the model reached its output limit before finishing, so no results were saved. Try uploading it split into fewer pages.',
+  'warning.extraction.invalidResponse':
+    'Our AI provider returned an answer we could not read as laboratory results, so nothing was extracted. Trying again often works.',
+  'warning.extraction.unknown':
+    'Nothing could be read from this report because of an unexpected fault on our side. Please try again later.',
+  'warning.storage.objectMissing':
+    'The uploaded file is no longer stored, so this report cannot be processed again. Please upload it again.',
+  'warning.processing.unexpected':
+    'Something went wrong while reprocessing this report. Please try again in a few minutes.',
 
   // ── File and quota refusals ───────────────────────────────────────────
   'fileError.empty': '{file} is empty. Nothing was uploaded.',
@@ -366,6 +409,17 @@ export const en = {
   'upload.disabled.capacity': 'The service is at capacity. Please try again later.',
   'upload.disabled.storageFull': 'Your storage is full. Delete a report to free space.',
   'upload.disabled.monthly': 'You have used all your uploads for this month.',
+  'upload.dateLabel': 'Date these tests were taken — {file}',
+  'upload.dateHint': 'The date printed on the report, not the date you are uploading it.',
+  'upload.dateRequired': 'Choose the date these tests were taken. It cannot be read reliably from the PDF.',
+  'upload.dateMalformed': 'That is not a date we can read. Use the date picker.',
+  'upload.dateFuture': 'That date has not happened yet. Check the date printed on the report.',
+  'upload.dateTooOld': 'That date looks like a typing slip. Check the year.',
+  'upload.startOne': 'Upload file',
+  'upload.startMany': 'Upload {count} files',
+  'upload.startHint': 'Nothing leaves your computer until you press this.',
+  'upload.state.draft': 'Waiting for you — set the date, then press upload.',
+  'upload.step.dateFirst': '{count} waiting for a date',
   'upload.cancelLabel': 'Cancel upload of {file}',
   'upload.removeLabel': 'Remove {file} from the list',
   'upload.progressLabel': 'Uploading {file}',
@@ -375,7 +429,7 @@ export const en = {
     '{file} was uploaded successfully. You can leave this page — processing continues and your report appears under Reports when it finishes.',
   'upload.storedBodyMany':
     'All {count} reports were uploaded successfully. You can leave this page — processing continues and they appear under Reports as each one finishes.',
-  'upload.goToReports': 'Go to reports',
+  'upload.goToFiles': 'Go to files',
   'upload.uploaded': 'Report uploaded. Processing starts automatically.',
   'upload.cancelled': 'Upload cancelled.',
   'upload.queueHeading': 'Your files',
@@ -415,7 +469,7 @@ export const en = {
   'detail.openFailed': 'That file could not be opened.',
   'detail.missingTitle': 'That report does not exist',
   'detail.missingBody': 'It may have been deleted, or the link may be wrong.',
-  'detail.backToReports': 'Back to reports',
+  'detail.backToFiles': 'Back to files',
   'detail.reprocessing': 'Reprocessing…',
   'detail.tryAgain': 'Try processing again',
   'detail.reportOf': 'Report of {date}',
@@ -657,6 +711,26 @@ export const en = {
   'profile.confirmPassword': 'Confirm new password',
   'profile.changing': 'Changing…',
   'profile.changePassword': 'Change password',
+  'profile.documentHeading': 'Identity document',
+  'profile.documentIntro':
+    'Recorded so a report can be matched to the person it belongs to. Every field is optional, and leaving them blank changes nothing about how your results are read.',
+  'profile.documentType': 'Document type',
+  'profile.documentTypeUnset': 'Not specified',
+  'profile.document.cedula': 'Cédula de ciudadanía',
+  'profile.document.registroCivil': 'Registro civil',
+  'profile.document.pasaporte': 'Passport',
+  'profile.document.cedulaExtranjeria': 'Cédula de extranjería',
+  'profile.documentNumber': 'Document number',
+  'profile.documentNumberHint': 'Exactly as printed. It is stored as you type it and never reformatted.',
+  'profile.documentPlace': 'Place of issue',
+  'profile.documentPlaceHint': 'The city or authority shown on the document.',
+  'profile.documentNumberNeedsType': 'Choose the document type this number belongs to.',
+  'profile.documentSave': 'Save document',
+  'profile.documentSaved': 'Document saved.',
+  'profile.documentRemoveAll': 'Remove my document',
+  'profile.documentRemoveTitle': 'Remove your identity document?',
+  'profile.documentRemoveBody':
+    'The document type, number and place of issue are deleted from your profile. Nothing else about your account changes, and you can add them again later.',
   'profile.contextHeading': 'About you',
   'profile.optional': 'Optional',
   'profile.contextIntro':
@@ -670,7 +744,7 @@ export const en = {
   'profile.removeFailed': 'We could not remove this. Check your connection and try again.',
   'profile.dateOfBirth': 'Date of birth',
   'profile.dateOfBirthHint': 'Used to work out your age when a report was taken.',
-  'profile.biologicalSex': 'Biological sex',
+  'profile.biologicalSex': 'Sex',
   'profile.biologicalSexHint': 'Asked because many reference ranges differ by sex.',
   'profile.preferNotToSay': 'Prefer not to say',
   'profile.sex.female': 'Female',
@@ -680,6 +754,29 @@ export const en = {
   'profile.pregnancy.not': 'Not pregnant',
   'profile.pregnancy.pregnant': 'Pregnant',
   'profile.pregnancy.postpartum': 'Postpartum',
+  'profile.weight': 'Weight (kg)',
+  'profile.height': 'Height (cm)',
+  'profile.weightInvalid': 'Enter a weight in kilograms, between {min} and {max}.',
+  'profile.heightInvalid': 'Enter a height in centimetres, between {min} and {max}.',
+  'profile.bmi': 'Body mass index',
+  'profile.bmiPending': 'Fill in both your weight and your height to see it.',
+  'profile.bmiBand.underweight': 'Below the normal range',
+  'profile.bmiBand.normal': 'Normal',
+  'profile.bmiBand.overweight': 'Above the normal range',
+  'profile.bmiBand.obese': 'Obesity',
+  'profile.bmiBandCurrent': 'Your index falls here.',
+  'profile.bmiAdultsOnly':
+    'These four bands apply to adults only.',
+  'profile.bmiScale': 'The scale',
+  'profile.bmiScale.underweight': 'Under 18.5',
+  'profile.bmiScale.normal': '18.5 – 24.9',
+  'profile.bmiScale.overweight': '25.0 – 29.9',
+  'profile.bmiScale.obese': '30.0 and over',
+  'profile.bmiNote':
+    'Your weight divided by the square of your height. It is arithmetic on two numbers you gave us, not a judgement about your health, and it is not used to classify any of your results.',
+  'profile.familyConditions': 'Family illnesses',
+  'profile.familyConditionsHint':
+    'Illnesses that run in your close family. One per line — say who, if it helps.',
   'profile.medications': 'Medications',
   'profile.medicationsHint': 'One per line. Written as you write them — never parsed.',
   'profile.conditions': 'Ongoing conditions',
@@ -857,4 +954,301 @@ export const en = {
   'legal.notYetPublished': 'not yet published',
   'legal.readingTime': 'reading time {time}',
   'legal.doc.dataRetention': 'Data Retention Policy',
+
+  // ── Administration: variable catalog (KAN-49) ─────────────────────────
+  'adminVariables.intro':
+    'The canonical list of laboratory tests. Every reader sees these names and explanations, and the extraction pipeline matches printed names against them.',
+  'adminVariables.countOne': '{count} variable',
+  'adminVariables.countMany': '{count} variables',
+  'adminVariables.search': 'Search the catalog',
+  'adminVariables.searchPlaceholder': 'Name, alias or id',
+  'adminVariables.loadingLabel': 'Loading the catalog',
+  'adminVariables.loadFailed': 'The catalog could not be loaded.',
+  'adminVariables.emptyTitle': 'The catalog is empty',
+  'adminVariables.emptyBody':
+    'Import the maintained spreadsheet, or add the first entry by hand.',
+  'adminVariables.noMatchTitle': 'No variable matches',
+  'adminVariables.noMatchBody': 'Clear a filter, or search for a different name.',
+  'adminVariables.showing': 'Showing {visible} of {total}.',
+  'adminVariables.filterCategory': 'Filter by panel',
+  'adminVariables.allCategories': 'All panels',
+  'adminVariables.filterOrigin': 'Filter by origin',
+  'adminVariables.originAll': 'Any origin',
+  'adminVariables.originCatalog': 'Curated',
+  'adminVariables.originDiscovered': 'Discovered',
+  'adminVariables.needsReview': 'Needs review ({count})',
+  'adminVariables.tableCaption': 'Laboratory variables in the catalog',
+  'adminVariables.columnName': 'Name',
+  'adminVariables.columnId': 'Document id',
+  'adminVariables.columnCategory': 'Panel',
+  'adminVariables.columnUnit': 'Unit',
+  'adminVariables.columnAliases': 'Aliases',
+  'adminVariables.columnState': 'State',
+  'adminVariables.columnActions': 'Actions',
+  'adminVariables.noUnit': 'None',
+  'adminVariables.noDescription': 'No explanation yet',
+  'adminVariables.stateReviewed': 'Reviewed',
+  'adminVariables.stateNeedsReview': 'Needs review',
+  'adminVariables.new': 'New variable',
+  'adminVariables.edit': 'Edit',
+  'adminVariables.editLabel': 'Edit {name}',
+  'adminVariables.delete': 'Delete',
+  'adminVariables.deleteLabel': 'Delete {name}',
+  'adminVariables.newTitle': 'New variable',
+  'adminVariables.editTitle': 'Edit {name}',
+  'adminVariables.fieldId': 'Document id',
+  'adminVariables.fieldIdHint':
+    'Lower case, digits and hyphens. Suggested from the English name; change it before saving if you need a different one.',
+  'adminVariables.fieldIdFixed':
+    'An id cannot be changed after the entry is created — results already point at it.',
+  'adminVariables.fieldCanonicalName': 'Canonical name',
+  'adminVariables.fieldCanonicalNameHint':
+    'The English name the matcher compares printed names against.',
+  'adminVariables.fieldName': 'Display name ({language})',
+  'adminVariables.fieldDescription': 'Explanation ({language})',
+  'adminVariables.fieldDescriptionHint':
+    'Plain language, shown on the variable page. Leave empty rather than guessing.',
+  'adminVariables.fieldAliases': 'Aliases',
+  'adminVariables.fieldAliasesHint':
+    'One per line — the spellings real reports print, in any language. Commas are kept.',
+  'adminVariables.fieldCategory': 'Panel',
+  'adminVariables.fieldUnit': 'Default unit',
+  'adminVariables.fieldUnitHint':
+    'Used when a report prints a value without one. A report’s own unit always wins.',
+  'adminVariables.reviewNote':
+    'Saving marks this entry as curated and reviewed, so the enrichment pass will not rewrite it.',
+  'adminVariables.errorRequired': 'This field is required.',
+  'adminVariables.errorInvalidId':
+    'Use lower-case letters, digits and hyphens, starting with a letter or digit.',
+  'adminVariables.errorIdTaken': 'Another variable already uses this id.',
+  'adminVariables.duplicateWarning':
+    'A name here matches {id}, which is already in the catalog. Two entries for one test split a reader’s history in half — check before saving.',
+  'adminVariables.create': 'Create variable',
+  'adminVariables.creating': 'Creating…',
+  'adminVariables.created': '{name} was added to the catalog.',
+  'adminVariables.updated': '{name} was updated.',
+  'adminVariables.saveFailed': 'The variable could not be saved.',
+  'adminVariables.existsFailed':
+    'That id was taken while you were editing. Choose another one.',
+  'adminVariables.deleteTitle': 'Delete {name}?',
+  'adminVariables.deleteBody':
+    'The catalog entry goes: this name, its translations and its explanation stop being shown to every reader.',
+  'adminVariables.deleteKeeps':
+    'No results are affected. Anyone tracking this test keeps their values and their history, headed with whatever their own laboratory printed.',
+  'adminVariables.deleteReturns':
+    'It can come back on its own: the next report printing this test finds no match, and the pipeline creates an unreviewed placeholder for it. Correcting an entry usually beats deleting it.',
+  'adminVariables.deleteConfirm': 'Delete variable',
+  'adminVariables.deleting': 'Deleting…',
+  'adminVariables.deleted': '{name} was deleted from the catalog.',
+  'adminVariables.deleteFailed': 'The variable could not be deleted.',
+
+  // ── Administration: users (KAN-50) ────────────────────────────────────
+  'adminUsers.intro':
+    'Every account in the system. Roles and access are changed here; laboratory results are not readable from this screen.',
+  'adminUsers.countOne': '{count} account',
+  'adminUsers.countMany': '{count} accounts',
+  'adminUsers.search': 'Search accounts',
+  'adminUsers.searchPlaceholder': 'Email, name or user id',
+  'adminUsers.loadingLabel': 'Loading accounts',
+  'adminUsers.loadFailed': 'The accounts could not be loaded.',
+  'adminUsers.emptyTitle': 'No accounts yet',
+  'adminUsers.emptyBody': 'Accounts appear here as soon as somebody registers.',
+  'adminUsers.noMatchTitle': 'No account matches',
+  'adminUsers.noMatchBody': 'Clear a filter, or search for a different address.',
+  'adminUsers.showing': 'Showing {visible} of {total}.',
+  'adminUsers.filterRole': 'Filter by role',
+  'adminUsers.roleAll': 'Any role',
+  'adminUsers.roleUser': 'User',
+  'adminUsers.roleAdmin': 'Admin',
+  'adminUsers.filterStatus': 'Filter by access',
+  'adminUsers.statusAll': 'Any access',
+  'adminUsers.statusActive': 'Active',
+  'adminUsers.statusDisabled': 'Disabled',
+  'adminUsers.tableCaption': 'Accounts registered in the system',
+  'adminUsers.columnAccount': 'Account',
+  'adminUsers.columnRole': 'Role',
+  'adminUsers.columnStatus': 'Access',
+  'adminUsers.columnJoined': 'Registered',
+  'adminUsers.columnActions': 'Actions',
+  'adminUsers.noName': 'No name given',
+  'adminUsers.you': 'You',
+  'adminUsers.unknownDate': 'Unknown',
+  'adminUsers.loadMore': 'Load more accounts',
+  'adminUsers.limitNote':
+    'Showing {count} accounts. Search covers the accounts loaded so far — load more to reach the rest.',
+  'adminUsers.changeRole': 'Change role',
+  'adminUsers.changeRoleLabel': 'Change the role of {name}',
+  'adminUsers.roleTitle': 'Change the role of {name}',
+  'adminUsers.promoteBody':
+    'An admin can read every account in the system, change roles, disable accounts and edit the variable catalog.',
+  'adminUsers.demoteBody':
+    'This account loses access to the administration screens and to every other account.',
+  'adminUsers.roleClaimNote':
+    'The change is written to the account’s token, and reaches their open sessions the next time it refreshes — within the hour, or immediately if they sign in again.',
+  'adminUsers.promoteConfirm': 'Make admin',
+  'adminUsers.demoteConfirm': 'Make user',
+  'adminUsers.roleSaving': 'Saving…',
+  'adminUsers.roleChanged': '{name} is now {role}.',
+  'adminUsers.roleFailed': 'The role could not be changed.',
+  'adminUsers.selfActions': 'You cannot change your own role or access.',
+  'adminUsers.disable': 'Disable',
+  'adminUsers.disableLabel': 'Disable {name}',
+  'adminUsers.enable': 'Enable',
+  'adminUsers.enableLabel': 'Re-enable {name}',
+  'adminUsers.disableTitle': 'Disable {name}?',
+  'adminUsers.disableBody':
+    'They cannot sign in again until an admin re-enables the account, and no open session can renew itself.',
+  'adminUsers.disableWindow':
+    'A session that is open right now keeps reading its own data until its token expires — an hour at the outside. To end access immediately, delete the account instead.',
+  'adminUsers.disableKeeps':
+    'Nothing is deleted. Their reports, results and history stay exactly as they are, and come back untouched if the account is re-enabled.',
+  'adminUsers.disableReason': 'Reason (optional)',
+  'adminUsers.disableReasonHint':
+    'Recorded in the audit log beside who did it and when. Not shown to the account holder.',
+  'adminUsers.disableConfirm': 'Disable account',
+  'adminUsers.disabling': 'Disabling…',
+  'adminUsers.disabledToast': '{name} can no longer sign in.',
+  'adminUsers.enableTitle': 'Re-enable {name}?',
+  'adminUsers.enableBody':
+    'They can sign in again immediately, and find their reports and history as they left them.',
+  'adminUsers.enableConfirm': 'Re-enable account',
+  'adminUsers.enabling': 'Re-enabling…',
+  'adminUsers.enabledToast': '{name} can sign in again.',
+  'adminUsers.accessFailed': 'The account’s access could not be changed.',
+
+
+  // ── Administration: processing jobs (KAN-20, KAN-51) ──────────────────
+  'adminJobs.intro':
+    'Extraction runs that have not finished, and the ones that failed. Report and account identifiers only — no file name, and no result, appears on this screen.',
+  'adminJobs.loadingLabel': 'Loading the processing queue',
+  'adminJobs.loadFailed': 'The processing queue could not be loaded.',
+  'adminJobs.search': 'Search jobs',
+  'adminJobs.searchPlaceholder': 'Report id, user id or failure code',
+  'adminJobs.emptyTitle': 'Nothing in the queue',
+  'adminJobs.emptyBody':
+    'Every report that has been uploaded finished processing. Jobs appear here while they run, and stay if they fail.',
+  'adminJobs.noMatchTitle': 'No job matches',
+  'adminJobs.noMatchBody': 'Clear a filter, or search for a different identifier.',
+  'adminJobs.showing': 'Showing {visible} of {total}.',
+  'adminJobs.filterState': 'Filter by state',
+  'adminJobs.chipAll': 'All ({count})',
+  'adminJobs.chipInFlight': 'In flight ({count})',
+  'adminJobs.chipStalled': 'Stalled ({count})',
+  'adminJobs.chipFailed': 'Failed ({count})',
+  'adminJobs.stalledAlertOne': '{count} job has been running longer than a run can take.',
+  'adminJobs.stalledAlertMany': '{count} jobs have been running longer than a run can take.',
+  'adminJobs.stalledAlertBody':
+    'Processing runs once and does not restart itself, so these have lost their worker and will not finish. Reprocessing is what recovers them.',
+  'adminJobs.tableCaption': 'Extraction jobs in flight and jobs that failed',
+  'adminJobs.columnJob': 'Report',
+  'adminJobs.columnState': 'State',
+  'adminJobs.columnStarted': 'Attempt started',
+  'adminJobs.columnDuration': 'Duration',
+  'adminJobs.columnAttempts': 'Attempts',
+  'adminJobs.columnFailure': 'Reason',
+  'adminJobs.columnActions': 'Actions',
+  'adminJobs.ownerLabel': 'Account {uid}',
+  'adminJobs.stateWaiting': 'Waiting',
+  'adminJobs.stateRunning': 'Running',
+  'adminJobs.stateStalled': 'Stalled',
+  'adminJobs.stateFailed': 'Failed',
+  'adminJobs.startedUnknown': 'Not recorded',
+  'adminJobs.durationHours': '{hours} h {minutes} min',
+  'adminJobs.durationMinutes': '{minutes} min {seconds} s',
+  'adminJobs.durationSeconds': '{seconds} s',
+  'adminJobs.durationNone': 'Not recorded',
+  'adminJobs.durationNoneLabel':
+    'A run that failed has no finishing time recorded, so its duration is not known.',
+  'adminJobs.attemptsFirst': 'First run',
+  'adminJobs.attemptsSpent': 'Retry {count} of {max}',
+  'adminJobs.noFailure': 'Still running',
+  'adminJobs.retry': 'Reprocess',
+  'adminJobs.retrying': 'Reprocessing…',
+  'adminJobs.retryLabel': 'Reprocess report {report}',
+  'adminJobs.retryRunning': 'Still within the time a run can take.',
+  'adminJobs.retryPermanent': 'A second reading would fail the same way.',
+  'adminJobs.retryExhausted': 'Retried {max} times without success.',
+  'adminJobs.retrySucceeded': 'Report {report} finished processing.',
+  'adminJobs.retryFailedAgain': 'Report {report} failed again.',
+  'adminJobs.retryNote':
+    'Reprocessing runs the same pipeline the upload did, at the same cost, and the same limits apply to an admin as to the account holder. It is written to the audit log.',
+  'adminJobs.loadMore': 'Load more jobs',
+  'adminJobs.limitNote':
+    'Showing {count} jobs. Search covers the jobs loaded so far — load more to reach the rest.',
+
+
+  // ── Administration: overview (KAN-18) ─────────────────────────────────
+  'adminOverview.intro':
+    'The state of the system as a whole. Counts and capacity only — no laboratory value and no account’s results appear on this screen.',
+  'adminOverview.loadingLabel': 'Loading the system overview',
+  'adminOverview.loadFailed': 'The overview could not be loaded.',
+  'adminOverview.healthOk': 'Operating normally',
+  'adminOverview.healthAttention': 'Needs attention',
+  'adminOverview.healthBlocked': 'Uploads are switched off',
+  'adminOverview.healthBlockedBody':
+    'The project-wide kill switch is on, so no account can upload a report. It clears when storage is back under the ceiling.',
+  'adminOverview.healthAttentionBody':
+    'Nothing is blocked, but something below is asking to be looked at.',
+  'adminOverview.healthOkBody': 'No failed reports, and storage is well inside its ceiling.',
+  'adminOverview.accountsHeading': 'Accounts',
+  'adminOverview.accountsTotal': 'Registered',
+  'adminOverview.accountsAdmins': 'With admin access',
+  'adminOverview.accountsDisabled': 'Disabled',
+  'adminOverview.accountsLink': 'Manage accounts',
+  'adminOverview.reportsHeading': 'Reports',
+  'adminOverview.reportsTotal': 'Uploaded',
+  'adminOverview.reportsProcessed': 'Processed',
+  'adminOverview.reportsFailed': 'Failed',
+  'adminOverview.reportsFailedNote':
+    'Each failure is one person whose report never came back. {ticket} builds the retry queue.',
+  'adminOverview.catalogHeading': 'Variable catalog',
+  'adminOverview.catalogTotal': 'Entries',
+  'adminOverview.catalogNeedsReview': 'Awaiting review',
+  'adminOverview.catalogLink': 'Open the catalog',
+  'adminOverview.storageHeading': 'Storage',
+  'adminOverview.storageUsed': '{used} of {limit} used',
+  'adminOverview.storageUploadsOn': 'Uploads accepted',
+  'adminOverview.storageUploadsOff': 'Uploads refused',
+  'adminOverview.auditHeading': 'Recent administrative actions',
+  'adminOverview.auditEmpty': 'Nothing has been done yet.',
+  'adminOverview.auditNote':
+    'Written by the server, never by the browser. The full trail lives in the auditLogs collection.',
+  'adminOverview.auditRoleChanged': 'Role changed',
+  'adminOverview.auditUserDisabled': 'Account disabled',
+  'adminOverview.auditUserEnabled': 'Account re-enabled',
+  'adminOverview.auditAccountDeleted': 'Account deleted by its owner',
+  'adminOverview.auditReportRetried': 'Report reprocessed by an admin',
+  'adminOverview.auditUnknown': 'Recorded action',
+  'adminOverview.auditActor': 'by {actor}',
+  'adminOverview.auditActorRedacted': 'by a deleted account',
+  'adminOverview.auditTarget': 'on {target}',
+  'adminOverview.auditNoTarget': 'no account named',
+  'adminOverview.refresh': 'Refresh',
+  'adminOverview.refreshing': 'Refreshing…',
+  'common.admin': 'Admin',
+  'common.adminAccessLabel': 'You have admin access',
+
+
+  // ── Pagination ────────────────────────────────────────────────────────
+  'pagination.showing': 'Showing {from}–{to} of {total}',
+  'pagination.previous': 'Previous',
+  'pagination.next': 'Next',
+  'pagination.goToPage': 'Go to page {page}',
+  'pagination.catalogPages': 'Catalog pages',
+  'pagination.accountPages': 'Account pages',
+  'pagination.jobPages': 'Job pages',
+
+
+  // ── Account menu ──────────────────────────────────────────────────────
+  'account.menuLabel': 'Account menu — {email}',
+  'account.signedInAs': 'Signed in as',
+  'account.verifyEmail': 'Verify your email address',
+  'account.summary.heading': 'Your record',
+  'account.summary.hint': 'Point at a heading — or tap it — to see what you saved.',
+  'account.summary.empty': 'Nothing saved here yet.',
+  'account.summary.fillIn': 'Fill in your profile',
+  'account.summary.edit': 'Edit in your profile',
+
+
+  'common.signingOut': 'Signing you out…',
 } as const;

@@ -68,7 +68,27 @@ export const useEmulators = flag(import.meta.env.VITE_USE_FIREBASE_EMULATORS);
 export const functionsRegion =
   (import.meta.env.VITE_FUNCTIONS_REGION as string | undefined) || 'us-east1';
 export const sentryDsn = (import.meta.env.VITE_SENTRY_DSN as string | undefined) ?? '';
+/**
+ * GA4 measurement id (`G-XXXXXXXXXX`). Blank disables analytics outright — see
+ * `lib/analytics.ts`, which also declines to load for a reader who has asked
+ * not to be tracked.
+ */
+export const gaMeasurementId =
+  (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() ?? '';
+/**
+ * The environment name events are filed under.
+ *
+ * Derived from the build rather than read straight from the variable, because
+ * the variable lives in the one `.env` a developer edits and it therefore says
+ * `development` on the machine that produces the production bundle. Every
+ * error from real users would have arrived filed as development noise —
+ * which is the same as not having environments at all.
+ *
+ * The variable still wins when it is set, for the staging build that is a
+ * production bundle and should not be called one.
+ */
 export const sentryEnvironment =
-  (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) ?? 'development';
+  (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined)?.trim() ||
+  (import.meta.env.PROD ? 'production' : 'development');
 export const appVersion = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'dev';
 export const isProduction = import.meta.env.PROD;

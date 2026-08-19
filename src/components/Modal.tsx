@@ -17,9 +17,15 @@ export interface ModalProps {
   children: ReactNode;
   /** Buttons for the footer row. The confirming action goes last. */
   actions?: ReactNode;
+  /**
+   * `wide` is for content that is looked at rather than read — a page of a
+   * PDF, say. The default width is set for a paragraph and a pair of buttons,
+   * and a document shown at that size is a document nobody can read.
+   */
+  size?: 'default' | 'wide';
 }
 
-export function Modal({ open, onClose, title, children, actions }: ModalProps) {
+export function Modal({ open, onClose, title, children, actions, size = 'default' }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -42,7 +48,7 @@ export function Modal({ open, onClose, title, children, actions }: ModalProps) {
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={size === 'wide' ? 'dialog dialog-wide' : 'dialog'}
       aria-labelledby="modal-title"
       style={{ border: 0, padding: 'var(--space-4)', borderRadius: 'var(--r-card)' }}
       onClick={(event) => {

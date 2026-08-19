@@ -12,7 +12,6 @@ import { ConfidenceTag, ResultStatusBadge, TrendBadge } from '@/components/Statu
 import { VariableChart } from '@/components/VariableChart';
 import { translateOptional, type Locale } from '@/domain/locales';
 import {
-  categoryLabel,
   formatReferenceRange,
   MIN_POINTS_FOR_TREND,
   monthsFor,
@@ -32,6 +31,7 @@ import { formatObservedDate, formatObservedLongDate } from '@/i18n/dates';
 import type { I18nContextValue } from '@/i18n/I18nContext';
 import { useI18n } from '@/i18n/useI18n';
 import { fetchVariableCatalog, subscribeToVariableSeriesEntry } from '@/services/variables';
+import { useVariableCategories } from '@/hooks/useVariableCategories';
 import { fetchVariableHistory, type VariableHistory } from '@/services/variableHistory';
 
 /**
@@ -75,6 +75,8 @@ export function VariableDetails() {
   const [history, setHistory] = useState<VariableHistory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const categories = useVariableCategories();
 
   const [period, setPeriod] = useState<Period>('all');
   const [showRange, setShowRange] = useState(true);
@@ -215,7 +217,7 @@ export function VariableDetails() {
 
         <dl className="variable-hero-facts">
           <Fact label={t('detail.col.range')} value={range.text ?? t('detail.notStated')} note={range.note} />
-          <Fact label={t('variable.categoryLabel')} value={categoryLabel(series.category, locale)} />
+          <Fact label={t('variable.categoryLabel')} value={categories.label(series.category, locale)} />
           <Fact
             label={t('variable.measuredLabel')}
             value={t(series.resultCount === 1 ? 'variable.measuredOne' : 'variable.measuredMany', {
@@ -520,7 +522,7 @@ function MeasurementRow({
         </div>
       </td>
       <td>
-        <Link to={`/reports/${measurement.reportId}`}>
+        <Link to={`/files/${measurement.reportId}`}>
           {measurement.reportFileName || t('variable.openReport')}
         </Link>
       </td>

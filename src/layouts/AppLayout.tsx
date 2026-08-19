@@ -14,9 +14,9 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/auth/useAuth';
+import { AccountMenu } from '@/components/AccountMenu';
+import { AuthTransition } from '@/components/AuthTransition';
 import { Icon } from '@/components/Icon';
-import { LanguageSwitcher } from '@/components/LanguagePicker';
-import { Tag } from '@/components/Tag';
 import { formatWeekdayDate } from '@/i18n/dates';
 import { useI18n } from '@/i18n/useI18n';
 import type { MessageKey } from '@/i18n/messages';
@@ -37,7 +37,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { to: '/variables', label: 'nav.variables', icon: 'house' },
   { to: '/upload', label: 'nav.upload', icon: 'upload-simple' },
-  { to: '/reports', label: 'nav.reports', icon: 'files' },
+  { to: '/files', label: 'nav.files', icon: 'files' },
 ];
 
 const ACCOUNT_NAV: NavItem[] = [
@@ -48,13 +48,15 @@ const ACCOUNT_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { to: '/admin', label: 'nav.adminOverview', icon: 'shield-check' },
   { to: '/admin/users', label: 'nav.adminUsers', icon: 'users-three' },
+  { to: '/admin/variables', label: 'nav.adminVariables', icon: 'flask' },
   { to: '/admin/jobs', label: 'nav.adminJobs', icon: 'queue' },
 ];
 
 export function AppLayout() {
-  const { user, isEmailVerified, isAdmin, signOutUser } = useAuth();
+  const { isAdmin, signOutUser } = useAuth();
   const { t, locale } = useI18n();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -70,9 +72,30 @@ export function AppLayout() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [drawerOpen]);
 
+  /**
+   * Ends the session, saying so while it happens.
+   *
+   * This is a network round trip followed by a route change, and it used to
+   * look like nothing at all — the menu stayed open, the page stayed put, and
+   * the app changed underneath a second later. A reader who clicks and sees
+   * nothing happen clicks again.
+   *
+   * The flag is not cleared on the way out: the veil stays up until this
+   * layout unmounts at `/`. Clearing it first would put the signed-in shell
+   * back on screen for a frame, populated with the session that has just been
+   * ended.
+   */
   async function handleSignOut() {
-    await signOutUser();
-    navigate('/', { replace: true });
+    setSigningOut(true);
+    try {
+      await signOutUser();
+      navigate('/', { replace: true });
+    } catch {
+      // The session is still live and the shell behind is still theirs, so the
+      // veil has to come down — leaving it up would strand them on a spinner
+      // with no way back.
+      setSigningOut(false);
+    }
   }
 
   const navGroups: { heading?: MessageKey; items: NavItem[] }[] = [
@@ -85,6 +108,8 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
+      {signingOut ? <AuthTransition label={t('common.signingOut')} /> : null}
+
       <a className="skip-link" href="#main">
         {t('common.skipToContent')}
       </a>
@@ -141,22 +166,12 @@ export function AppLayout() {
 
           <span className="app-topbar-date">{formatWeekdayDate(new Date(), locale)}</span>
           <div className="spacer" />
-          <LanguageSwitcher />
-          <span style={{ fontSize: 13 }}>{user?.email}</span>
-          {isEmailVerified ? (
-            <Tag tone="neutral">
-              <Icon name="seal-check" size={13} />
-              <span style={{ marginLeft: 5 }}>{t('common.verified')}</span>
-            </Tag>
-          ) : (
-            <Tag tone="accent-2">
-              <Icon name="warning" size={13} />
-              <span style={{ marginLeft: 5 }}>{t('common.unverified')}</span>
-            </Tag>
-          )}
-          <button type="button" className="btn btn-ghost" onClick={handleSignOut}>
-            {t('common.signOut')}
-          </button>
+          {/* The address, the role, the verification state, the language and
+              the way out all live in here now. Five controls spread across the
+              bar wrapped onto a second row on a narrow screen and competed
+              with the page on a wide one; what they have in common is that
+              they are all about the account rather than about the page. */}
+          <AccountMenu onSignOut={() => void handleSignOut()} />
         </div>
         <div className="app-topbar-rule" />
 

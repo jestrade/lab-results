@@ -1,0 +1,240 @@
+{
+  "categories": [
+    {
+      "id": "complete_blood_count",
+      "names": {
+        "en": "Complete blood count",
+        "es": "Biometría hemática"
+      },
+      "order": 10,
+      "keywords": [
+        "biometriahematica",
+        "hemograma",
+        "citometriahematica",
+        "completebloodcount",
+        "cbc",
+        "bloodcount",
+        "hematologia",
+        "hematology"
+      ]
+    },
+    {
+      "id": "coagulation",
+      "names": {
+        "en": "Coagulation",
+        "es": "Pruebas de coagulación"
+      },
+      "order": 20,
+      "keywords": []
+    },
+    {
+      "id": "lipid_profile",
+      "names": {
+        "en": "Lipid profile",
+        "es": "Perfil de lípidos"
+      },
+      "order": 30,
+      "keywords": [
+        "lipid",
+        "lipido",
+        "colesterol",
+        "cholesterol",
+        "trigliceri",
+        "triglyceri"
+      ]
+    },
+    {
+      "id": "glucose_metabolism",
+      "names": {
+        "en": "Glucose metabolism",
+        "es": "Metabolismo de la glucosa"
+      },
+      "order": 40,
+      "keywords": [
+        "glucosa",
+        "glucose",
+        "glucemia",
+        "diabet",
+        "hemoglobinaglucosilada",
+        "hba1c",
+        "insulin",
+        "metabolismodelaglucosa"
+      ]
+    },
+    {
+      "id": "liver_function",
+      "names": {
+        "en": "Liver function",
+        "es": "Función hepática"
+      },
+      "order": 50,
+      "keywords": [
+        "hepatic",
+        "higado",
+        "liver",
+        "funcionhepatica",
+        "transaminas",
+        "bilirrubin",
+        "bilirubin"
+      ]
+    },
+    {
+      "id": "kidney_function",
+      "names": {
+        "en": "Kidney function",
+        "es": "Función renal"
+      },
+      "order": 60,
+      "keywords": [
+        "renal",
+        "rinon",
+        "kidney",
+        "funcionrenal",
+        "creatinin",
+        "urea",
+        "nefro"
+      ]
+    },
+    {
+      "id": "thyroid",
+      "names": {
+        "en": "Thyroid",
+        "es": "Tiroides"
+      },
+      "order": 70,
+      "keywords": [
+        "tiroid",
+        "thyroid",
+        "tsh"
+      ]
+    },
+    {
+      "id": "electrolytes",
+      "names": {
+        "en": "Electrolytes",
+        "es": "Electrolitos"
+      },
+      "order": 80,
+      "keywords": [
+        "electrolit",
+        "electrolyt",
+        "ionograma"
+      ]
+    },
+    {
+      "id": "iron_metabolism",
+      "names": {
+        "en": "Iron studies",
+        "es": "Metabolismo del hierro"
+      },
+      "order": 90,
+      "keywords": []
+    },
+    {
+      "id": "vitamins",
+      "names": {
+        "en": "Vitamins",
+        "es": "Vitaminas"
+      },
+      "order": 100,
+      "keywords": [
+        "vitamin",
+        "vitamina",
+        "mineral"
+      ]
+    },
+    {
+      "id": "hormones",
+      "names": {
+        "en": "Hormones",
+        "es": "Hormonas"
+      },
+      "order": 110,
+      "keywords": [
+        "hormon",
+        "endocrin",
+        "esteroid",
+        "steroid",
+        "fertilidad",
+        "fertility"
+      ]
+    },
+    {
+      "id": "inflammation",
+      "names": {
+        "en": "Inflammation",
+        "es": "Inflamación"
+      },
+      "order": 120,
+      "keywords": [
+        "inflamac",
+        "inflammat",
+        "reactantes",
+        "acutephase",
+        "pcr",
+        "crp",
+        "sedimentacion"
+      ]
+    },
+    {
+      "id": "allergy",
+      "names": {
+        "en": "Allergy (IgE)",
+        "es": "Perfil de alergias (IgE)"
+      },
+      "order": 130,
+      "keywords": []
+    },
+    {
+      "id": "tumour_markers",
+      "names": {
+        "en": "Tumour markers",
+        "es": "Marcadores tumorales"
+      },
+      "order": 140,
+      "keywords": []
+    },
+    {
+      "id": "urinalysis",
+      "names": {
+        "en": "Urinalysis",
+        "es": "Examen general de orina"
+      },
+      "order": 150,
+      "keywords": [
+        "orina",
+        "urin",
+        "egopcompleto",
+        "ego",
+        "uroanalisis"
+      ]
+    },
+    {
+      "id": "faecal",
+      "names": {
+        "en": "Stool",
+        "es": "Coprológico"
+      },
+      "order": 160,
+      "keywords": []
+    },
+    {
+      "id": "semen_analysis",
+      "names": {
+        "en": "Semen analysis",
+        "es": "Espermatograma"
+      },
+      "order": 170,
+      "keywords": []
+    },
+    {
+      "id": "other",
+      "names": {
+        "en": "Other",
+        "es": "Otros"
+      },
+      "order": 180,
+      "keywords": []
+    }
+  ]
+}

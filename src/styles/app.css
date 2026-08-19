@@ -764,6 +764,37 @@
   gap: 10px;
   font-size: 13px;
 }
+/* A row still waiting for its date is the one thing on the page asking the
+   reader for something, so it is the one row that says so without colour
+   alone — the field and its label are inside it. */
+.upload-row[data-state='draft'] {
+  border-color: var(--color-accent);
+}
+
+/* A control that is only an icon: used where the label would repeat text
+   already in the row, and carries its name through aria-label. The hit area
+   stays at the 24px the pointer needs even though the glyph is 14. */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-card);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.icon-button:hover {
+  color: var(--color-text);
+  background: var(--color-neutral-200);
+}
+.icon-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
 
 .progress-track {
   height: 4px;
@@ -1184,6 +1215,76 @@ dialog.dialog {
   /* Centres in the top layer. The UA default is `margin: auto`, but Broadsheet
      sets a width, and some engines then pin it to the inline start. */
   margin: auto;
+}
+
+/* ── PDF viewer dialog (spec §40) ──────────────────────────────────────────
+ *
+ * Broadsheet's `.dialog` is 440px wide, which is right for a sentence and two
+ * buttons and useless for a page of A4. This variant takes the viewport it
+ * needs and caps itself so the dialog never grows past the window — the frame
+ * inside is the part that scrolls, not the page behind it.
+ */
+dialog.dialog-wide {
+  width: min(1040px, 100vw - 2 * var(--space-4));
+  max-width: none;
+  max-height: min(92vh, 100vh - 2 * var(--space-4));
+}
+
+/* `.dialog` is already a column flexbox; `min-height: 0` is what lets this
+   child shrink inside it rather than overflowing the dialog's own height. */
+dialog.dialog-wide .dialog-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  /* The body is dimmed to 0.85 for supporting prose. A document being read
+     off the screen must not be. */
+  opacity: 1;
+}
+
+.pdf-frame {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: min(68vh, 640px);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.pdf-frame iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  /* The browser's own PDF viewer paints its toolbar on a dark ground; leaving
+     the frame transparent shows the dialog through it mid-load. */
+  background: var(--color-bg);
+}
+
+.pdf-frame-pending {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* On a phone the dialog is the whole screen, and the padding that frames a
+   confirmation is width the document needs more. */
+@media (max-width: 640px) {
+  dialog.dialog-wide {
+    width: 100vw;
+    max-height: 100vh;
+    padding: var(--space-3);
+    border-radius: 0;
+  }
+  .pdf-frame {
+    min-height: 60vh;
+  }
 }
 
 /* ── AI processing consent gate (spec §54) ─────────────────────────────── */
@@ -1657,6 +1758,126 @@ dialog.dialog {
   width: 100%;
 }
 
+/* The derived index, set apart from the fields it is computed from so it does
+   not read as a fourth thing to fill in. */
+.profile-bmi {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-card);
+  background: var(--color-neutral-100);
+}
+.profile-bmi-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.profile-bmi-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.profile-bmi p {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* The traffic light.
+   Colour is the last layer here, never the first: every one of these carries
+   an icon and the band's name, so the pill still says "Obesity" in greyscale,
+   on paper and to a screen reader (spec §60, KAN-53). */
+.bmi-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bmi-pill[data-signal='ok'] {
+  background: var(--feedback-success-bg);
+  color: var(--feedback-success-ink);
+}
+.bmi-pill[data-signal='caution'] {
+  background: var(--feedback-warning-bg);
+  color: var(--feedback-warning-ink);
+}
+.bmi-pill[data-signal='alert'] {
+  background: var(--feedback-danger-bg);
+  color: var(--feedback-danger-ink);
+}
+
+/* The published table, so the light can be checked rather than believed. */
+.bmi-scale {
+  flex: 1 1 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.bmi-scale-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+/* The reader's own band, marked by weight and a ground as well as by colour —
+   someone who cannot tell the dots apart still sees which row is theirs. */
+/* Three markers, not one: a ground, a ring and bolder text. In light the
+   card ground sits a shade off the panel behind it and would carry the row on
+   its own only just — the ring is what makes "this one is mine" unmissable in
+   both themes, and neither of the three is a colour a reader has to name. */
+.bmi-scale-row[data-current='true'] {
+  background: var(--card-bg);
+  box-shadow: inset 0 0 0 1px var(--color-divider);
+  color: var(--color-text);
+  font-weight: 600;
+}
+.bmi-scale-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.bmi-scale-row[data-signal='ok'] .bmi-scale-dot {
+  background: var(--feedback-success-ink);
+}
+.bmi-scale-row[data-signal='caution'] .bmi-scale-dot {
+  background: var(--feedback-warning-ink);
+}
+.bmi-scale-row[data-signal='alert'] .bmi-scale-dot {
+  background: var(--feedback-danger-ink);
+}
+.bmi-scale-range {
+  font-variant-numeric: tabular-nums;
+}
+
+.bmi-adults {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+.bmi-adults i {
+  flex: none;
+  margin-top: 2px;
+}
+
 /* ── language switcher (KAN-8) ─────────────────────────────────────────── */
 
 /* The compact switcher in the headers. Sized to disappear into the chrome:
@@ -1698,4 +1919,648 @@ dialog.dialog {
   position: absolute;
   top: 18px;
   right: 20px;
+}
+
+/* ── administration (KAN-49, KAN-50) ───────────────────────────────────── */
+
+/* The sentence under the heading that says what the screen governs and, on
+   /admin/users, what it deliberately does not show. Held to the measure the
+   rest of the app reads at rather than run to the width of a wide table. */
+.admin-intro {
+  max-width: 68ch;
+  margin: 0;
+  font-size: 13px;
+}
+
+/* A table cell carrying more than one fact: the name with its translation
+   under it, or the address with the account's name and uid. Stacked rather
+   than split across columns because they are one identity, and a row that
+   spread them would be read as four unrelated fields. */
+.admin-cell-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-cell-title {
+  font-weight: 600;
+}
+.admin-cell-sub {
+  font-size: 12px;
+}
+
+/* Identifiers — document ids and uids — in the face that makes an O and a 0
+   distinguishable. These get copied into logs and support tickets, where
+   transcribing one wrong is the whole cost. */
+.admin-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}
+
+/* The same identifier when it *is* the row's title — the report id on the
+   processing queue, where nothing else names the job. Monospaced for the same
+   reason as above, but at full contrast: a muted heading reads as secondary
+   information, and here it is the only information. */
+.admin-code-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* The id of an entry that already exists, shown in the editor where the input
+   would be. Text, not a disabled field: a control that can never be used is
+   still a control to tab past. */
+.admin-static-value {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-100);
+}
+
+.admin-row-actions {
+  display: inline-flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* The truncation notice and its button. Kept together on one row so the
+   sentence explaining that the list is cut short cannot be read without the
+   control that uncuts it. */
+.admin-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-divider);
+}
+
+/* The overview's figure cards. Auto-fit rather than a fixed column count: the
+   four cards carry different amounts, and a grid that forced them into a row
+   would set every card's height by the tallest. */
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.admin-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-stat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-stat-head .card-title {
+  margin: 0;
+}
+.admin-stat-line {
+  margin: 0;
+  font-size: 14px;
+}
+.admin-stat-note {
+  margin: 0;
+  font-size: 12px;
+}
+.admin-stat-link {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Label left, figure right, on one baseline — so a column of them can be read
+   down either side without the eye tracking across a gap. */
+.admin-figure {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-figure-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.admin-figure-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* A non-zero failure count is the one figure on this page that means somebody
+   is waiting on a report that never came back. */
+.admin-figure-value[data-alarming] {
+  color: var(--feedback-danger-ink);
+}
+
+.admin-section-heading {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+.admin-audit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.admin-audit-row {
+  display: grid;
+  grid-template-columns: minmax(160px, auto) 1fr auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.admin-audit-row:last-child {
+  border-bottom: 0;
+}
+.admin-audit-action {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  /* Three columns cannot hold a uid pair and a date on a phone; stacked, each
+     line keeps its own row rather than wrapping into the next one's. */
+  .admin-audit-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+/* ── pagination (KAN-49, KAN-50) ───────────────────────────────────────── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+}
+/* The count sentence stays put whether or not the controls are drawn, so a
+   result that fits on one page still says how big it is. */
+.pagination-count {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pagination-page,
+.pagination-step {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.pagination-page:hover:not([aria-current]),
+.pagination-step:hover:not(:disabled) {
+  background: var(--color-neutral-100);
+}
+/* The page you are on is a state, not a control — it reads as pressed and
+   `aria-current` says the same thing to a screen reader. */
+.pagination-page[aria-current='page'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+  cursor: default;
+}
+.pagination-step:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.pagination-gap {
+  padding: 0 2px;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+@media (max-width: 560px) {
+  /* The arrows carry the meaning on a narrow screen; the words are what wrap
+     the control onto three lines. */
+  .pagination-step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pagination-step {
+    min-width: 34px;
+    padding: 0 8px;
+  }
+}
+
+/* ── actions menu ──────────────────────────────────────────────────────── */
+
+.actions-menu {
+  position: relative;
+}
+.actions-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  /* 40px square before the caret: this is the one control on the page with no
+     text to widen its hit area, and a header icon that needs aiming at is a
+     header icon nobody uses. */
+  padding: 9px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.actions-trigger:hover,
+.actions-trigger[aria-expanded='true'] {
+  background: var(--color-neutral-100);
+  color: var(--color-text);
+}
+
+.actions-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  /* Wide enough for the longest item label in the longest language —
+     "Borrar los datos de las variables" — to sit on one line. A destructive
+     command broken across two reads as a paragraph rather than a button. */
+  min-width: 272px;
+  max-width: min(90vw, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-md);
+}
+.actions-panel-item {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  /* The label is a sentence, not a word, and wrapping it is better than a
+     panel that grows past the edge of a phone. */
+  white-space: normal;
+}
+.actions-panel-item:hover {
+  background: var(--color-neutral-100);
+}
+/* Destructive items say so before they are pressed, not only in the dialog
+   that follows. The icon alone would carry it for someone who reads icons;
+   the colour carries it for everyone else. */
+.actions-panel-item[data-tone='danger'] {
+  color: var(--feedback-danger-ink);
+}
+.actions-panel-item[data-tone='danger']:hover {
+  background: var(--feedback-danger-bg);
+}
+
+/* ── account menu (KAN-25) ─────────────────────────────────────────────── */
+
+.account-menu {
+  position: relative;
+}
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.account-trigger:hover,
+.account-trigger[aria-expanded='true'] {
+  border-color: var(--color-divider);
+  background: var(--color-neutral-100);
+}
+.account-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* The one thing that stays visible when the panel is shut: an unverified
+   address is a task the account has to finish before it can upload, and a
+   warning nobody sees until they go looking is not a warning. */
+.account-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--feedback-danger-ink);
+  box-shadow: 0 0 0 2px var(--panel-bg);
+}
+
+.account-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 248px;
+  max-width: min(90vw, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-md);
+}
+.account-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.account-panel-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+.account-panel-email {
+  font-size: 13px;
+  font-weight: 600;
+  /* Addresses are long and this panel is narrow; breaking is better than a
+     row that pushes the panel wider than the viewport. */
+  overflow-wrap: anywhere;
+}
+.account-panel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.account-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.account-panel-rule {
+  height: 1px;
+  background: var(--color-divider);
+}
+.account-panel-row {
+  display: flex;
+  align-items: center;
+}
+.account-panel-action {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  margin: -3px -4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+.account-panel-action:hover {
+  background: var(--color-neutral-100);
+}
+
+/* ── the record behind the avatar (KAN-27) ──────────────────────────────── */
+
+.account-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.account-summary-hint,
+.account-summary-empty {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+/* Always drawn, signal or not. The dot is the traffic light; the band's name
+   sits beside it, because a coloured dot on its own says nothing. */
+.account-bmi {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 7px 8px;
+  margin: 0 -8px;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-100);
+}
+.account-bmi-dot {
+  align-self: center;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-text-faint);
+}
+.account-bmi[data-signal='ok'] .account-bmi-dot {
+  background: var(--feedback-success-ink);
+}
+.account-bmi[data-signal='caution'] .account-bmi-dot {
+  background: var(--feedback-warning-ink);
+}
+.account-bmi[data-signal='alert'] .account-bmi-dot {
+  background: var(--feedback-danger-ink);
+}
+.account-bmi-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.account-bmi-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.account-bmi-band {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.account-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.account-summary-item {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.account-summary-item:hover,
+.account-summary-item:focus-visible,
+.account-summary-item[data-pinned='true'] {
+  background: var(--color-neutral-100);
+}
+.account-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Collapsed to nothing, NOT `display: none`.
+   A zero-height clip keeps the value in the accessibility tree, so the row
+   reads as "Past illnesses, pneumonia 2019" without anyone having to hover —
+   which matters, because hover is the one route a screen reader and a phone
+   both lack. */
+.account-summary-value {
+  height: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  /* Free text is stored one item per line, and a summary that reflows a
+     medication list into a paragraph has lost the list. */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.account-summary-item:hover .account-summary-value,
+.account-summary-item:focus-visible .account-summary-value,
+.account-summary-item[data-pinned='true'] .account-summary-value {
+  /* Capped and scrollable: a reader with a long medication list must not push
+     the sign-out button off the bottom of the screen. */
+  height: auto;
+  max-height: 7.5em;
+  overflow-y: auto;
+}
+
+/* Reduced motion is not the issue here — there is no animation — but a reader
+   who cannot use a pointer at all still needs the row to open, which is what
+   the pinned state above is for. */
+@media (hover: none) {
+  .account-summary-hint {
+    /* Pointing at a heading is not an instruction a touch screen can follow. */
+    font-style: italic;
+  }
+}
+
+/* No narrow-screen override. `position: fixed` was tried here and is a trap:
+   the base rule offsets the panel with `top: calc(100% + 8px)`, and on a fixed
+   element that 100% resolves against the viewport rather than the trigger, so
+   the panel lands just below the fold and reads as a menu that does not open.
+   Anchoring to the trigger and capping at 90vw keeps it on screen at every
+   width without a second positioning scheme to keep in step. */
+
+/* ── auth transition (KAN-25) ──────────────────────────────────────────── */
+
+/* Covers the whole viewport rather than the control that started it: what is
+   about to change is who the application thinks you are, and every number on
+   the page behind belongs to the session being ended. Sitting above the
+   sidebar's z-index also means a second, impatient click cannot reach
+   anything mid-teardown. */
+.auth-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-bg, #fff) 82%, transparent);
+  backdrop-filter: blur(2px);
+  animation: auth-transition-in 160ms ease-out;
+}
+.auth-transition-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 28px;
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+}
+.auth-transition-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@keyframes auth-transition-in {
+  from {
+    opacity: 0;
+  }
+}
+/* The veil is confirmation that the click landed; someone who asked for less
+   motion still needs that, so only the fade goes. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-transition {
+    animation: none;
+  }
 }

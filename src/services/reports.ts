@@ -8,7 +8,7 @@
  * still uploading.
  */
 
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { Timestamp, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { deleteObject, ref, uploadBytesResumable } from 'firebase/storage';
 
 import { getDb, getStorageClient } from '@/lib/firebase';
@@ -104,6 +104,16 @@ export interface UploadHandle {
 export interface UploadOptions {
   file: File;
   ownerId: string;
+  /**
+   * The day the tests were taken, as the user declared it on the upload form.
+   *
+   * Required, and deliberately not defaulted. Extraction used to supply this
+   * and got it wrong often enough to misplace whole reports on the trend
+   * charts — see `domain/reportDate.ts`. A default here would quietly
+   * reintroduce a guess under a field whose entire value is that it is not
+   * one.
+   */
+  reportDate: Date;
   userLabel?: string | null;
   /**
    * The file's SHA-256, when the caller has already computed it.
@@ -120,6 +130,7 @@ export interface UploadOptions {
 export function uploadReport({
   file,
   ownerId,
+  reportDate,
   userLabel = null,
   contentHash: knownHash,
   onProgress,
@@ -157,12 +168,14 @@ export function uploadReport({
     if (cancelled) throw new Error('Upload cancelled');
 
     // Only fields the client is allowed to set — see `firestore.rules`. The
-    // pipeline adds reportDate, laboratoryName, counts and warnings later.
+    // pipeline adds laboratoryName, counts and warnings later; `reportDate` is
+    // the user's own and the pipeline no longer overwrites it.
     const docRef = await addDoc(collection(getDb(), 'reports'), {
       ownerId,
       storagePath,
       originalFileName: file.name,
       fileSize: file.size,
+      reportDate: Timestamp.fromDate(reportDate),
       contentHash,
       status: 'uploaded',
       userLabel,

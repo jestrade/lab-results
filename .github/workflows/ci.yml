@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [mainx]
   pull_request:
-    branches: [main]
+    branches: [mainx]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -161,12 +161,12 @@ jobs:
           projectId: ${{ secrets.VITE_STAGING_FIREBASE_PROJECT_ID }}
           expires: 7d
 
-  # Deploy on green, from main only.
+  # Deploy on green, from mainx only.
   deploy:
     name: Deploy to Firebase
     runs-on: ubuntu-latest
     needs: [verify, e2e, security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/mainx' && github.event_name == 'push'
     permissions:
       contents: read
     steps:
@@ -190,6 +190,12 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_SENTRY_ENVIRONMENT: production
+          # Vite inlines this at build time, so a measurement id that is only
+          # in a developer's .env never reaches the deployed bundle: the tag
+          # is skipped entirely and the property stays empty. Analytics is
+          # deliberately production-only — the staging build below leaves it
+          # unset so preview traffic cannot pollute the real property.
+          VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
           VITE_APP_VERSION: ${{ github.sha }}
 
       - name: Write deploy credentials

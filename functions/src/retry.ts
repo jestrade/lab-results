@@ -19,6 +19,13 @@
  *   3. Failures that cannot succeed on a second reading are refused rather
  *      than attempted (see config/retry.json).
  *
+ * The caller is normally the report's owner. An admin is also allowed, and
+ * only for one reason: the console's job list (KAN-20) shows reports stranded
+ * across every account, and the person who could rescue them from their own
+ * file list is exactly the person who cannot tell that anything is stuck. The
+ * policy is not relaxed for them — same cap, same cooldown, same refusals —
+ * and the act is written to the audit log, which an owner's own retry is not.
+ *
  * The results subcollection is cleared before the new run. Result ids encode
  * the row's position on the report, so a second extraction that finds fewer
  * rows would otherwise leave the tail of the first one behind, mixed in with
@@ -157,7 +164,7 @@ const REFUSAL_STATUS = {
 /** Either the refusal to raise, or what the run needs. Never both. */
 interface ClaimResult {
   error?: HttpsError;
-  ok?: { attempt: number; storagePath: string };
+  ok?: { attempt: number; storagePath: string; ownerId: string };
 }
 
 function millis(value: unknown): number | null {
@@ -205,6 +212,10 @@ export const retryReport = onCall(
     const db = getFirestore();
     const ref = db.collection('reports').doc(reportId);
     const uid = request.auth.uid;
+    // The claim the rules trust everywhere else. An admin reaches this for the
+    // admin console's job list (KAN-20), where the whole point is rescuing a
+    // report belonging to someone who cannot see it is stuck.
+    const isAdmin = request.auth.token.role === 'admin';
 
     // ── claim ────────────────────────────────────────────────────────────
     //
@@ -216,7 +227,8 @@ export const retryReport = onCall(
       if (!snap.exists) return { error: new HttpsError('not-found', 'That report does not exist.') };
 
       const data = snap.data()!;
-      if (data.ownerId !== uid) {
+      const ownerId = String(data.ownerId ?? '');
+      if (ownerId !== uid && !isAdmin) {
         // Same answer a stranger gets from `firestore.rules` for a report they
         // do not own, and it does not confirm the id belongs to anybody.
         return {
@@ -257,13 +269,29 @@ export const retryReport = onCall(
       return {
         ok: {
           attempt,
+          ownerId,
           storagePath: String(data.storagePath ?? ''),
         },
       };
     });
 
     if (claim.error) throw claim.error;
-    const { attempt, storagePath } = claim.ok!;
+    const { attempt, ownerId, storagePath } = claim.ok!;
+
+    // KAN-21. An admin reprocessing somebody else's report is an
+    // administrative act on another person's health record, so it is recorded
+    // with who did it — while an owner retrying their own upload is not, and
+    // logging it would bury the entries that matter under everyday use.
+    if (ownerId !== uid) {
+      await db.collection('auditLogs').add({
+        action: 'report.retried',
+        actorId: uid,
+        targetId: ownerId,
+        reportId,
+        attempt,
+        at: FieldValue.serverTimestamp(),
+      });
+    }
 
     const bucket = getStorage().bucket();
     const [exists] = await bucket.file(storagePath).exists();
@@ -282,10 +310,14 @@ export const retryReport = onCall(
     }
 
     const cleared = await clearResults(reportId);
-    logger.info('Retrying report', { reportId, attempt, clearedResults: cleared });
+    logger.info('Retrying report', { reportId, attempt, clearedResults: cleared, actorId: uid, ownerId });
 
     try {
-      await processReport({ id: reportId, ownerId: uid, storagePath, bucket: bucket.name });
+      // The document's owner, not the caller. It decides whose AI-processing
+      // consent is checked and whose variable series the results are written
+      // to — passing the caller would have made an admin retry read the admin's
+      // consent and land the values on the wrong account.
+      await processReport({ id: reportId, ownerId, storagePath, bucket: bucket.name });
     } catch (error) {
       // `processReport` writes its own `failed` status for every outcome it
       // anticipates; this is for the ones it does not. Without it the report

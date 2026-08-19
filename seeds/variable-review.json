@@ -1,0 +1,1346 @@
+{
+  "reviewedOn": "2026-08-17",
+  "reviewedBy": "Claude (Opus 5), for jesuestrada@gmail.com",
+  "sourceCatalogSize": 178,
+  "pendingReviewed": 85,
+  "note": "Reviewed content lands here before it lands in Firestore, for the reason docs/variables.md gives about seeds/variables.json: this is shown to every reader as an explanation of their own blood test, so it goes through the repository where it can be diffed, reviewed and rolled back. `enrich` and `reclassify` are safe to apply and the script is idempotent. `merge` and `remove` are not applied by any script — they move or delete stored history and need a person.",
+  "enrich": [
+    {
+      "id": "mch",
+      "canonicalName": "Mean Corpuscular Hemoglobin (MCH)",
+      "names": {
+        "en": "Mean Corpuscular Hemoglobin (MCH)",
+        "es": "Hemoglobina Corpuscular Media (HCM)"
+      },
+      "descriptions": {
+        "en": "The average amount of hemoglobin carried inside a single red blood cell. It is calculated from the hemoglobin level and the red cell count, and is one of the indices used to describe what kind of anemia is present when one is found.",
+        "es": "La cantidad promedio de hemoglobina que transporta un glóbulo rojo. Se calcula a partir de la hemoglobina y del recuento de eritrocitos, y es uno de los índices que describen qué tipo de anemia hay cuando se encuentra alguna."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "pg",
+      "aliases": [
+        "MCH",
+        "HCM",
+        "CHM",
+        "Hemoglobina Corpuscular Media",
+        "Contenido de Hemoglobina Media"
+      ]
+    },
+    {
+      "id": "basofilos-porcentaje",
+      "canonicalName": "Basophils (percentage)",
+      "names": {
+        "en": "Basophils (percentage)",
+        "es": "Basófilos (porcentaje)"
+      },
+      "descriptions": {
+        "en": "The share of white blood cells that are basophils, a cell type involved in allergic and inflammatory responses. This is a proportion, not a count: it moves when any other white cell type changes, which is why laboratories usually print the absolute count beside it.",
+        "es": "La proporción de glóbulos blancos que son basófilos, un tipo de célula que participa en las respuestas alérgicas e inflamatorias. Es una proporción, no un conteo: cambia cuando cambia cualquier otro tipo de glóbulo blanco, y por eso los laboratorios suelen imprimir el número absoluto junto a ella."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "%",
+      "aliases": [
+        "BASOFILOS %",
+        "Basófilos %",
+        "Basophils %",
+        "BASOPHILS PERCENT"
+      ]
+    },
+    {
+      "id": "eosinofilos-porcentaje",
+      "canonicalName": "Eosinophils (percentage)",
+      "names": {
+        "en": "Eosinophils (percentage)",
+        "es": "Eosinófilos (porcentaje)"
+      },
+      "descriptions": {
+        "en": "The share of white blood cells that are eosinophils, a cell type associated with allergic responses and parasitic infections. Being a proportion, it shifts whenever another white cell population changes, independently of whether the eosinophils themselves did.",
+        "es": "La proporción de glóbulos blancos que son eosinófilos, un tipo de célula asociado con respuestas alérgicas e infecciones parasitarias. Al ser una proporción, cambia cuando cambia otra población de glóbulos blancos, independientemente de si los eosinófilos mismos cambiaron."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "%",
+      "aliases": [
+        "EOSINOFILOS %",
+        "Eosinófilos %",
+        "Eosinophils %"
+      ]
+    },
+    {
+      "id": "eosinofilos",
+      "canonicalName": "Eosinophils (absolute count)",
+      "names": {
+        "en": "Eosinophils (absolute count)",
+        "es": "Eosinófilos (número absoluto)"
+      },
+      "descriptions": {
+        "en": "How many eosinophils are present in a volume of blood, counted rather than expressed as a share. This is the figure clinicians generally read when they want to know whether the eosinophils themselves have changed.",
+        "es": "Cuántos eosinófilos hay en un volumen de sangre, contados en lugar de expresados como proporción. Es la cifra que suele leerse cuando se quiere saber si los eosinófilos mismos cambiaron."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "Eosinófilos (No. absoluto)",
+        "EOSINOFILOS Abs",
+        "Eosinophils Absolute"
+      ]
+    },
+    {
+      "id": "linfocitos",
+      "canonicalName": "Lymphocytes (absolute count)",
+      "names": {
+        "en": "Lymphocytes (absolute count)",
+        "es": "Linfocitos (número absoluto)"
+      },
+      "descriptions": {
+        "en": "How many lymphocytes are present in a volume of blood. Lymphocytes are the white cells of the adaptive immune system — the ones that recognise a specific infection rather than responding to any of them.",
+        "es": "Cuántos linfocitos hay en un volumen de sangre. Los linfocitos son los glóbulos blancos del sistema inmunitario adaptativo: los que reconocen una infección concreta en lugar de responder a cualquiera."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "Linfocitos (No. absoluto)",
+        "LINFOCITOS Abs",
+        "Lymphocytes Absolute"
+      ]
+    },
+    {
+      "id": "linfocitos-porcentaje",
+      "canonicalName": "Lymphocytes (percentage)",
+      "names": {
+        "en": "Lymphocytes (percentage)",
+        "es": "Linfocitos (porcentaje)"
+      },
+      "descriptions": {
+        "en": "The share of white blood cells that are lymphocytes. As a proportion it rises whenever another white cell population falls, so it is read alongside the absolute count rather than instead of it.",
+        "es": "La proporción de glóbulos blancos que son linfocitos. Al ser una proporción, sube cuando baja otra población de glóbulos blancos, por lo que se lee junto al número absoluto y no en su lugar."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "%",
+      "aliases": [
+        "LINFOCITOS %",
+        "Linfocitos %",
+        "Lymphocytes %"
+      ]
+    },
+    {
+      "id": "monocitos",
+      "canonicalName": "Monocytes (percentage)",
+      "names": {
+        "en": "Monocytes (percentage)",
+        "es": "Monocitos (porcentaje)"
+      },
+      "descriptions": {
+        "en": "The share of white blood cells that are monocytes, the cells that clear debris and dead cells and help present material to the rest of the immune system. Being a proportion, it moves with every other white cell population.",
+        "es": "La proporción de glóbulos blancos que son monocitos, las células que retiran desechos y células muertas y ayudan a presentar material al resto del sistema inmunitario. Al ser una proporción, cambia con cualquier otra población de glóbulos blancos."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "%",
+      "aliases": [
+        "MONOCITOS %",
+        "Monocitos %",
+        "Monocytes %"
+      ]
+    },
+    {
+      "id": "monocitos-abs",
+      "canonicalName": "Monocytes (absolute count)",
+      "names": {
+        "en": "Monocytes (absolute count)",
+        "es": "Monocitos (número absoluto)"
+      },
+      "descriptions": {
+        "en": "How many monocytes are present in a volume of blood, counted rather than expressed as a share of the white cells.",
+        "es": "Cuántos monocitos hay en un volumen de sangre, contados en lugar de expresados como proporción de los glóbulos blancos."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "MONOCITOS Abs",
+        "Monocitos (No. absoluto)",
+        "Monocytes Absolute"
+      ]
+    },
+    {
+      "id": "neutrofilos",
+      "canonicalName": "Neutrophils (percentage)",
+      "names": {
+        "en": "Neutrophils (percentage)",
+        "es": "Neutrófilos (porcentaje)"
+      },
+      "descriptions": {
+        "en": "The share of white blood cells that are neutrophils, usually the most numerous type and the first to arrive at a bacterial infection. As a proportion it is read together with the absolute count.",
+        "es": "La proporción de glóbulos blancos que son neutrófilos, normalmente el tipo más numeroso y el primero en llegar a una infección bacteriana. Al ser una proporción, se lee junto con el número absoluto."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "%",
+      "aliases": [
+        "NEUTROFILOS %",
+        "Neutrófilos %",
+        "Neutrophils %"
+      ]
+    },
+    {
+      "id": "neutrofilos-no-absoluto",
+      "canonicalName": "Neutrophils (absolute count)",
+      "names": {
+        "en": "Neutrophils (absolute count)",
+        "es": "Neutrófilos (número absoluto)"
+      },
+      "descriptions": {
+        "en": "How many neutrophils are present in a volume of blood. This is the figure used to judge how well the body can respond to a bacterial infection, which the percentage alone cannot answer.",
+        "es": "Cuántos neutrófilos hay en un volumen de sangre. Es la cifra con la que se valora la capacidad de respuesta ante una infección bacteriana, algo que el porcentaje por sí solo no responde."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "Neutrófilos (No. absoluto)",
+        "NEUTROFILOS Abs",
+        "Neutrophils Absolute",
+        "ANC"
+      ]
+    },
+    {
+      "id": "celulas-inmaduras-%",
+      "canonicalName": "Immature Cells (percentage)",
+      "names": {
+        "en": "Immature Cells (percentage)",
+        "es": "Células Inmaduras (porcentaje)"
+      },
+      "descriptions": {
+        "en": "The share of white blood cells that the analyser judged to be immature — cells released from the bone marrow before they finished developing. Analysers flag these as a group rather than naming each type.",
+        "es": "La proporción de glóbulos blancos que el analizador clasificó como inmaduros: células liberadas de la médula ósea antes de terminar de desarrollarse. Los analizadores las señalan como grupo, sin nombrar cada tipo."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "%",
+      "aliases": [
+        "CELULAS INMADURAS %",
+        "Immature Granulocytes %",
+        "IG %"
+      ]
+    },
+    {
+      "id": "normoblastos-%",
+      "canonicalName": "Nucleated Red Blood Cells (percentage)",
+      "names": {
+        "en": "Nucleated Red Blood Cells (percentage)",
+        "es": "Normoblastos (porcentaje)"
+      },
+      "descriptions": {
+        "en": "The share of cells counted that are immature red blood cells still carrying a nucleus. Mature red cells have none, so their presence in circulating blood is something the analyser reports separately.",
+        "es": "La proporción de células contadas que son glóbulos rojos inmaduros que aún conservan núcleo. Los eritrocitos maduros no lo tienen, por lo que su presencia en sangre circulante se informa aparte."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "%",
+      "aliases": [
+        "NORMOBLASTOS %",
+        "NRBC %",
+        "Eritroblastos %"
+      ]
+    },
+    {
+      "id": "normoblastos-abs",
+      "canonicalName": "Nucleated Red Blood Cells (absolute count)",
+      "names": {
+        "en": "Nucleated Red Blood Cells (absolute count)",
+        "es": "Normoblastos (número absoluto)"
+      },
+      "descriptions": {
+        "en": "How many nucleated red blood cells are present in a volume of blood, counted rather than expressed as a share.",
+        "es": "Cuántos normoblastos hay en un volumen de sangre, contados en lugar de expresados como proporción."
+      },
+      "category": "complete_blood_count",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "NORMOBLASTOS ABS",
+        "NRBC Absolute",
+        "Eritroblastos absolutos"
+      ]
+    },
+    {
+      "id": "bilirrubina-directa",
+      "canonicalName": "Direct Bilirubin",
+      "names": {
+        "en": "Direct Bilirubin",
+        "es": "Bilirrubina Directa"
+      },
+      "descriptions": {
+        "en": "The fraction of bilirubin that the liver has already processed and made water-soluble, ready to be sent out in bile. It is measured alongside the total and the indirect fraction, because which fraction is raised points at a different part of the pathway.",
+        "es": "La fracción de bilirrubina que el hígado ya procesó y volvió soluble en agua, lista para salir por la bilis. Se mide junto con la total y la indirecta, porque cuál fracción está elevada señala una parte distinta del proceso."
+      },
+      "category": "liver_function",
+      "defaultUnit": "mg/dL",
+      "aliases": [
+        "BILIRRUBINA DIRECTA",
+        "Bilirrubina conjugada",
+        "Conjugated Bilirubin"
+      ]
+    },
+    {
+      "id": "bilirrubina-indirecta",
+      "canonicalName": "Indirect Bilirubin",
+      "names": {
+        "en": "Indirect Bilirubin",
+        "es": "Bilirrubina Indirecta"
+      },
+      "descriptions": {
+        "en": "The fraction of bilirubin that the liver has not yet processed, calculated as the total minus the direct fraction. It comes from red blood cells being broken down.",
+        "es": "La fracción de bilirrubina que el hígado todavía no ha procesado; se calcula restando la directa de la total. Proviene de la degradación de los glóbulos rojos."
+      },
+      "category": "liver_function",
+      "defaultUnit": "mg/dL",
+      "aliases": [
+        "BILIRRUBINA INDIRECTA",
+        "Bilirrubina no conjugada",
+        "Unconjugated Bilirubin"
+      ]
+    },
+    {
+      "id": "glicemia",
+      "canonicalName": "Blood Glucose",
+      "names": {
+        "en": "Blood Glucose",
+        "es": "Glicemia"
+      },
+      "descriptions": {
+        "en": "The amount of sugar circulating in the blood at the moment the sample was taken. Without a note that the draw was fasting or timed after a glucose load, this is a single reading whose meaning depends on when the person last ate.",
+        "es": "La cantidad de azúcar que circula en la sangre en el momento de la toma. Sin una nota de que la muestra fue en ayunas o tomada tras una carga de glucosa, es una lectura aislada cuyo significado depende de cuándo comió la persona por última vez."
+      },
+      "category": "glucose_metabolism",
+      "defaultUnit": "mg/dL",
+      "aliases": [
+        "GLICEMIA",
+        "Glucosa en Plasma",
+        "Plasma Glucose",
+        "Glucemia"
+      ]
+    },
+    {
+      "id": "glicemia-una-1-hora-postcarga",
+      "canonicalName": "Glucose, 1 Hour Post-Load",
+      "names": {
+        "en": "Glucose, 1 Hour Post-Load",
+        "es": "Glicemia 1 hora poscarga"
+      },
+      "descriptions": {
+        "en": "Blood sugar measured one hour after drinking a standard glucose solution, as part of an oral glucose tolerance test. It is a timed point on a curve rather than a standalone reading.",
+        "es": "Azúcar en sangre medida una hora después de beber una solución estándar de glucosa, como parte de una prueba de tolerancia oral. Es un punto cronometrado de una curva, no una lectura aislada."
+      },
+      "category": "glucose_metabolism",
+      "defaultUnit": "mg/dL",
+      "aliases": [
+        "Glicemia una 1 hora postcarga",
+        "Glucosa 1 hora poscarga",
+        "OGTT 1h"
+      ]
+    },
+    {
+      "id": "glicemia-dos-2-horas-postcarga",
+      "canonicalName": "Glucose, 2 Hours Post-Load",
+      "names": {
+        "en": "Glucose, 2 Hours Post-Load",
+        "es": "Glicemia 2 horas poscarga"
+      },
+      "descriptions": {
+        "en": "Blood sugar measured two hours after drinking a standard glucose solution, the point at which an oral glucose tolerance test is usually read.",
+        "es": "Azúcar en sangre medida dos horas después de beber una solución estándar de glucosa, el punto en el que suele leerse la prueba de tolerancia oral."
+      },
+      "category": "glucose_metabolism",
+      "defaultUnit": "mg/dL",
+      "aliases": [
+        "Glicemia dos 2 horas postcarga",
+        "Glucosa 2 horas poscarga",
+        "OGTT 2h"
+      ]
+    },
+    {
+      "id": "ldl-inmunologico",
+      "canonicalName": "LDL Cholesterol, Direct",
+      "names": {
+        "en": "LDL Cholesterol, Direct",
+        "es": "Colesterol LDL Directo"
+      },
+      "descriptions": {
+        "en": "LDL cholesterol measured directly by the laboratory rather than calculated from the other lipid figures. The direct method is used when triglycerides are high, because the usual calculation becomes unreliable there.",
+        "es": "Colesterol LDL medido directamente en el laboratorio en lugar de calcularse a partir de los demás lípidos. El método directo se usa cuando los triglicéridos están altos, porque el cálculo habitual pierde fiabilidad."
+      },
+      "category": "lipid_profile",
+      "defaultUnit": "mg/dL",
+      "aliases": [
+        "LDL Inmunológico",
+        "LDL Directo",
+        "Direct LDL"
+      ]
+    },
+    {
+      "id": "tiempo-protrombina-tp",
+      "canonicalName": "Prothrombin Time (PT)",
+      "names": {
+        "en": "Prothrombin Time (PT)",
+        "es": "Tiempo de Protrombina (TP)"
+      },
+      "descriptions": {
+        "en": "How long a sample of plasma takes to clot once a clotting trigger is added. It reports on one of the two arms of the clotting sequence, and is the measurement the INR is derived from.",
+        "es": "Cuánto tarda en coagular una muestra de plasma tras añadir un activador de la coagulación. Informa sobre una de las dos vías de la coagulación y es la medición de la que se deriva el INR."
+      },
+      "category": "coagulation",
+      "defaultUnit": "seconds",
+      "aliases": [
+        "TIEMPO DE PROTROMBINA (TP)",
+        "PT",
+        "TP",
+        "Protrombina"
+      ]
+    },
+    {
+      "id": "tiempo-tromboplastina-parcial-activado-ttpa",
+      "canonicalName": "Activated Partial Thromboplastin Time (aPTT)",
+      "names": {
+        "en": "Activated Partial Thromboplastin Time (aPTT)",
+        "es": "Tiempo de Tromboplastina Parcial Activado (TTPa)"
+      },
+      "descriptions": {
+        "en": "How long plasma takes to clot when a different trigger is used from the one in the prothrombin time. The two tests together indicate which part of the clotting sequence is behaving unusually.",
+        "es": "Cuánto tarda el plasma en coagular cuando se usa un activador distinto al del tiempo de protrombina. Las dos pruebas juntas indican qué parte de la secuencia de coagulación se comporta de forma inusual."
+      },
+      "category": "coagulation",
+      "defaultUnit": "seconds",
+      "aliases": [
+        "TIEMPO DE TROMBOPLASTINA PARCIAL ACTIVADO (TTPa)",
+        "aPTT",
+        "TTPa",
+        "PTT",
+        "TTP"
+      ]
+    },
+    {
+      "id": "inr",
+      "canonicalName": "International Normalised Ratio (INR)",
+      "names": {
+        "en": "International Normalised Ratio (INR)",
+        "es": "Índice Internacional Normalizado (INR)"
+      },
+      "descriptions": {
+        "en": "The prothrombin time expressed on a standard scale, so that a result means the same thing whichever laboratory produced it. It exists because the raw clotting time varies with the reagent each laboratory uses.",
+        "es": "El tiempo de protrombina expresado en una escala estándar, de modo que un resultado signifique lo mismo sin importar qué laboratorio lo produjo. Existe porque el tiempo de coagulación bruto varía según el reactivo de cada laboratorio."
+      },
+      "category": "coagulation",
+      "defaultUnit": null,
+      "aliases": [
+        "INR",
+        "Razón Internacional Normalizada",
+        "Índice Internacional Normalizado"
+      ]
+    },
+    {
+      "id": "inmunoglobulina-ige",
+      "canonicalName": "Immunoglobulin E (Total IgE)",
+      "names": {
+        "en": "Immunoglobulin E (Total IgE)",
+        "es": "Inmunoglobulina E (IgE Total)"
+      },
+      "descriptions": {
+        "en": "The total amount of IgE antibody in the blood, added up across every allergen rather than for one in particular. It is the general counterpart to the allergen-specific RAST IgE tests.",
+        "es": "La cantidad total de anticuerpo IgE en la sangre, sumada sobre todos los alérgenos en lugar de uno en particular. Es la contraparte general de las pruebas RAST IgE específicas por alérgeno."
+      },
+      "category": "allergy",
+      "defaultUnit": "IU/mL",
+      "aliases": [
+        "INMUNOGLOBULINA IgE",
+        "IgE Total",
+        "Total IgE"
+      ]
+    },
+    {
+      "id": "cuerpos-cetonicos-autom",
+      "canonicalName": "Ketones, Urine",
+      "names": {
+        "en": "Ketones, Urine",
+        "es": "Cuerpos Cetónicos en Orina"
+      },
+      "descriptions": {
+        "en": "Whether ketones are present in the urine. Ketones appear when the body is drawing energy from fat rather than from sugar, which happens during fasting, prolonged exercise, a very low-carbohydrate diet, or when glucose is not reaching cells.",
+        "es": "Si hay cuerpos cetónicos en la orina. Aparecen cuando el cuerpo obtiene energía de la grasa en lugar del azúcar, lo que ocurre en ayuno, ejercicio prolongado, dietas muy bajas en carbohidratos, o cuando la glucosa no llega a las células."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "Cuerpos cetónicos (cetonuria) autom.",
+        "CETONAS",
+        "Cetonuria",
+        "Ketones"
+      ]
+    },
+    {
+      "id": "densidad-urinaria-automatizada",
+      "canonicalName": "Urine Specific Gravity",
+      "names": {
+        "en": "Urine Specific Gravity",
+        "es": "Densidad Urinaria"
+      },
+      "descriptions": {
+        "en": "How concentrated the urine is, compared against plain water. It mostly reflects how much fluid the person has drunk and how well the kidneys are concentrating urine, so a single value says more about the day than about the kidneys.",
+        "es": "Qué tan concentrada está la orina en comparación con el agua. Refleja sobre todo cuánto líquido bebió la persona y qué tan bien concentran los riñones, así que un valor aislado dice más sobre el día que sobre el riñón."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "Densidad urinaria automatizada",
+        "DENSIDAD",
+        "Gravedad específica",
+        "Specific Gravity"
+      ]
+    },
+    {
+      "id": "ph-urinario-automatizado",
+      "canonicalName": "Urine pH",
+      "names": {
+        "en": "Urine pH",
+        "es": "pH Urinario"
+      },
+      "descriptions": {
+        "en": "How acidic or alkaline the urine is. It shifts with diet, with the time since the last meal, and with how long the sample sat before being read, which is why it is interpreted alongside the rest of the panel rather than on its own.",
+        "es": "Qué tan ácida o alcalina es la orina. Cambia con la dieta, con el tiempo desde la última comida y con cuánto reposó la muestra antes de leerse, por lo que se interpreta junto con el resto del panel y no por separado."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "pH urinario automatizado",
+        "pH",
+        "pH en orina"
+      ]
+    },
+    {
+      "id": "proteinas-en-orina-automatizadas",
+      "canonicalName": "Protein, Urine",
+      "names": {
+        "en": "Protein, Urine",
+        "es": "Proteínas en Orina"
+      },
+      "descriptions": {
+        "en": "Whether protein is passing into the urine. Healthy kidneys keep most protein in the blood, so its appearance is one of the findings a urinalysis exists to detect — though fever, exercise and standing for long periods can also produce it temporarily.",
+        "es": "Si hay proteínas pasando a la orina. Los riñones sanos retienen la mayor parte de la proteína en la sangre, por lo que su aparición es uno de los hallazgos que el examen de orina busca detectar, aunque la fiebre, el ejercicio y estar mucho tiempo de pie también pueden producirla de forma pasajera."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "Proteínas en orina automatizadas",
+        "PROTEINAS",
+        "Proteinuria",
+        "Urine Protein"
+      ]
+    },
+    {
+      "id": "nitritos-automatizados",
+      "canonicalName": "Nitrites, Urine",
+      "names": {
+        "en": "Nitrites, Urine",
+        "es": "Nitritos en Orina"
+      },
+      "descriptions": {
+        "en": "Whether nitrites are present in the urine. Several bacteria that cause urinary infections convert nitrate into nitrite, so this is read as an indirect sign of them — but not all such bacteria do it, so a negative result does not settle the question by itself.",
+        "es": "Si hay nitritos en la orina. Varias bacterias que causan infecciones urinarias convierten el nitrato en nitrito, por lo que se lee como un signo indirecto de ellas; sin embargo, no todas lo hacen, así que un resultado negativo no resuelve la pregunta por sí solo."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "Nitritos automatizados",
+        "NITRITOS",
+        "Nitrites"
+      ]
+    },
+    {
+      "id": "leucocitos-estearasa",
+      "canonicalName": "Leukocyte Esterase, Urine",
+      "names": {
+        "en": "Leukocyte Esterase, Urine",
+        "es": "Esterasa Leucocitaria en Orina"
+      },
+      "descriptions": {
+        "en": "A chemical test for an enzyme released by white blood cells, used as an indirect sign that they are present in the urine. It is a different measurement from counting the cells under a microscope, and the two can disagree — the enzyme lingers after the cells themselves have broken apart.",
+        "es": "Una prueba química para una enzima que liberan los glóbulos blancos, usada como signo indirecto de su presencia en la orina. Es una medición distinta de contar las células al microscopio, y ambas pueden discrepar: la enzima permanece después de que las células se han desintegrado."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "LEUCOCITOS/ESTEARASA",
+        "Esterasa leucocitaria",
+        "Leukocyte Esterase"
+      ]
+    },
+    {
+      "id": "leucocitos-en-orina-automatizados",
+      "canonicalName": "Leukocytes, Urine",
+      "names": {
+        "en": "Leukocytes, Urine",
+        "es": "Leucocitos en Orina"
+      },
+      "descriptions": {
+        "en": "How many white blood cells are seen in the urine sediment. Their presence indicates inflammation somewhere along the urinary tract; the count does not say where along it.",
+        "es": "Cuántos glóbulos blancos se observan en el sedimento urinario. Su presencia indica inflamación en algún punto de la vía urinaria; el conteo no dice en qué punto."
+      },
+      "category": "urinalysis",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "Leucocitos en orina automatizados",
+        "Leucocitos orina automatizada",
+        "Piuria",
+        "WBC Urine"
+      ]
+    },
+    {
+      "id": "eritrocitos-orina-automatizada",
+      "canonicalName": "Erythrocytes, Urine",
+      "names": {
+        "en": "Erythrocytes, Urine",
+        "es": "Eritrocitos en Orina"
+      },
+      "descriptions": {
+        "en": "How many red blood cells are seen in the urine sediment. Blood in the urine has many possible sources along the urinary tract, and the count alone does not distinguish between them.",
+        "es": "Cuántos glóbulos rojos se observan en el sedimento urinario. La sangre en la orina puede originarse en varios puntos de la vía urinaria, y el conteo por sí solo no distingue entre ellos."
+      },
+      "category": "urinalysis",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "Eritrocitos orina automatizada",
+        "Hematuria",
+        "RBC Urine",
+        "Hematíes en orina"
+      ]
+    },
+    {
+      "id": "eritrocitos-no-lisados-automatizados",
+      "canonicalName": "Non-Lysed Erythrocytes, Urine",
+      "names": {
+        "en": "Non-Lysed Erythrocytes, Urine",
+        "es": "Eritrocitos No Lisados en Orina"
+      },
+      "descriptions": {
+        "en": "Red blood cells in the urine that are still intact rather than broken open. Analysers report them separately because intact and ruptured cells suggest the blood entered the urine in different ways.",
+        "es": "Glóbulos rojos en la orina que siguen íntegros en lugar de estar rotos. Los analizadores los informan por separado porque las células íntegras y las rotas sugieren formas distintas de llegada de la sangre a la orina."
+      },
+      "category": "urinalysis",
+      "defaultUnit": "cells/uL",
+      "aliases": [
+        "Eritrocitos no lisados automatizados",
+        "Non-lysed RBC",
+        "Eritrocitos íntegros"
+      ]
+    },
+    {
+      "id": "hemoglobina-en-orina-automatizada",
+      "canonicalName": "Hemoglobin, Urine",
+      "names": {
+        "en": "Hemoglobin, Urine",
+        "es": "Hemoglobina en Orina"
+      },
+      "descriptions": {
+        "en": "A chemical test for hemoglobin in the urine. It reacts to hemoglobin whether or not intact red cells are present, which is why it is read together with the red cell count from the sediment rather than instead of it.",
+        "es": "Una prueba química para detectar hemoglobina en la orina. Reacciona a la hemoglobina haya o no glóbulos rojos íntegros, por lo que se lee junto con el recuento de eritrocitos del sedimento y no en su lugar."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "Hemoglobina en orina automatizada",
+        "Sangre en orina",
+        "Blood, Urine",
+        "Hemoglobinuria"
+      ]
+    },
+    {
+      "id": "glucosa-en-orina-automatizada",
+      "canonicalName": "Glucose, Urine",
+      "names": {
+        "en": "Glucose, Urine",
+        "es": "Glucosa en Orina"
+      },
+      "descriptions": {
+        "en": "Whether sugar is present in the urine. The kidneys normally reabsorb glucose entirely, so it appears once blood sugar rises past what they can hold back, or when their threshold for it is lowered.",
+        "es": "Si hay azúcar en la orina. Los riñones normalmente reabsorben toda la glucosa, así que aparece cuando el azúcar en sangre supera lo que pueden retener, o cuando ese umbral está disminuido."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "Glucosa en orina automatizada",
+        "Glucosuria",
+        "Urine Glucose"
+      ]
+    },
+    {
+      "id": "levaduras-orina-automatizada",
+      "canonicalName": "Yeast, Urine",
+      "names": {
+        "en": "Yeast, Urine",
+        "es": "Levaduras en Orina"
+      },
+      "descriptions": {
+        "en": "Whether yeast cells are seen in the urine sediment. They may come from an infection of the urinary tract or from contamination of the sample as it was collected, and the finding alone does not separate the two.",
+        "es": "Si se observan levaduras en el sedimento urinario. Pueden provenir de una infección de la vía urinaria o de contaminación de la muestra al recogerla, y el hallazgo por sí solo no separa ambas cosas."
+      },
+      "category": "urinalysis",
+      "defaultUnit": null,
+      "aliases": [
+        "Levaduras orina automatizada",
+        "Yeast Urine",
+        "Hongos en orina"
+      ]
+    },
+    {
+      "id": "alergeno-acaro-anticuerpos-ige",
+      "canonicalName": "RAST IgE Allergen: Dust Mite",
+      "names": {
+        "en": "RAST IgE Allergen: Dust Mite",
+        "es": "RAST IgE Alérgeno: Ácaro del Polvo"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody in the blood directed specifically at house dust mite. A raised result means the immune system has been sensitised to it, which is not the same as having symptoms from it.",
+        "es": "La cantidad de anticuerpo IgE en la sangre dirigida específicamente contra el ácaro del polvo doméstico. Un resultado elevado significa que el sistema inmunitario se ha sensibilizado, lo que no equivale a tener síntomas por ello."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "Alergeno Acaro, Anticuerpos IgE",
+        "IgE Ácaro",
+        "Dust Mite IgE"
+      ]
+    },
+    {
+      "id": "rast-ige-alergeno-aspergillus-fumigatus",
+      "canonicalName": "RAST IgE Allergen: Aspergillus fumigatus",
+      "names": {
+        "en": "RAST IgE Allergen: Aspergillus fumigatus",
+        "es": "RAST IgE Alérgeno: Aspergillus fumigatus"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at Aspergillus fumigatus, a mould found in soil, compost and damp indoor spaces. Sensitisation is not the same as illness.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Aspergillus fumigatus, un moho presente en el suelo, el compost y espacios interiores húmedos. La sensibilización no equivale a enfermedad."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE ALERGENO: Aspergillus fumigatus",
+        "Aspergillus fumigatus IgE"
+      ]
+    },
+    {
+      "id": "rast-ige-alergeno-candida-albicans-monilia-ige",
+      "canonicalName": "RAST IgE Allergen: Candida albicans",
+      "names": {
+        "en": "RAST IgE Allergen: Candida albicans",
+        "es": "RAST IgE Alérgeno: Candida albicans"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at Candida albicans, a yeast that lives harmlessly on most people and can also provoke an allergic response in some.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Candida albicans, una levadura que vive de forma inofensiva en la mayoría de las personas y que en algunas puede provocar una respuesta alérgica."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE ALERGENO: Candida Albicans(Monilia), IgE",
+        "Monilia IgE",
+        "Candida IgE"
+      ]
+    },
+    {
+      "id": "rast-ige-alergeno-hormiga",
+      "canonicalName": "RAST IgE Allergen: Ant",
+      "names": {
+        "en": "RAST IgE Allergen: Ant",
+        "es": "RAST IgE Alérgeno: Hormiga"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at ant venom or ant body proteins, measured after a sting or as part of an allergy panel.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra el veneno o las proteínas de la hormiga, medida tras una picadura o como parte de un panel de alergia."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE ALERGENO: HORMIGA",
+        "Ant IgE",
+        "IgE Hormiga"
+      ]
+    },
+    {
+      "id": "rast-ige-alergeno-latex",
+      "canonicalName": "RAST IgE Allergen: Latex",
+      "names": {
+        "en": "RAST IgE Allergen: Latex",
+        "es": "RAST IgE Alérgeno: Látex"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at natural rubber latex. It is often requested before surgery or for people whose work brings them into repeated contact with latex gloves.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra el látex de caucho natural. Suele solicitarse antes de una cirugía o para personas cuyo trabajo implica contacto repetido con guantes de látex."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE ALERGENO: LATEX",
+        "Latex IgE",
+        "IgE Látex"
+      ]
+    },
+    {
+      "id": "rast-ige-alternaria-tenuis",
+      "canonicalName": "RAST IgE Allergen: Alternaria",
+      "names": {
+        "en": "RAST IgE Allergen: Alternaria",
+        "es": "RAST IgE Alérgeno: Alternaria"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at Alternaria, an outdoor mould whose spores rise in warm, dry weather and around harvested crops.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Alternaria, un moho de exteriores cuyas esporas aumentan con el clima cálido y seco y alrededor de las cosechas."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE ALTERNARIA TENUIS",
+        "Alternaria tenuis",
+        "Alternaria alternata IgE"
+      ]
+    },
+    {
+      "id": "rast-ige-cucaracha",
+      "canonicalName": "RAST IgE Allergen: Cockroach",
+      "names": {
+        "en": "RAST IgE Allergen: Cockroach",
+        "es": "RAST IgE Alérgeno: Cucaracha"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at cockroach proteins, which persist in household dust long after the insects themselves are gone.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra proteínas de cucaracha, que permanecen en el polvo doméstico mucho después de que los insectos ya no están."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE CUCARACHA",
+        "Cockroach IgE",
+        "IgE Cucaracha"
+      ]
+    },
+    {
+      "id": "rast-ige-lana",
+      "canonicalName": "RAST IgE Allergen: Wool",
+      "names": {
+        "en": "RAST IgE Allergen: Wool",
+        "es": "RAST IgE Alérgeno: Lana"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at wool, usually requested when clothing or bedding is suspected of provoking a skin or airway reaction.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra la lana, normalmente solicitada cuando se sospecha que la ropa o la ropa de cama provoca una reacción cutánea o respiratoria."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE LANA",
+        "Wool IgE",
+        "IgE Lana"
+      ]
+    },
+    {
+      "id": "rast-ige-penicillium-hongo",
+      "canonicalName": "RAST IgE Allergen: Penicillium",
+      "names": {
+        "en": "RAST IgE Allergen: Penicillium",
+        "es": "RAST IgE Alérgeno: Penicillium"
+      },
+      "descriptions": {
+        "en": "The amount of IgE antibody directed specifically at Penicillium, a mould common in damp buildings and on spoiled food. This is an allergy to the mould itself, which is a separate question from an allergy to penicillin the medicine.",
+        "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Penicillium, un moho frecuente en edificios húmedos y en alimentos en mal estado. Es una alergia al moho, cuestión distinta de la alergia al medicamento penicilina."
+      },
+      "category": "allergy",
+      "defaultUnit": "kU/L",
+      "aliases": [
+        "RAST IgE PENICILLIUM (HONGO)",
+        "Penicillium notatum IgE",
+        "IgE Penicillium"
+      ]
+    }
+  ],
+  "merge": [
+    {
+      "id": "ade",
+      "into": "ancho-de-distribucion-eritrocitario",
+      "confidence": "high",
+      "reason": "ADE is Amplitud de Distribución Eritrocitaria — the Spanish name for RDW, which the catalog already carries."
+    },
+    {
+      "id": "rdw",
+      "into": "ancho-de-distribucion-eritrocitario",
+      "confidence": "high",
+      "reason": "The English abbreviation of the same entry."
+    },
+    {
+      "id": "chcm",
+      "into": "concentracion-de-hemoglobina-corpuscular",
+      "confidence": "high",
+      "reason": "CHCM is Concentración de Hemoglobina Corpuscular Media — MCHC."
+    },
+    {
+      "id": "mchc",
+      "into": "concentracion-de-hemoglobina-corpuscular",
+      "confidence": "high",
+      "reason": "The English abbreviation of the same entry."
+    },
+    {
+      "id": "concentracion-promedio-de-hb-corpuscular",
+      "into": "concentracion-de-hemoglobina-corpuscular",
+      "confidence": "high",
+      "reason": "Spells out MCHC in its own name; a third spelling of one test."
+    },
+    {
+      "id": "chm",
+      "into": "mch",
+      "confidence": "high",
+      "reason": "CHM is Contenido de Hemoglobina Media — MCH, which this review creates as a catalog entry."
+    },
+    {
+      "id": "vpm",
+      "into": "volumen-plaquetario-promedio",
+      "confidence": "high",
+      "reason": "VPM is Volumen Plaquetario Medio — MPV, already in the catalog."
+    },
+    {
+      "id": "mpv",
+      "into": "volumen-plaquetario-promedio",
+      "confidence": "high",
+      "reason": "The English abbreviation of the same entry."
+    },
+    {
+      "id": "total-plaquetas",
+      "into": "recuento-de-plaquetas",
+      "confidence": "high",
+      "reason": "\"Recuento total de plaquetas\" and \"Recuento de plaquetas\" are one test."
+    },
+    {
+      "id": "hematies",
+      "into": "recuento-de-eritrocitos",
+      "confidence": "high",
+      "reason": "Hematíes and eritrocitos are the same cell; both entries are the red cell count."
+    },
+    {
+      "id": "colesterol-alta-densidad-hdl",
+      "into": "hdl-cholesterol",
+      "confidence": "high",
+      "reason": "The Spanish long form of HDL cholesterol."
+    },
+    {
+      "id": "colesterol-baja-densidad-ldl",
+      "into": "ldl-cholesterol",
+      "confidence": "high",
+      "reason": "The Spanish long form of LDL cholesterol. Note this is the calculated LDL — the direct assay stays separate as ldl-inmunologico."
+    },
+    {
+      "id": "transaminasa-glutamico-oxalacetica-got",
+      "into": "aspartate-aminotransferase",
+      "confidence": "high",
+      "reason": "GOT is the older name for AST. The catalog also carries transaminasa-oxaloacetica-got-en-suero, which is a pre-existing duplicate of the same test — see the report."
+    },
+    {
+      "id": "transaminasa-glutamico-piruvica-gpt",
+      "into": "alanine-aminotransferase",
+      "confidence": "high",
+      "reason": "GPT is the older name for ALT. transaminasa-piruvica-gpt is the same pre-existing duplicate problem."
+    },
+    {
+      "id": "tsh-ultrasensible",
+      "into": "thyroid-stimulating-hormone",
+      "confidence": "high",
+      "reason": "\"Ultrasensible\" names the assay generation, not a different analyte."
+    },
+    {
+      "id": "urobilinogeno",
+      "into": "urobilinogeno-en-orina-automatizado",
+      "confidence": "high",
+      "reason": "The dipstick short form of the entry already curated."
+    },
+    {
+      "id": "nitrogeno-ureico-en-suero",
+      "into": "blood-urea-nitrogen",
+      "confidence": "high",
+      "reason": "Nitrógeno ureico en suero is BUN. Note this is BUN, not urea — the two differ by a factor of about 2.14, so they must never be folded together."
+    },
+    {
+      "id": "glicemia-en-ayunas",
+      "into": "fasting-blood-glucose",
+      "confidence": "high",
+      "reason": "The Spanish name for fasting blood glucose."
+    },
+    {
+      "id": "basofilos-abs",
+      "into": "basofilos",
+      "confidence": "high",
+      "reason": "The curated basofilos entry is already the absolute count."
+    },
+    {
+      "id": "basofilos-%",
+      "into": "basofilos-porcentaje",
+      "confidence": "high",
+      "reason": "Two spellings of the basophil percentage."
+    },
+    {
+      "id": "eosinofilos-%",
+      "into": "eosinofilos-porcentaje",
+      "confidence": "high",
+      "reason": "Two spellings of the eosinophil percentage."
+    },
+    {
+      "id": "eosinofilos-abs",
+      "into": "eosinofilos",
+      "confidence": "high",
+      "reason": "Both are the eosinophil absolute count."
+    },
+    {
+      "id": "linfocitos-abs",
+      "into": "linfocitos",
+      "confidence": "high",
+      "reason": "Both are the lymphocyte absolute count."
+    },
+    {
+      "id": "linfocitos-%",
+      "into": "linfocitos-porcentaje",
+      "confidence": "high",
+      "reason": "Two spellings of the lymphocyte percentage."
+    },
+    {
+      "id": "monocitos-%",
+      "into": "monocitos",
+      "confidence": "high",
+      "reason": "Both are the monocyte percentage."
+    },
+    {
+      "id": "neutrofilos-%",
+      "into": "neutrofilos",
+      "confidence": "high",
+      "reason": "Both are the neutrophil percentage."
+    },
+    {
+      "id": "neutrofilos-abs",
+      "into": "neutrofilos-no-absoluto",
+      "confidence": "high",
+      "reason": "Both are the neutrophil absolute count. The target's id reads like a negation but its printed name is \"Neutrófilos (No. absoluto)\" — No. is número."
+    },
+    {
+      "id": "cetonas",
+      "into": "cuerpos-cetonicos-autom",
+      "confidence": "high",
+      "reason": "Two spellings of urine ketones."
+    },
+    {
+      "id": "densidad",
+      "into": "densidad-urinaria-automatizada",
+      "confidence": "high",
+      "reason": "Two spellings of urine specific gravity."
+    },
+    {
+      "id": "nitritos",
+      "into": "nitritos-automatizados",
+      "confidence": "high",
+      "reason": "Two spellings of the urine nitrite test."
+    },
+    {
+      "id": "leucocitos-orina-automatizada",
+      "into": "leucocitos-en-orina-automatizados",
+      "confidence": "high",
+      "reason": "Two spellings of the same urine leukocyte count. Neither is the esterase dipstick test, which stays separate."
+    },
+    {
+      "id": "aspecto",
+      "into": "aspecto-de-la-orina-automatizado",
+      "confidence": "medium",
+      "reason": "A bare ASPECTO alongside DENSIDAD, pH and NITRITOS reads as the urine panel — but semen appearance also exists in this catalog, so confirm against a report before merging."
+    },
+    {
+      "id": "ph",
+      "into": "ph-urinario-automatizado",
+      "confidence": "high",
+      "reason": "Confirmed from the stored data: laboratory range 4.8-7.4 and values 5-7. Semen pH runs 7.2-8.0, so this is the urine reading."
+    },
+    {
+      "id": "proteinas",
+      "into": "proteinas-en-orina-automatizadas",
+      "confidence": "high",
+      "reason": "Confirmed from the stored data: the unit is mg/dL, which is the urine dipstick scale. Serum total protein is reported in g/dL."
+    },
+    {
+      "id": "glucosa-en-plasma",
+      "into": "glicemia",
+      "confidence": "medium",
+      "reason": "Both are an untimed blood glucose. Merge only if the reports do not use one name for fasting and the other for random."
+    },
+    {
+      "id": "bilirrubina-total",
+      "into": "bilirubin",
+      "confidence": "high",
+      "reason": "Confirmed from the stored range text — \"Mujer: 0.3-0.98 Hombre: 0.3-1.14\" mg/dL — which is a total bilirubin range; the direct fraction runs to about 0.3."
+    },
+    {
+      "id": "basofilos-2",
+      "into": "basofilos",
+      "confidence": "high",
+      "reason": "Resolved from the stored data, not the name: unit 10^3 cell/uL with a laboratory range of 0.02-0.1. A basophil *percentage* runs 0-2%, so this is the absolute count."
+    },
+    {
+      "id": "monocitos-2",
+      "into": "monocitos-abs",
+      "confidence": "high",
+      "reason": "Resolved from the stored data: unit 10^3 cell/uL, laboratory range 0.1-0.7. A monocyte percentage runs about 2-10%, so this is the absolute count."
+    },
+    {
+      "id": "neutrofilos-2",
+      "into": "neutrofilos-no-absoluto",
+      "confidence": "high",
+      "reason": "Resolved from the stored data: unit 10^3 cell/uL, laboratory range 2.5-7.5. A neutrophil percentage runs about 40-70%, so this is the absolute count."
+    }
+  ],
+  "ambiguous": [],
+  "remove": [
+    {
+      "id": "pt-control-dia",
+      "printedName": "PT CONTROL DIA",
+      "reason": "This is the laboratory's own daily quality-control value for the prothrombin time — the result of running a control serum, printed on the report beside the patient's. It is not a measurement of the person. Tracked as a variable it would draw a trend line of the laboratory's control material on somebody's health record."
+    },
+    {
+      "id": "ptt-control-dia",
+      "printedName": "PTT CONTROL DIA",
+      "reason": "The same, for the partial thromboplastin time."
+    }
+  ],
+  "reclassifiedOn": "2026-08-18",
+  "reclassify": [
+    {
+      "id": "anormalidades-cabeza-espermatozoides",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "anormalidades-cola-espermatozoides",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "aspecto-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "bacterias-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "color-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "eritrocitos-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-con-morfologia-anormal",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-con-morfologia-normal",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-inmoviles-imv",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-muertos",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-total-eyaculado",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-vivos-moviles",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-x-ml",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "leucocitos-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "licuefaccion-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "motilidad-no-progresiva-np",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "periodo-abstinencia-sexual",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "ph-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "progresion-lineal-lenta-o-no-lineal-np",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "progresion-lineal-rapida-pr",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "viscosidad-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "volumen-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "alergeno-acaro-anticuerpos-ige",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "inmunoglobulina-ige",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-aspergillus-fumigatus",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-caballo",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-candida-albicans-monilia-ige",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-hormiga",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-latex",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-plumas-paloma",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-algodon",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alternaria-tenuis",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-blomia-tropicalis",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-caspa-pelo-gato",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-caspa-pelo-perro",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-cucaracha",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-dematophagoide-pteronyssinus",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-lana",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-mosquito",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-penicillium-hongo",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "inr",
+      "category": "coagulation",
+      "reason": "PT, aPTT and the INR derived from PT. They are ordered and read together, and none of them belongs to any panel the catalog previously had."
+    },
+    {
+      "id": "tiempo-protrombina-tp",
+      "category": "coagulation",
+      "reason": "PT, aPTT and the INR derived from PT. They are ordered and read together, and none of them belongs to any panel the catalog previously had."
+    },
+    {
+      "id": "tiempo-tromboplastina-parcial-activado-ttpa",
+      "category": "coagulation",
+      "reason": "PT, aPTT and the INR derived from PT. They are ordered and read together, and none of them belongs to any panel the catalog previously had."
+    },
+    {
+      "id": "antigeno-especifico-prostata-total-tpsa",
+      "category": "tumour_markers",
+      "reason": "PSA is a tumour marker, not a hormone and not a kidney test. The panel will grow — CEA, AFP, CA-125 — and having it named is what stops the next one landing in \"other\"."
+    },
+    {
+      "id": "sangre-oculta-humano-especifica-en-materia-fecal",
+      "category": "faecal",
+      "reason": "A stool study, which is neither urine nor blood. Same reasoning as the tumour markers: the panel exists on real reports and will grow."
+    },
+    {
+      "id": "ferritin",
+      "category": "iron_metabolism",
+      "reason": "Ferritin and serum iron were filed under vitamins, which they are not. Iron studies are their own panel, and a reader looking for their ferritin under \"Vitamins\" is a reader who cannot find their own result."
+    },
+    {
+      "id": "serum-iron",
+      "category": "iron_metabolism",
+      "reason": "Ferritin and serum iron were filed under vitamins, which they are not. Iron studies are their own panel, and a reader looking for their ferritin under \"Vitamins\" is a reader who cannot find their own result."
+    }
+  ],
+  "resolvedOn": "2026-08-18"
+}

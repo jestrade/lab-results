@@ -15,8 +15,9 @@ import {
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
   where,
-  type Timestamp,
+  Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -24,6 +25,7 @@ import { deleteObject, getDownloadURL, ref } from 'firebase/storage';
 
 import { getDb, getFunctionsClient, getStorageClient } from '@/lib/firebase';
 import { canRetryReport } from '@/domain/retry';
+import { warningText } from '@/domain/reportWarnings';
 import { DEFAULT_LOCALE, type Locale } from '@/domain/locales';
 import { messageFor } from '@/i18n/catalogs';
 import { formatShortDate } from '@/i18n/dates';
@@ -32,12 +34,13 @@ import type { Report, ReportStatus, ReportWarning } from '@/domain/types';
 /**
  * Live list of one user's reports.
  *
- * Ordered by `uploadedAt`, not `reportDate`. The report date is extracted from
- * the PDF and is therefore null until processing finishes — ordering on it
- * would put every new upload in an unpredictable position depending on how
- * Firestore sorts nulls, which is exactly when the user is looking for it.
- * Upload time always exists. Sorting by report date is offered in the UI and
- * done client-side, over a list that is already small by construction.
+ * Ordered by `uploadedAt`, not `reportDate`. Every report uploaded since the
+ * date became a required field on the upload form carries one, but the ones
+ * from before it do not, and ordering on a field that is null for part of the
+ * collection puts those reports wherever Firestore happens to sort nulls.
+ * Upload time always exists, for every report ever stored. Sorting by report
+ * date is offered in the UI and done client-side, over a list that is already
+ * small by construction.
  */
 export function subscribeToReports(
   ownerId: string,
@@ -143,6 +146,28 @@ export async function fetchDuplicateCandidates(
     for (const entry of snapshot?.docs ?? []) byId.set(entry.id, toReport(entry.id, entry.data()));
   }
   return [...byId.values()];
+}
+
+/**
+ * Corrects the date on a report the user already uploaded (KAN-13).
+ *
+ * A direct document write rather than a callable, because this is the one
+ * piece of a report that belongs to the user rather than to the pipeline:
+ * they read it off the paper, and `firestore.rules` lets the owner — and only
+ * the owner — change it.
+ *
+ * The stored results keep the `observedAt` the pipeline gave them. Rewriting
+ * every result and every point of every affected variable series from the
+ * browser is not something the rules allow, and should not be: correcting a
+ * date has to move the whole report's history together or not at all, which
+ * is a server-side job. Reprocessing the report (the retry button) is what
+ * puts the values back on the corrected day, and the copy on the dialog says
+ * so rather than leaving the reader to discover it.
+ */
+export async function updateReportDate(reportId: string, date: Date): Promise<void> {
+  await updateDoc(doc(getDb(), 'reports', reportId), {
+    reportDate: Timestamp.fromDate(date),
+  });
 }
 
 /**
@@ -276,7 +301,10 @@ export function hasResults(report: Report): boolean {
   return report.status === 'processed' || report.status === 'partially_processed';
 }
 
-/** Report date if extraction found one, upload date otherwise. */
+/**
+ * The date to file this report under: the one its owner declared, falling back
+ * to the upload date for reports stored before that field existed.
+ */
 export function effectiveDate(report: Report): Date | null {
   const stamp = report.reportDate ?? report.uploadedAt;
   return stamp?.toDate ? stamp.toDate() : null;
@@ -297,9 +325,12 @@ export function reportSubtitle(
   locale: Locale = DEFAULT_LOCALE,
 ): { text: string; tone: 'muted' | 'danger' } {
   if (report.status === 'failed') {
-    // The warning text comes from the pipeline and is English whatever the
-    // reader chose; our own fallback is not, and is what most failures show.
-    const reason = report.warnings[0]?.message;
+    // Translated from the warning's code where we know the cause, so the line
+    // says *why* — rate limit, safety block, scan with no text — rather than
+    // "it failed". Codes we do not have a translation for keep the pipeline's
+    // own English sentence, which still says more than the fallback.
+    const warning = report.warnings[0];
+    const reason = warning ? warningText(warning, locale) : undefined;
     // The fallback no longer sends the user back to the upload page: when a
     // retry is on offer it costs them nothing, and re-uploading costs an
     // upload operation out of their monthly allowance.
@@ -323,7 +354,7 @@ export function reportSubtitle(
     );
   }
   if (report.status === 'partially_processed' && report.warnings.length > 0) {
-    parts.push(report.warnings[0]!.message);
+    parts.push(warningText(report.warnings[0]!, locale));
   }
   return { text: parts.join(' · '), tone: 'muted' };
 }

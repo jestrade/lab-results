@@ -48,6 +48,7 @@ Firebase SDK.
 | `VITE_FIREBASE_*` | Web app config from the Firebase console |
 | `VITE_USE_FIREBASE_EMULATORS` | `true` routes Auth/Firestore/Storage to the local suite |
 | `VITE_SENTRY_DSN` | Leave blank to disable error reporting entirely |
+| `VITE_GA_MEASUREMENT_ID` | GA4 id. Leave blank to disable analytics entirely |
 | `AI_PROVIDER`, `GEMINI_MODEL` | AI provider and model selection — see [ai.md](ai.md) |
 | `GEMINI_API_KEY` | **Server-only.** Emulator reads it here; deploys read Secret Manager |
 
@@ -96,6 +97,21 @@ the codebase.
    > admin.auth().setCustomUserClaims('<uid>', { role: 'admin' })
    ```
 
+   After that, **/admin/users** grants and removes the claim for everyone else,
+   and disables or re-enables an account through `setUserDisabled`
+   (`functions/src/userAdmin.ts`). Neither is offered on your own row: an admin
+   who removes their own claim or locks their own account cannot undo either,
+   and on a project with one admin that is every administrative operation gone
+   until somebody returns to the shell above.
+
+   Note what a granted claim does *not* do: reach a session that is already
+   open. It arrives on that session's next token refresh — within the hour, or
+   immediately if the user signs in again. Disabling has the mirror-image
+   property, since `firestore.rules` reads the token rather than the Auth
+   record: sign-in and token renewal stop at once, and a token already minted
+   runs out its remaining lifetime. To end access immediately, delete the
+   account.
+
 5. **Billing budget** — required, and not optional. The capacity caps protect
    the free tier, not the bill. Set a $1 budget with alerts at 50/90/100% on
    project `labresults-2a13f`. Full rationale in
@@ -141,6 +157,13 @@ Dependabot (`.github/dependabot.yml`) opens grouped dependency PRs weekly.
 | `VITE_FIREBASE_*` | production build |
 | `VITE_STAGING_FIREBASE_*` | preview build |
 | `VITE_SENTRY_DSN` | production build |
+| `VITE_GA_MEASUREMENT_ID` | production build |
+
+Analytics is production-only: the preview build leaves `VITE_GA_MEASUREMENT_ID`
+unset so staging traffic never reaches the real property. Because Vite inlines
+the value at build time, an id that exists only in a local `.env` produces a
+deployed bundle with analytics switched off — which is not visible anywhere
+except an empty GA property.
 
 The `verify` job builds with dummy values instead — a build must never depend on
 production secrets. Previews point at the staging project, never production, so

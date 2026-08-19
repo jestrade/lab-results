@@ -16,13 +16,33 @@ import { Tag } from '@/components/Tag';
 import { useToast } from '@/components/useToast';
 import { validatePassword } from '@/components/password';
 import { messageFor } from '@/i18n/catalogs';
-import { formatLongDate } from '@/i18n/dates';
+import { formatLongDate, intlTag } from '@/i18n/dates';
 import { Trans } from '@/i18n/Trans';
 import { useI18n } from '@/i18n/useI18n';
 import type { I18nContextValue } from '@/i18n/I18nContext';
 import type { MessageKey } from '@/i18n/messages';
 import type { Locale } from '@/domain/locales';
-import type { BiologicalSex, HealthContext, PregnancyStatus, UserProfile } from '@/domain/types';
+import {
+  BMI_BANDS,
+  MAX_HEIGHT_CM,
+  MAX_WEIGHT_KG,
+  MIN_HEIGHT_CM,
+  MIN_WEIGHT_KG,
+  bmiBand,
+  bodyMassIndex,
+  isPlausibleHeightCm,
+  isPlausibleWeightKg,
+  parseMeasurement,
+} from '@/domain/bmi';
+import type { BmiBand } from '@/domain/bmi';
+import type {
+  BiologicalSex,
+  HealthContext,
+  IdentityDocument,
+  IdentityDocumentType,
+  PregnancyStatus,
+  UserProfile,
+} from '@/domain/types';
 import {
   DELETION_CONFIRMATION,
   changePassword,
@@ -33,21 +53,45 @@ import {
 } from '@/services/account';
 import {
   clearHealthContext,
+  clearIdentityDocument,
   subscribeToProfile,
   updateDisplayName,
   updateHealthContext,
+  updateIdentityDocument,
 } from '@/services/profiles';
 
 /**
  * Profile (KAN-27, KAN-48, KAN-23).
  *
- * Four things live here, in the order someone looks for them: who the account
- * belongs to, the password, the optional context about the person whose results
- * these are, and — last, where nothing is reached by accident — deleting the
- * account. Privacy settings stay on Account settings; consent is a decision,
- * not a detail, and burying it under a form would undo the reason that page
- * exists.
+ * Five things live here, in the order someone looks for them: who the account
+ * belongs to, the identity document that says so, the password, the optional
+ * context about the person whose results these are, and — last, where nothing
+ * is reached by accident — deleting the account. Privacy settings stay on
+ * Account settings; consent is a decision, not a detail, and burying it under
+ * a form would undo the reason that page exists.
  */
+
+const DOCUMENT_TYPE_OPTIONS: { value: IdentityDocumentType; label: MessageKey }[] = [
+  { value: 'cedula', label: 'profile.document.cedula' },
+  { value: 'registro_civil', label: 'profile.document.registroCivil' },
+  { value: 'pasaporte', label: 'profile.document.pasaporte' },
+  { value: 'cedula_extranjeria', label: 'profile.document.cedulaExtranjeria' },
+];
+
+/**
+ * The published table, shown under the figure.
+ *
+ * Rendered rather than summarised, because a coloured light with no scale
+ * beside it is a verdict the reader cannot check. Seeing 26.1 sit inside
+ * "25.0 – 29.9" is the difference between being told something and being shown
+ * where the number landed.
+ */
+const BMI_SCALE: { band: BmiBand; range: MessageKey }[] = [
+  { band: 'underweight', range: 'profile.bmiScale.underweight' },
+  { band: 'normal', range: 'profile.bmiScale.normal' },
+  { band: 'overweight', range: 'profile.bmiScale.overweight' },
+  { band: 'obese', range: 'profile.bmiScale.obese' },
+];
 
 const SEX_OPTIONS: { value: BiologicalSex; label: MessageKey }[] = [
   { value: 'female', label: 'profile.sex.female' },
@@ -70,16 +114,57 @@ const DELETED_ITEM_KEYS: MessageKey[] = [
   'profile.deleted.account',
 ];
 
-type ContextDraft = Omit<HealthContext, 'updatedAt'>;
+type DocumentDraft = Omit<IdentityDocument, 'updatedAt'>;
+
+const EMPTY_DOCUMENT: DocumentDraft = {
+  type: null,
+  number: null,
+  placeOfIssue: null,
+};
+
+function documentDraftFrom(profile: UserProfile | null): DocumentDraft {
+  const document = profile?.identityDocument;
+  if (!document) return EMPTY_DOCUMENT;
+  return {
+    type: document.type ?? null,
+    number: document.number ?? null,
+    placeOfIssue: document.placeOfIssue ?? null,
+  };
+}
+
+/** What is written to the profile. */
+type StoredContext = Omit<HealthContext, 'updatedAt'>;
+
+/**
+ * What the form holds while it is being filled in.
+ *
+ * The same record, except that the two measurements are the text the reader is
+ * typing rather than numbers. Parsing on every keystroke would rewrite `70.`
+ * to `70` the instant the decimal point is typed, making a fractional weight
+ * impossible to enter — the same failure the `normalise` note below describes
+ * for spaces. They become numbers once, at save.
+ */
+type ContextDraft = Omit<StoredContext, 'weightKg' | 'heightCm'> & {
+  weightKg: string;
+  heightCm: string;
+};
 
 const EMPTY_CONTEXT: ContextDraft = {
   dateOfBirth: null,
   biologicalSex: null,
   pregnancyStatus: null,
+  weightKg: '',
+  heightCm: '',
   medications: null,
   conditions: null,
+  familyConditions: null,
   ongoingSymptoms: null,
 };
+
+/** A stored measurement as form text. Absent stays blank, never `0`. */
+function measurementText(value: number | null | undefined): string {
+  return value === null || value === undefined ? '' : String(value);
+}
 
 function draftFrom(profile: UserProfile | null): ContextDraft {
   const context = profile?.healthContext;
@@ -88,8 +173,11 @@ function draftFrom(profile: UserProfile | null): ContextDraft {
     dateOfBirth: context.dateOfBirth ?? null,
     biologicalSex: context.biologicalSex ?? null,
     pregnancyStatus: context.pregnancyStatus ?? null,
+    weightKg: measurementText(context.weightKg),
+    heightCm: measurementText(context.heightCm),
     medications: context.medications ?? null,
     conditions: context.conditions ?? null,
+    familyConditions: context.familyConditions ?? null,
     ongoingSymptoms: context.ongoingSymptoms ?? null,
   };
 }
@@ -163,6 +251,13 @@ export function Profile() {
             }}
           />
 
+          <IdentityDocumentSection
+            profile={profile}
+            onSave={(draft) => updateIdentityDocument(user.uid, draft)}
+            onClear={() => clearIdentityDocument(user.uid)}
+            t={t}
+          />
+
           <PasswordSection canChange={hasPasswordSignIn(user)} user={user} t={t} locale={locale} />
 
           <HealthContextSection
@@ -170,6 +265,7 @@ export function Profile() {
             onSave={(draft) => updateHealthContext(user.uid, draft)}
             onClear={() => clearHealthContext(user.uid)}
             t={t}
+            locale={locale}
           />
 
           <DataSection user={user} t={t} locale={locale} />
@@ -305,6 +401,218 @@ function IdentitySection({
           </div>
         ) : null}
       </div>
+    </section>
+  );
+}
+
+/**
+ * The band beside the figure — the traffic light, with its name attached.
+ *
+ * Icon and label always, colour on top. Remove every colour from this page and
+ * the reader still sees "Obesity" next to a warning glyph, which is the rule
+ * `domain/status.ts` holds every other status in this app to (spec §60).
+ */
+function BmiBandPill({ band, t }: { band: BmiBand; t: I18nContextValue['t'] }) {
+  const entry = BMI_BANDS[band];
+  return (
+    <span className="bmi-pill" data-signal={entry.signal}>
+      <Icon name={entry.icon} size={13} />
+      {t(entry.labelKey)}
+    </span>
+  );
+}
+
+/**
+ * The identity document on the profile.
+ *
+ * Its own section rather than three more fields under "Your details", because
+ * the write is its own: the display name goes to Firestore *and* to the auth
+ * record, and folding a document number into that form would mean one Save
+ * button standing for two unrelated writes, either of which can fail alone.
+ *
+ * Kept above the health context deliberately. This says who the account holder
+ * is; that says what is true about their body. They are answered by different
+ * evidence — a card in a wallet, and a memory of a prescription — and reading
+ * one heading straight into the other invites the two to be filled in as one.
+ */
+function IdentityDocumentSection({
+  profile,
+  onSave,
+  onClear,
+  t,
+}: {
+  profile: UserProfile | null;
+  onSave: (draft: DocumentDraft) => Promise<void>;
+  onClear: () => Promise<void>;
+  t: I18nContextValue['t'];
+}) {
+  const [draft, setDraft] = useState<DocumentDraft>(() => documentDraftFrom(profile));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [numberError, setNumberError] = useState<string | null>(null);
+  const [confirmingClear, setConfirmingClear] = useState(false);
+
+  const hasAnything = Object.values(documentDraftFrom(profile)).some((value) => value !== null);
+
+  function set<K extends keyof DocumentDraft>(key: K, value: DocumentDraft[K]) {
+    setDraft((current) => ({ ...current, [key]: value }));
+    setSaved(false);
+    setNumberError(null);
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+
+    const next: DocumentDraft = {
+      type: draft.type,
+      number: normalise(draft.number),
+      placeOfIssue: normalise(draft.placeOfIssue),
+    };
+
+    // A number with no type is a string of digits nobody can act on — the same
+    // sequence means a different person depending on which document it came
+    // off. Every other combination is allowed to be incomplete.
+    if (next.number !== null && next.type === null) {
+      setNumberError(t('profile.documentNumberNeedsType'));
+      return;
+    }
+
+    setError(null);
+    setNumberError(null);
+    setSaving(true);
+    try {
+      await onSave(next);
+      setDraft(next);
+      setSaved(true);
+    } catch {
+      setError(t('profile.saveFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClear() {
+    setSaving(true);
+    try {
+      await onClear();
+      setDraft(EMPTY_DOCUMENT);
+      setConfirmingClear(false);
+      setSaved(false);
+    } catch {
+      setError(t('profile.removeFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="settings-section" aria-labelledby="profile-document">
+      <div className="settings-head">
+        <h2 id="profile-document">{t('profile.documentHeading')}</h2>
+        <Tag tone="neutral">{t('profile.optional')}</Tag>
+      </div>
+
+      <p className="muted">{t('profile.documentIntro')}</p>
+
+      {error ? (
+        <Alert tone="danger" live>
+          {error}
+        </Alert>
+      ) : null}
+
+      <form onSubmit={(event) => void handleSubmit(event)} className="profile-form" noValidate>
+        <div className="profile-grid">
+          <Field label={t('profile.documentType')}>
+            {(props) => (
+              <select
+                {...props}
+                className="input"
+                value={draft.type ?? ''}
+                onChange={(event) =>
+                  set('type', (event.target.value || null) as IdentityDocumentType | null)
+                }
+              >
+                <option value="">{t('profile.documentTypeUnset')}</option>
+                {DOCUMENT_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.label)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+
+          <Field
+            label={t('profile.documentNumber')}
+            hint={t('profile.documentNumberHint')}
+            error={numberError}
+          >
+            {(props) => (
+              <input
+                {...props}
+                className="input"
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                value={draft.number ?? ''}
+                onChange={(event) => set('number', event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+
+        <Field label={t('profile.documentPlace')} hint={t('profile.documentPlaceHint')}>
+          {(props) => (
+            <input
+              {...props}
+              className="input"
+              type="text"
+              autoComplete="off"
+              value={draft.placeOfIssue ?? ''}
+              onChange={(event) => set('placeOfIssue', event.target.value)}
+            />
+          )}
+        </Field>
+
+        <div className="profile-actions">
+          <Button type="submit" variant="primary" loading={saving} loadingLabel={t('common.saving')}>
+            {t('profile.documentSave')}
+          </Button>
+          {hasAnything ? (
+            <Button variant="secondary" onClick={() => setConfirmingClear(true)} disabled={saving}>
+              {t('profile.documentRemoveAll')}
+            </Button>
+          ) : null}
+          {/* Announced, not just coloured (KAN-53). */}
+          <span role="status" className="muted" style={{ fontSize: 13 }}>
+            {saved ? t('profile.documentSaved') : ''}
+          </span>
+        </div>
+      </form>
+
+      <Modal
+        open={confirmingClear}
+        onClose={() => (saving ? undefined : setConfirmingClear(false))}
+        title={t('profile.documentRemoveTitle')}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmingClear(false)} disabled={saving}>
+              {t('settings.keepIt')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => void handleClear()}
+              loading={saving}
+              loadingLabel={t('profile.removing')}
+            >
+              {t('profile.removeIt')}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ marginBottom: 0 }}>{t('profile.documentRemoveBody')}</p>
+      </Modal>
     </section>
   );
 }
@@ -458,35 +766,79 @@ function HealthContextSection({
   onSave,
   onClear,
   t,
+  locale,
 }: {
   profile: UserProfile | null;
-  onSave: (draft: ContextDraft) => Promise<void>;
+  onSave: (draft: StoredContext) => Promise<void>;
   onClear: () => Promise<void>;
   t: I18nContextValue['t'];
+  locale: Locale;
 }) {
   const [draft, setDraft] = useState<ContextDraft>(() => draftFrom(profile));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [weightError, setWeightError] = useState<string | null>(null);
+  const [heightError, setHeightError] = useState<string | null>(null);
   const [confirmingClear, setConfirmingClear] = useState(false);
 
-  const hasAnything = Object.values(draftFrom(profile)).some((value) => value !== null);
+  // Blank measurements read as `''` rather than `null`, so an emptiness test
+  // has to know about both — otherwise every profile looks like it has
+  // something stored and the removal button never goes away.
+  const hasAnything = Object.values(draftFrom(profile)).some(
+    (value) => value !== null && value !== '',
+  );
+
+  // Derived on every render rather than stored: the index is nothing but these
+  // two numbers, and a copy of it could disagree with them.
+  const weight = parseMeasurement(draft.weightKg);
+  const height = parseMeasurement(draft.heightCm);
+  const bmi = bodyMassIndex(weight, height);
+  const band = bmiBand(bmi);
+  // Localised, so a Spanish reader sees 22,9 rather than 22.9 — the separator
+  // is not decoration, it is which number is being shown.
+  const bmiText =
+    bmi === null
+      ? '—'
+      : bmi.toLocaleString(intlTag(locale), {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
 
   function set<K extends keyof ContextDraft>(key: K, value: ContextDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
     setSaved(false);
+    if (key === 'weightKg') setWeightError(null);
+    if (key === 'heightCm') setHeightError(null);
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+
+    // Checked at save, and only then: complaining about "17" while the reader
+    // is still on their way to "170" would mark the field invalid on the way
+    // to a correct answer.
+    const badWeight = weight !== null && !isPlausibleWeightKg(weight);
+    const badHeight = height !== null && !isPlausibleHeightCm(height);
+    setWeightError(
+      badWeight ? t('profile.weightInvalid', { min: MIN_WEIGHT_KG, max: MAX_WEIGHT_KG }) : null,
+    );
+    setHeightError(
+      badHeight ? t('profile.heightInvalid', { min: MIN_HEIGHT_CM, max: MAX_HEIGHT_CM }) : null,
+    );
+    if (badWeight || badHeight) return;
+
     setError(null);
     setSaving(true);
     try {
       await onSave({
         ...draft,
         dateOfBirth: normalise(draft.dateOfBirth),
+        weightKg: weight,
+        heightCm: height,
         medications: normalise(draft.medications),
         conditions: normalise(draft.conditions),
+        familyConditions: normalise(draft.familyConditions),
         ongoingSymptoms: normalise(draft.ongoingSymptoms),
       });
       setSaved(true);
@@ -594,6 +946,80 @@ function HealthContextSection({
           )}
         </Field>
 
+        <div className="profile-grid">
+          <Field label={t('profile.weight')} error={weightError}>
+            {(props) => (
+              <input
+                {...props}
+                className="input"
+                // `text` with a numeric keypad, not `number`: a number input
+                // rejects the comma a Spanish keyboard produces for a decimal,
+                // and silently drops what it cannot parse rather than letting
+                // us say what was wrong with it.
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={draft.weightKg}
+                onChange={(event) => set('weightKg', event.target.value)}
+              />
+            )}
+          </Field>
+
+          <Field label={t('profile.height')} error={heightError}>
+            {(props) => (
+              <input
+                {...props}
+                className="input"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={draft.heightCm}
+                onChange={(event) => set('heightCm', event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+
+        {/* Always on screen, empty or not: a figure that appears and disappears
+            as the fields are filled reads as the app losing it. Announced,
+            because it changes without being asked for and a reader who cannot
+            see it fill in would get nothing otherwise (KAN-53). */}
+        <div className="profile-bmi" role="status">
+          <div className="profile-bmi-figure">
+            <span className="kicker">{t('profile.bmi')}</span>
+            <span className="profile-bmi-value">{bmiText}</span>
+            {band ? <BmiBandPill band={band} t={t} /> : null}
+          </div>
+          <p className="muted">{bmi === null ? t('profile.bmiPending') : t('profile.bmiNote')}</p>
+
+          <ul className="bmi-scale">
+            {BMI_SCALE.map((row) => (
+              <li
+                key={row.band}
+                className="bmi-scale-row"
+                data-signal={BMI_BANDS[row.band].signal}
+                // Marked in the markup, not only in colour: the row the
+                // reader's own number falls in has to be findable without it.
+                data-current={row.band === band ? 'true' : undefined}
+              >
+                <span className="bmi-scale-dot" aria-hidden="true" />
+                <span className="bmi-scale-band">{t(BMI_BANDS[row.band].labelKey)}</span>
+                <span className="bmi-scale-range">{t(row.range)}</span>
+                {row.band === band ? (
+                  <span className="sr-only">{t('profile.bmiBandCurrent')}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+
+          {/* Not a footnote. The four bands are an adult scale, and a parent
+              reading a child's index against them is reading the wrong chart. */}
+          <p className="bmi-adults">
+            <Icon name="info" size={13} />
+            <span>{t('profile.bmiAdultsOnly')}</span>
+          </p>
+        </div>
+
         <Field label={t('profile.medications')} hint={t('profile.medicationsHint')}>
           {(props) => (
             <textarea
@@ -614,6 +1040,18 @@ function HealthContextSection({
               rows={3}
               value={draft.conditions ?? ''}
               onChange={(event) => set('conditions', event.target.value)}
+            />
+          )}
+        </Field>
+
+        <Field label={t('profile.familyConditions')} hint={t('profile.familyConditionsHint')}>
+          {(props) => (
+            <textarea
+              {...props}
+              className="input"
+              rows={3}
+              value={draft.familyConditions ?? ''}
+              onChange={(event) => set('familyConditions', event.target.value)}
             />
           )}
         </Field>

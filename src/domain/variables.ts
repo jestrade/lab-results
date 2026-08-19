@@ -9,7 +9,8 @@
 
 import { messageFor } from '@/i18n/catalogs';
 import type { MessageKey } from '@/i18n/messages';
-import { DEFAULT_LOCALE, translate, type Locale, type Translated } from './locales';
+import { NO_CATEGORIES, type CategoryCatalog } from './categories';
+import { DEFAULT_LOCALE, translate, type Locale } from './locales';
 import { present, rangeSourceLabel, TREND } from './status';
 import type {
   LabVariable,
@@ -18,41 +19,6 @@ import type {
   VariableCategory,
   VariableSeries,
 } from './types';
-
-/**
- * The group headings on the variables grid, per locale.
- *
- * These are the panel names a laboratory prints — "Biometría hemática" is what
- * a Mexican report calls a complete blood count, not a literal translation of
- * the English phrase. Translating the words rather than naming the panel would
- * produce headings no Spanish-speaking reader recognises from their own report.
- */
-export const CATEGORY_NAME: Record<VariableCategory, Translated> = {
-  complete_blood_count: { en: 'Complete blood count', es: 'Biometría hemática' },
-  lipid_profile: { en: 'Lipid profile', es: 'Perfil de lípidos' },
-  glucose_metabolism: { en: 'Glucose metabolism', es: 'Metabolismo de la glucosa' },
-  liver_function: { en: 'Liver function', es: 'Función hepática' },
-  kidney_function: { en: 'Kidney function', es: 'Función renal' },
-  thyroid: { en: 'Thyroid', es: 'Tiroides' },
-  electrolytes: { en: 'Electrolytes', es: 'Electrolitos' },
-  vitamins: { en: 'Vitamins', es: 'Vitaminas' },
-  hormones: { en: 'Hormones', es: 'Hormonas' },
-  inflammation: { en: 'Inflammation', es: 'Inflamación' },
-  urinalysis: { en: 'Urinalysis', es: 'Examen general de orina' },
-  other: { en: 'Other', es: 'Otros' },
-};
-
-export function categoryLabel(category: VariableCategory, locale: Locale): string {
-  return translate(CATEGORY_NAME[category], locale);
-}
-
-/** English labels, for contexts with no locale to hand (tests, logs). */
-export const CATEGORY_LABEL: Record<VariableCategory, string> = Object.fromEntries(
-  (Object.keys(CATEGORY_NAME) as VariableCategory[]).map((category) => [
-    category,
-    CATEGORY_NAME[category][DEFAULT_LOCALE],
-  ]),
-) as Record<VariableCategory, string>;
 
 /** The name to show for a series, in the reader's language. */
 export function seriesName(series: VariableSeries, locale: Locale): string {
@@ -103,26 +69,6 @@ export function withCatalog(
     };
   });
 }
-
-/**
- * Display order for category groups. Fixed rather than alphabetical so the
- * grid does not reshuffle as a user's panels change — a variable should stay
- * where they last saw it.
- */
-export const CATEGORY_ORDER: readonly VariableCategory[] = [
-  'complete_blood_count',
-  'lipid_profile',
-  'glucose_metabolism',
-  'liver_function',
-  'kidney_function',
-  'thyroid',
-  'electrolytes',
-  'vitamins',
-  'hormones',
-  'inflammation',
-  'urinalysis',
-  'other',
-];
 
 /**
  * Points below which no direction is reported.
@@ -399,6 +345,18 @@ export interface CategoryGroup {
  */
 export type VariableSort = 'category' | 'recent' | 'flagged';
 
+/**
+ * The orderings offered, defined once — the same shape as `PERIODS`, and here
+ * for the same reason: the chips render from this list and `readFilters`
+ * validates against it, so a new ordering cannot appear in one without the
+ * other learning to accept it.
+ */
+export const SORTS: { id: VariableSort; label: MessageKey }[] = [
+  { id: 'category', label: 'variables.sort.category' },
+  { id: 'recent', label: 'variables.sort.recent' },
+  { id: 'flagged', label: 'variables.sort.flagged' },
+];
+
 /** Worst first. Ties inside a rank fall through to the next comparison. */
 const STATUS_RANK: Record<ResultStatus, number> = {
   critical: 0,
@@ -454,6 +412,7 @@ export function sortSeries(
 
 export function groupByCategory(
   all: VariableSeries[],
+  categories: CategoryCatalog = NO_CATEGORIES,
   locale: Locale = DEFAULT_LOCALE,
 ): CategoryGroup[] {
   const buckets = new Map<VariableCategory, VariableSeries[]>();
@@ -465,12 +424,135 @@ export function groupByCategory(
 
   const collator = new Intl.Collator(locale);
 
-  return CATEGORY_ORDER.filter((category) => buckets.has(category)).map((category) => ({
+  // Driven by the categories the reader actually has results in, ordered by
+  // the catalog — not by the catalog filtered down to those. The difference
+  // shows when the catalog has not loaded, or when a category document has
+  // been deleted out from under a series: iterating the catalog would drop
+  // those cards off the grid entirely, and they are still the reader's own
+  // results. `sort` keeps them, at the end.
+  return categories.sort(buckets.keys(), locale).map((category) => ({
     category,
-    label: categoryLabel(category, locale),
+    label: categories.label(category, locale),
     series: buckets
       .get(category)!
       .slice()
       .sort((a, b) => collator.compare(seriesName(a, locale), seriesName(b, locale))),
   }));
+}
+
+/** Everything the home grid's controls decide about what is on screen. */
+export interface VariableFilters {
+  query: string;
+  category: VariableCategory | 'all';
+  outOfRangeOnly: boolean;
+  sort: VariableSort;
+  period: Period;
+}
+
+/**
+ * What the grid shows before anyone touches a control.
+ *
+ * `all` for both the category and the period: a grid that opened narrowed
+ * would be hiding results before the reader knew a filter existed. `category`
+ * for the sort because it is the layout of the report they are holding.
+ */
+export const DEFAULT_FILTERS: VariableFilters = {
+  query: '',
+  category: 'all',
+  outOfRangeOnly: false,
+  sort: 'category',
+  period: 'all',
+};
+
+/**
+ * The query-string names. Short because this ends up in a URL people copy into
+ * a message, and stable because links already sent stop working if they change.
+ */
+const PARAM = {
+  query: 'q',
+  category: 'category',
+  outOfRangeOnly: 'flagged',
+  sort: 'sort',
+  period: 'period',
+} as const;
+
+/**
+ * The filters a URL asks for, with anything unrecognised falling back to its
+ * default.
+ *
+ * Every value here arrives from outside the application — a hand-edited
+ * address bar, a link from a build where a sort had a different name, a URL
+ * truncated by whatever pasted it. None of those should be an error the reader
+ * sees. Falling back per field rather than per URL means `?period=zzz&q=iron`
+ * still honours the search: one unreadable field is not a reason to discard
+ * the ones next to it.
+ *
+ * The category is the one field with no list to check against. It used to be
+ * validated against a compiled-in union; now the ids live in Firestore and are
+ * not known on the first render, and validating against the categories this
+ * account has results in was never an option either — those arrive with the
+ * subscription, so a legitimate `?category=thyroid` would be dropped before
+ * the data it refers to had loaded.
+ *
+ * So any non-empty id is taken at face value. An id nothing matches shows an
+ * empty grid with its "showing 0 of N" line and a control to clear the filter,
+ * which is a readable state; silently widening it to `all` would show the
+ * reader a full grid and no sign that the link they followed asked for
+ * something else.
+ */
+export function readFilters(params: URLSearchParams): VariableFilters {
+  const category = params.get(PARAM.category);
+  const sort = params.get(PARAM.sort);
+  const period = params.get(PARAM.period);
+
+  return {
+    query: params.get(PARAM.query) ?? DEFAULT_FILTERS.query,
+    category: category?.trim() ? category.trim() : DEFAULT_FILTERS.category,
+    // Present and "1" — not merely present. `?flagged=0` reads as off to
+    // anyone who writes it, and honouring presence alone would turn it on.
+    outOfRangeOnly: params.get(PARAM.outOfRangeOnly) === '1',
+    sort: SORTS.some((option) => option.id === sort)
+      ? (sort as VariableSort)
+      : DEFAULT_FILTERS.sort,
+    period: PERIODS.some((option) => option.id === period)
+      ? (period as Period)
+      : DEFAULT_FILTERS.period,
+  };
+}
+
+/**
+ * The query string for a set of filters.
+ *
+ * Defaults are omitted rather than written out, so an untouched grid has a
+ * bare `/variables` in the address bar. A URL carrying `?q=&category=all&
+ * sort=category` for a page nobody has filtered is noise in the one place the
+ * user is most likely to read and share.
+ *
+ * A whitespace-only search is dropped for the same reason: it filters nothing,
+ * so it should not be in a link.
+ */
+export function filterParams(filters: VariableFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.query.trim() !== '') params.set(PARAM.query, filters.query);
+  if (filters.category !== 'all') params.set(PARAM.category, filters.category);
+  if (filters.outOfRangeOnly) params.set(PARAM.outOfRangeOnly, '1');
+  if (filters.sort !== DEFAULT_FILTERS.sort) params.set(PARAM.sort, filters.sort);
+  if (filters.period !== DEFAULT_FILTERS.period) params.set(PARAM.period, filters.period);
+  return params;
+}
+
+/**
+ * Whether anything is being hidden — the cue for the "showing N of M" line.
+ *
+ * The sort is deliberately not counted. It reorders the grid and removes
+ * nothing from it, so a line explaining an absence would be explaining one
+ * that is not there.
+ */
+export function hasActiveFilters(filters: VariableFilters): boolean {
+  return (
+    filters.query.trim() !== '' ||
+    filters.category !== 'all' ||
+    filters.outOfRangeOnly ||
+    filters.period !== 'all'
+  );
 }

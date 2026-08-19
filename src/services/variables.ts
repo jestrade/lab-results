@@ -21,6 +21,11 @@ import {
 import { httpsCallable } from 'firebase/functions';
 
 import { getDb, getFunctionsClient } from '@/lib/firebase';
+import {
+  categoryCatalog,
+  readCategory,
+  type CategoryCatalog,
+} from '@/domain/categories';
 import { readTranslated, readTranslatedOptional } from '@/domain/locales';
 import type { LabVariable, VariableOrigin } from '@/domain/types';
 import type {
@@ -69,6 +74,33 @@ export function fetchVariableCatalog(): Promise<Map<string, LabVariable>> {
 /** Test seam, and the way an admin edit becomes visible without a reload. */
 export function clearVariableCatalogCache(): void {
   catalogCache = null;
+  categoriesCache = null;
+}
+
+/**
+ * The category catalog (KAN-8), on exactly the same terms.
+ *
+ * Eighteen-odd documents that change when an admin adds a panel, read by every
+ * page that draws a group heading or a filter chip. Fetched rather than
+ * subscribed, and cached for the session, for the reasons above.
+ *
+ * A failed read is not cached and is not fatal. `NO_CATEGORIES` groups by raw
+ * id and labels each heading from the id itself, so a reader whose network
+ * dropped one request sees a tidy-ish grid rather than an empty one.
+ */
+let categoriesCache: Promise<CategoryCatalog> | null = null;
+
+export function fetchVariableCategories(): Promise<CategoryCatalog> {
+  categoriesCache ??= getDocs(collection(getDb(), 'variableCategories'))
+    .then((snapshot) =>
+      categoryCatalog(snapshot.docs.map((doc) => readCategory(doc.id, doc.data()))),
+    )
+    .catch((error) => {
+      categoriesCache = null;
+      throw error;
+    });
+
+  return categoriesCache;
 }
 
 function toVariable(id: string, data: Record<string, unknown>): LabVariable {

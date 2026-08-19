@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
-import { ButtonLink } from '@/components/Button';
+import { NavButton } from '@/components/NavButton';
 import { LanguageSwitcher } from '@/components/LanguagePicker';
 import { useT } from '@/i18n/useI18n';
 import type { MessageKey } from '@/i18n/messages';
@@ -40,12 +40,12 @@ export function PublicLayout() {
           </div>
           <div className="spacer" />
           <LanguageSwitcher />
-          <ButtonLink to="/sign-in" variant="ghost">
+          <NavButton to="/sign-in" variant="ghost">
             {t('common.signIn')}
-          </ButtonLink>
-          <ButtonLink to="/register" variant="primary">
+          </NavButton>
+          <NavButton to="/register" variant="primary">
             {t('common.createAccount')}
-          </ButtonLink>
+          </NavButton>
         </nav>
       </header>
 

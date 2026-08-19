@@ -5,11 +5,26 @@
  * header cell — the pattern assistive tech actually understands, rather than a
  * click handler on the cell with a caret glyph. The table keeps its semantics:
  * real `<table>`, real `<caption>`, real headers.
+ *
+ * ── Why paging lives in here rather than in the caller ───────────────────
+ *
+ * Because this component owns the sort, and the two are ordered: the page has
+ * to be cut from the sorted list, not sorted after it is cut. A caller that
+ * sliced its own rows and handed over twenty-five of them would get a table
+ * that re-sorts only the current page — every column header quietly becomes
+ * "sort these twenty-five", which looks like it works and is wrong from the
+ * second page onwards.
+ *
+ * The page number itself still belongs to the caller, the same way the
+ * selection does: it lives in the URL on both admin screens, and has to
+ * survive this component re-rendering.
  */
 
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { Icon } from './Icon';
+import { Pagination } from './Pagination';
+import { pageCount as countPages, pageSlice, PAGE_SIZE } from '@/domain/pagination';
 
 export interface Column<Row> {
   key: string;
@@ -52,6 +67,23 @@ export interface DataTableProps<Row> {
   captionVisible?: boolean;
   /** Omit for a table whose rows are not selectable. */
   selection?: Selection<Row>;
+  /** Omit to render every row at once. */
+  pagination?: TablePagination;
+}
+
+/**
+ * Paging, when the caller wants it.
+ *
+ * The page is owned by the caller for the same reason the selection is: on
+ * both admin screens it lives in the query string, so that a refresh, a back
+ * button and a shared link all land on the rows the reader was looking at.
+ */
+export interface TablePagination {
+  page: number;
+  onPageChange: (page: number) => void;
+  /** Names the list for assistive tech — "Catalog pages", "Account pages". */
+  label: string;
+  pageSize?: number;
 }
 
 export type SortDirection = 'ascending' | 'descending';
@@ -65,6 +97,7 @@ export function DataTable<Row>({
   initialSort,
   captionVisible = false,
   selection,
+  pagination,
 }: DataTableProps<Row>) {
   const [sort, setSort] = useState<{ key: string; direction: SortDirection } | null>(
     initialSort ?? null,
@@ -94,12 +127,19 @@ export function DataTable<Row>({
 
   if (rows.length === 0 && empty) return <>{empty}</>;
 
-  const keys = sorted.map(rowKey);
+  // After the sort, never before it — see the header note.
+  const size = pagination?.pageSize ?? PAGE_SIZE;
+  const visible = pagination ? pageSlice(sorted, pagination.page, size) : sorted;
+
+  // "All" means the rows in front of the reader. Ticking the header box on
+  // page two must not silently select the two hundred rows they cannot see.
+  const keys = visible.map(rowKey);
   const selectedHere = keys.filter((key) => selection?.selected.has(key));
   const allSelected = keys.length > 0 && selectedHere.length === keys.length;
 
   return (
-    <div className="table-scroll">
+    <>
+      <div className="table-scroll">
       <table className="table">
         <caption className={captionVisible ? undefined : 'sr-only'}>{caption}</caption>
         <thead>
@@ -169,7 +209,7 @@ export function DataTable<Row>({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row) => {
+          {visible.map((row) => {
             const key = rowKey(row);
             const isSelected = selection?.selected.has(key) ?? false;
             return (
@@ -195,6 +235,18 @@ export function DataTable<Row>({
           })}
         </tbody>
       </table>
-    </div>
+      </div>
+
+      {pagination ? (
+        <Pagination
+          page={pagination.page}
+          pageCount={countPages(sorted.length, size)}
+          total={sorted.length}
+          pageSize={size}
+          onPageChange={pagination.onPageChange}
+          label={pagination.label}
+        />
+      ) : null}
+    </>
   );
 }

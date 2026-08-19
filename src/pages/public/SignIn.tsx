@@ -36,7 +36,11 @@ export function SignIn() {
   const [googlePending, setGooglePending] = useState(false);
 
   // Guards stash the page the user was trying to reach; send them back there.
-  const destination = (location.state as LocationState | null)?.from?.pathname ?? '/variables';
+  // Without one, `/dashboard` decides: the role lives in a claim inside the ID
+  // token, and `onIdTokenChanged` has not resolved it yet at the moment this
+  // form's `signIn` call returns — so choosing here would send every admin to
+  // the reader's home page. See `LandingRedirect`.
+  const destination = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard';
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

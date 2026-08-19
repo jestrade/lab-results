@@ -36,6 +36,7 @@ export const es: Messages = {
     'Ha ocurrido un error inesperado. Normalmente basta con recargar la página.',
   'common.reload': 'Recargar la página',
   'common.uploadReport': 'Subir un informe',
+  'common.actions': 'Acciones',
 
   // ── Language ──────────────────────────────────────────────────────────
   'lang.heading': 'Idioma',
@@ -61,7 +62,7 @@ export const es: Messages = {
 
   // ── Navigation ────────────────────────────────────────────────────────
   'nav.upload': 'Subir reporte',
-  'nav.reports': 'Reportes',
+  'nav.files': 'Archivos',
   'nav.variables': 'Inicio',
   'nav.account': 'Cuenta',
   'nav.profile': 'Perfil',
@@ -69,6 +70,7 @@ export const es: Messages = {
   'nav.administration': 'Administración',
   'nav.adminOverview': 'Resumen de administración',
   'nav.adminUsers': 'Usuarios',
+  'nav.adminVariables': 'Catálogo de variables',
   'nav.adminJobs': 'Trabajos de procesamiento',
   'nav.main': 'Principal',
   'nav.navigation': 'Navegación',
@@ -98,7 +100,8 @@ export const es: Messages = {
   'dropzone.release': 'Suelta el archivo para subirlo',
   'dropzone.unavailable': 'La subida todavía no está disponible',
   'dropzone.prompt': 'Arrastra aquí los PDF de tu laboratorio',
-  'dropzone.hint': 'o elige archivos de tu equipo: solo PDF, hasta 25 MB cada uno',
+  'dropzone.hint':
+    'o elige archivos de tu equipo: solo PDF, hasta 25 MB cada uno. Le pondrás fecha a cada uno antes de enviarlo.',
   'password.show': 'Mostrar la contraseña',
   'password.hide': 'Ocultar la contraseña',
   'google.waiting': 'Esperando a Google…',
@@ -178,18 +181,10 @@ export const es: Messages = {
   'sparkline.steady':
     '{name} apenas cambió, de {from} a {to}, a lo largo de {count} mediciones.',
 
-  // ── Not found / coming soon ───────────────────────────────────────────
+  // ── Not found ─────────────────────────────────────────────────────────
   'notFound.title': 'Esa página no existe',
   'notFound.body': 'Puede que el enlace esté anticuado o que la página haya cambiado de sitio.',
   'notFound.back': 'Volver al inicio',
-  'comingSoon.title': 'Todavía sin construir',
-  'comingSoon.body': '{description} Esta pantalla la construye {ticket}.',
-  'comingSoon.adminOverviewBody':
-    'Métricas de todo el sistema: usuarios, reportes, fallos y tiempo medio de procesamiento.',
-  'comingSoon.adminUsersBody':
-    'Busca cuentas, revisa su actividad y desactívalas o vuelve a activarlas.',
-  'comingSoon.adminJobsBody':
-    'Trabajos de extracción en curso y fallidos, con sus duraciones y controles de reintento.',
 
   // ── Account settings ──────────────────────────────────────────────────
   'settings.aiHeading': 'Procesamiento con IA',
@@ -245,6 +240,17 @@ export const es: Messages = {
   'reports.col.outOfRange': 'Fuera de intervalo',
   'reports.col.actions': 'Acciones',
   'reports.uploadDateNote': 'fecha de subida',
+  'reports.changeDateLabel': 'Cambiar la fecha del reporte de {file}',
+  'reports.editDateTitle': 'Cambiar la fecha del reporte',
+  'reports.editDateBody':
+    'Indica la fecha en que se realizaron los exámenes de {file}: la fecha impresa en el propio reporte.',
+  'reports.editDateField': 'Fecha en que se realizaron estos exámenes',
+  'reports.editDateSave': 'Guardar la fecha',
+  'reports.editDateReprocessNote':
+    'Los resultados ya extraídos de este reporte conservan el día bajo el que se archivaron hasta que el reporte se procese de nuevo. Usa Reintentar en esta fila para moverlos a la fecha corregida.',
+  'reports.dateRequired': 'Elige la fecha en que se realizaron estos exámenes.',
+  'reports.dateSaved': 'Fecha del reporte actualizada.',
+  'reports.dateSaveFailed': 'No se ha podido guardar esa fecha. Inténtalo de nuevo.',
   'reports.retry': 'Reintentar',
   'reports.retrying': 'Reintentando…',
   'reports.retryLabel': 'Reintentar el procesamiento de {file}',
@@ -252,6 +258,10 @@ export const es: Messages = {
   'reports.viewDetailsLabel': 'Ver el detalle de {file}',
   'reports.originalPdf': 'PDF original',
   'reports.originalPdfLabel': 'Abrir el PDF original de {file}',
+  'reports.pdfLoading': 'Abriendo el PDF…',
+  'reports.pdfFrameTitle': 'PDF original de {file}',
+  'reports.openInNewTab': 'Abrir en una pestaña nueva',
+  'reports.openInNewTabLabel': 'Abrir {file} en una pestaña nueva del navegador',
   'reports.delete': 'Eliminar',
   'reports.deleteLabel': 'Eliminar {file}',
   'reports.caption': 'Tus reportes de laboratorio',
@@ -296,6 +306,38 @@ export const es: Messages = {
   'reports.extracting': 'Extrayendo los resultados…',
   'reports.pageOne': '{count} página',
   'reports.pageMany': '{count} páginas',
+
+  // ── Por qué ha fallado un reporte (KAN-7) ─────────────────────────────
+  //
+  // Indexadas por el código que escribe el pipeline, y se muestran en lugar
+  // de su frase en inglés. Cada una nombra la causa, porque lo siguiente que
+  // decide quien lee es si esperar, reintentar o subir otro archivo.
+  'warning.consent.missing':
+    'Este reporte no se ha procesado porque no has aceptado el procesamiento con IA. Acéptalo en la página de subida y se procesará sin gastar otra subida.',
+  'warning.extraction.noTextLayer':
+    'Esto parece un escaneo o una fotografía: el archivo contiene imágenes de las páginas, no texto que podamos leer. Sube el PDF tal como lo emitió el laboratorio.',
+  'warning.extraction.unreadable':
+    'No se ha podido abrir este PDF. Puede estar protegido con contraseña o dañado. Sube una copia sin protección.',
+  'warning.extraction.rateLimited':
+    'Nuestro proveedor de IA ha superado su límite de peticiones ahora mismo, así que no se ha podido leer nada de este reporte. Tu archivo no tiene ningún problema: espera unos minutos y vuelve a intentarlo.',
+  'warning.extraction.timeout':
+    'Nuestro proveedor de IA no ha respondido a tiempo, así que no se ha podido leer nada de este reporte. Suele resolverse solo: inténtalo de nuevo en unos minutos.',
+  'warning.extraction.unavailable':
+    'Nuestro proveedor de IA no está disponible ahora mismo, así que no se ha podido leer nada de este reporte. Inténtalo de nuevo en unos minutos.',
+  'warning.extraction.unauthenticated':
+    'Nuestro proveedor de IA ha rechazado nuestras credenciales, así que no se ha podido leer nada de este reporte. Es un fallo nuestro, no de tu archivo, y reintentar no servirá hasta que lo arreglemos.',
+  'warning.extraction.blocked':
+    'Los filtros de seguridad de nuestro proveedor de IA han detenido la lectura a mitad de este reporte, así que no se ha extraído nada. Suele ser una falsa alarma con el vocabulario clínico; reintentarlo puede funcionar.',
+  'warning.extraction.truncated':
+    'Este reporte tiene más resultados de los que caben en una sola lectura: el modelo ha alcanzado su límite de salida antes de terminar, así que no se ha guardado ningún resultado. Prueba a subirlo dividido en menos páginas.',
+  'warning.extraction.invalidResponse':
+    'Nuestro proveedor de IA ha devuelto una respuesta que no hemos podido interpretar como resultados de laboratorio, así que no se ha extraído nada. Reintentarlo suele funcionar.',
+  'warning.extraction.unknown':
+    'No se ha podido leer nada de este reporte por un fallo inesperado en nuestro lado. Inténtalo de nuevo más tarde.',
+  'warning.storage.objectMissing':
+    'El archivo subido ya no está almacenado, así que este reporte no se puede volver a procesar. Súbelo de nuevo.',
+  'warning.processing.unexpected':
+    'Algo ha fallado al reprocesar este reporte. Inténtalo de nuevo en unos minutos.',
 
   // ── File and quota refusals ───────────────────────────────────────────
   'fileError.empty': '{file} está vacío. No se ha subido nada.',
@@ -366,6 +408,19 @@ export const es: Messages = {
   'upload.disabled.storageFull':
     'Tu almacenamiento está lleno. Elimina algún reporte para liberar espacio.',
   'upload.disabled.monthly': 'Has agotado todas tus subidas de este mes.',
+  'upload.dateLabel': 'Fecha en que se realizaron estos exámenes — {file}',
+  'upload.dateHint': 'La fecha impresa en el reporte, no la fecha en que lo subes.',
+  'upload.dateRequired':
+    'Elige la fecha en que se realizaron estos exámenes. No se puede leer del PDF de forma fiable.',
+  'upload.dateMalformed': 'Esa no es una fecha que podamos leer. Usa el selector de fecha.',
+  'upload.dateFuture':
+    'Esa fecha todavía no ha llegado. Comprueba la fecha impresa en el reporte.',
+  'upload.dateTooOld': 'Esa fecha parece un error de tecleo. Comprueba el año.',
+  'upload.startOne': 'Subir archivo',
+  'upload.startMany': 'Subir {count} archivos',
+  'upload.startHint': 'Nada sale de tu computadora hasta que pulses aquí.',
+  'upload.state.draft': 'Esperándote: indica la fecha y pulsa subir.',
+  'upload.step.dateFirst': '{count} a la espera de una fecha',
   'upload.cancelLabel': 'Cancelar la subida de {file}',
   'upload.removeLabel': 'Quitar {file} de la lista',
   'upload.progressLabel': 'Subiendo {file}',
@@ -375,7 +430,7 @@ export const es: Messages = {
     '{file} se ha subido correctamente. Puedes salir de esta página: el procesamiento continúa y tu reporte aparecerá en Reportes cuando termine.',
   'upload.storedBodyMany':
     'Los {count} reportes se han subido correctamente. Puedes salir de esta página: el procesamiento continúa y cada uno aparecerá en Reportes cuando termine.',
-  'upload.goToReports': 'Ir a los reportes',
+  'upload.goToFiles': 'Ir a los archivos',
   'upload.uploaded': 'Reporte subido. El procesamiento empieza automáticamente.',
   'upload.cancelled': 'Subida cancelada.',
   'upload.queueHeading': 'Tus archivos',
@@ -415,7 +470,7 @@ export const es: Messages = {
   'detail.openFailed': 'No se ha podido abrir ese archivo.',
   'detail.missingTitle': 'Ese reporte no existe',
   'detail.missingBody': 'Puede que se haya eliminado o que el enlace sea incorrecto.',
-  'detail.backToReports': 'Volver a los reportes',
+  'detail.backToFiles': 'Volver a los archivos',
   'detail.reprocessing': 'Reprocesando…',
   'detail.tryAgain': 'Intentar procesarlo de nuevo',
   'detail.reportOf': 'Reporte del {date}',
@@ -662,6 +717,27 @@ export const es: Messages = {
   'profile.confirmPassword': 'Confirmar la contraseña nueva',
   'profile.changing': 'Cambiando…',
   'profile.changePassword': 'Cambiar la contraseña',
+  'profile.documentHeading': 'Documento de identidad',
+  'profile.documentIntro':
+    'Se registra para poder asociar un reporte con la persona a la que pertenece. Todos los campos son opcionales, y dejarlos en blanco no cambia nada en cómo se leen tus resultados.',
+  'profile.documentType': 'Tipo de documento',
+  'profile.documentTypeUnset': 'Sin especificar',
+  'profile.document.cedula': 'Cédula de ciudadanía',
+  'profile.document.registroCivil': 'Registro civil',
+  'profile.document.pasaporte': 'Pasaporte',
+  'profile.document.cedulaExtranjeria': 'Cédula de extranjería',
+  'profile.documentNumber': 'Número de documento',
+  'profile.documentNumberHint':
+    'Tal como aparece impreso. Se guarda como lo escribes y nunca se reformatea.',
+  'profile.documentPlace': 'Lugar de expedición',
+  'profile.documentPlaceHint': 'La ciudad o la autoridad que figura en el documento.',
+  'profile.documentNumberNeedsType': 'Elige el tipo de documento al que corresponde este número.',
+  'profile.documentSave': 'Guardar el documento',
+  'profile.documentSaved': 'Documento guardado.',
+  'profile.documentRemoveAll': 'Eliminar mi documento',
+  'profile.documentRemoveTitle': '¿Eliminar tu documento de identidad?',
+  'profile.documentRemoveBody':
+    'Se borran de tu perfil el tipo de documento, el número y el lugar de expedición. Nada más de tu cuenta cambia, y puedes volver a añadirlos más adelante.',
   'profile.contextHeading': 'Sobre ti',
   'profile.optional': 'Opcional',
   'profile.contextIntro':
@@ -676,7 +752,7 @@ export const es: Messages = {
     'No hemos podido eliminar esto. Comprueba tu conexión e inténtalo de nuevo.',
   'profile.dateOfBirth': 'Fecha de nacimiento',
   'profile.dateOfBirthHint': 'Se usa para calcular tu edad en el momento de cada reporte.',
-  'profile.biologicalSex': 'Sexo biológico',
+  'profile.biologicalSex': 'Sexo',
   'profile.biologicalSexHint':
     'Se pregunta porque muchos intervalos de referencia varían según el sexo.',
   'profile.preferNotToSay': 'Prefiero no decirlo',
@@ -687,6 +763,29 @@ export const es: Messages = {
   'profile.pregnancy.not': 'No embarazada',
   'profile.pregnancy.pregnant': 'Embarazada',
   'profile.pregnancy.postpartum': 'Posparto',
+  'profile.weight': 'Peso (kg)',
+  'profile.height': 'Estatura (cm)',
+  'profile.weightInvalid': 'Escribe un peso en kilogramos, entre {min} y {max}.',
+  'profile.heightInvalid': 'Escribe una estatura en centímetros, entre {min} y {max}.',
+  'profile.bmi': 'Índice de masa corporal',
+  'profile.bmiPending': 'Rellena tu peso y tu estatura para verlo.',
+  'profile.bmiBand.underweight': 'Peso inferior al normal',
+  'profile.bmiBand.normal': 'Normal',
+  'profile.bmiBand.overweight': 'Peso superior al normal',
+  'profile.bmiBand.obese': 'Obesidad',
+  'profile.bmiBandCurrent': 'Tu índice cae aquí.',
+  'profile.bmiAdultsOnly':
+    'Estas cuatro franjas solo aplican a personas adultas.',
+  'profile.bmiScale': 'La tabla',
+  'profile.bmiScale.underweight': 'Menos de 18.5',
+  'profile.bmiScale.normal': '18.5 – 24.9',
+  'profile.bmiScale.overweight': '25.0 – 29.9',
+  'profile.bmiScale.obese': 'Más de 30.0',
+  'profile.bmiNote':
+    'Tu peso dividido por el cuadrado de tu estatura. Es una operación con dos números que nos diste, no un juicio sobre tu salud, y no se usa para clasificar ninguno de tus resultados.',
+  'profile.familyConditions': 'Enfermedades familiares',
+  'profile.familyConditionsHint':
+    'Enfermedades que hay en tu familia cercana. Una por línea; di de quién, si ayuda.',
   'profile.medications': 'Medicación',
   'profile.medicationsHint': 'Una por línea. Se guarda tal como la escribas; nunca se interpreta.',
   'profile.conditions': 'Enfermedades o condiciones',
@@ -868,4 +967,303 @@ export const es: Messages = {
   'legal.notYetPublished': 'todavía sin publicar',
   'legal.readingTime': 'tiempo de lectura: {time}',
   'legal.doc.dataRetention': 'Política de Conservación de Datos',
+
+  // ── Administración: catálogo de variables (KAN-49) ────────────────────
+  'adminVariables.intro':
+    'La lista canónica de estudios de laboratorio. Todos los lectores ven estos nombres y explicaciones, y el proceso de extracción compara con ellos los nombres impresos.',
+  'adminVariables.countOne': '{count} variable',
+  'adminVariables.countMany': '{count} variables',
+  'adminVariables.search': 'Buscar en el catálogo',
+  'adminVariables.searchPlaceholder': 'Nombre, sinónimo o id',
+  'adminVariables.loadingLabel': 'Cargando el catálogo',
+  'adminVariables.loadFailed': 'No se pudo cargar el catálogo.',
+  'adminVariables.emptyTitle': 'El catálogo está vacío',
+  'adminVariables.emptyBody':
+    'Importa la hoja de cálculo mantenida, o añade a mano la primera entrada.',
+  'adminVariables.noMatchTitle': 'Ninguna variable coincide',
+  'adminVariables.noMatchBody': 'Quita un filtro, o busca otro nombre.',
+  'adminVariables.showing': 'Mostrando {visible} de {total}.',
+  'adminVariables.filterCategory': 'Filtrar por grupo',
+  'adminVariables.allCategories': 'Todos los grupos',
+  'adminVariables.filterOrigin': 'Filtrar por origen',
+  'adminVariables.originAll': 'Cualquier origen',
+  'adminVariables.originCatalog': 'Curada',
+  'adminVariables.originDiscovered': 'Descubierta',
+  'adminVariables.needsReview': 'Falta revisar ({count})',
+  'adminVariables.tableCaption': 'Variables de laboratorio del catálogo',
+  'adminVariables.columnName': 'Nombre',
+  'adminVariables.columnId': 'Id del documento',
+  'adminVariables.columnCategory': 'Grupo',
+  'adminVariables.columnUnit': 'Unidad',
+  'adminVariables.columnAliases': 'Sinónimos',
+  'adminVariables.columnState': 'Estado',
+  'adminVariables.columnActions': 'Acciones',
+  'adminVariables.noUnit': 'Ninguna',
+  'adminVariables.noDescription': 'Todavía sin explicación',
+  'adminVariables.stateReviewed': 'Revisada',
+  'adminVariables.stateNeedsReview': 'Falta revisar',
+  'adminVariables.new': 'Nueva variable',
+  'adminVariables.edit': 'Editar',
+  'adminVariables.editLabel': 'Editar {name}',
+  'adminVariables.delete': 'Eliminar',
+  'adminVariables.deleteLabel': 'Eliminar {name}',
+  'adminVariables.newTitle': 'Nueva variable',
+  'adminVariables.editTitle': 'Editar {name}',
+  'adminVariables.fieldId': 'Id del documento',
+  'adminVariables.fieldIdHint':
+    'Minúsculas, dígitos y guiones. Se sugiere a partir del nombre en inglés; cámbialo antes de guardar si necesitas otro.',
+  'adminVariables.fieldIdFixed':
+    'El id no se puede cambiar después de crear la entrada: ya hay resultados que apuntan a él.',
+  'adminVariables.fieldCanonicalName': 'Nombre canónico',
+  'adminVariables.fieldCanonicalNameHint':
+    'El nombre en inglés con el que se comparan los nombres impresos.',
+  'adminVariables.fieldName': 'Nombre visible ({language})',
+  'adminVariables.fieldDescription': 'Explicación ({language})',
+  'adminVariables.fieldDescriptionHint':
+    'En lenguaje sencillo; se muestra en la página de la variable. Déjala vacía antes que inventarla.',
+  'adminVariables.fieldAliases': 'Sinónimos',
+  'adminVariables.fieldAliasesHint':
+    'Uno por línea: las grafías que imprimen los reportes reales, en cualquier idioma. Las comas se conservan.',
+  'adminVariables.fieldCategory': 'Grupo',
+  'adminVariables.fieldUnit': 'Unidad por omisión',
+  'adminVariables.fieldUnitHint':
+    'Se usa cuando un reporte imprime un valor sin unidad. La unidad del propio reporte siempre gana.',
+  'adminVariables.reviewNote':
+    'Al guardar, la entrada queda marcada como curada y revisada, de modo que el proceso de enriquecimiento no la reescribirá.',
+  'adminVariables.errorRequired': 'Este campo es obligatorio.',
+  'adminVariables.errorInvalidId':
+    'Usa minúsculas, dígitos y guiones, empezando por una letra o un dígito.',
+  'adminVariables.errorIdTaken': 'Otra variable ya usa este id.',
+  'adminVariables.duplicateWarning':
+    'Uno de estos nombres coincide con {id}, que ya está en el catálogo. Dos entradas para un mismo estudio parten en dos el historial de quien lo sigue: compruébalo antes de guardar.',
+  'adminVariables.create': 'Crear variable',
+  'adminVariables.creating': 'Creando…',
+  'adminVariables.created': 'Se añadió {name} al catálogo.',
+  'adminVariables.updated': 'Se actualizó {name}.',
+  'adminVariables.saveFailed': 'No se pudo guardar la variable.',
+  'adminVariables.existsFailed':
+    'Ese id se ocupó mientras editabas. Elige otro.',
+  'adminVariables.deleteTitle': '¿Eliminar {name}?',
+  'adminVariables.deleteBody':
+    'Se elimina la entrada del catálogo: este nombre, sus traducciones y su explicación dejan de mostrarse a todos los lectores.',
+  'adminVariables.deleteKeeps':
+    'Ningún resultado se ve afectado. Quien siga este estudio conserva sus valores y su historial, encabezados con lo que imprimió su propio laboratorio.',
+  'adminVariables.deleteReturns':
+    'Puede volver por su cuenta: el siguiente reporte que imprima este estudio no encontrará coincidencia y el proceso creará un marcador sin revisar. Casi siempre es mejor corregir una entrada que eliminarla.',
+  'adminVariables.deleteConfirm': 'Eliminar variable',
+  'adminVariables.deleting': 'Eliminando…',
+  'adminVariables.deleted': 'Se eliminó {name} del catálogo.',
+  'adminVariables.deleteFailed': 'No se pudo eliminar la variable.',
+
+  // ── Administración: usuarios (KAN-50) ─────────────────────────────────
+  'adminUsers.intro':
+    'Todas las cuentas del sistema. Aquí se cambian los roles y el acceso; los resultados de laboratorio no se pueden leer desde esta pantalla.',
+  'adminUsers.countOne': '{count} cuenta',
+  'adminUsers.countMany': '{count} cuentas',
+  'adminUsers.search': 'Buscar cuentas',
+  'adminUsers.searchPlaceholder': 'Correo, nombre o id de usuario',
+  'adminUsers.loadingLabel': 'Cargando cuentas',
+  'adminUsers.loadFailed': 'No se pudieron cargar las cuentas.',
+  'adminUsers.emptyTitle': 'Todavía no hay cuentas',
+  'adminUsers.emptyBody': 'Las cuentas aparecen aquí en cuanto alguien se registra.',
+  'adminUsers.noMatchTitle': 'Ninguna cuenta coincide',
+  'adminUsers.noMatchBody': 'Quita un filtro, o busca otra dirección.',
+  'adminUsers.showing': 'Mostrando {visible} de {total}.',
+  'adminUsers.filterRole': 'Filtrar por rol',
+  'adminUsers.roleAll': 'Cualquier rol',
+  'adminUsers.roleUser': 'Usuario',
+  'adminUsers.roleAdmin': 'Administrador',
+  'adminUsers.filterStatus': 'Filtrar por acceso',
+  'adminUsers.statusAll': 'Cualquier acceso',
+  'adminUsers.statusActive': 'Activa',
+  'adminUsers.statusDisabled': 'Desactivada',
+  'adminUsers.tableCaption': 'Cuentas registradas en el sistema',
+  'adminUsers.columnAccount': 'Cuenta',
+  'adminUsers.columnRole': 'Rol',
+  'adminUsers.columnStatus': 'Acceso',
+  'adminUsers.columnJoined': 'Registro',
+  'adminUsers.columnActions': 'Acciones',
+  'adminUsers.noName': 'Sin nombre',
+  'adminUsers.you': 'Tú',
+  'adminUsers.unknownDate': 'Desconocida',
+  'adminUsers.loadMore': 'Cargar más cuentas',
+  'adminUsers.limitNote':
+    'Mostrando {count} cuentas. La búsqueda abarca las cuentas cargadas hasta ahora; carga más para alcanzar el resto.',
+  'adminUsers.changeRole': 'Cambiar rol',
+  'adminUsers.changeRoleLabel': 'Cambiar el rol de {name}',
+  'adminUsers.roleTitle': 'Cambiar el rol de {name}',
+  'adminUsers.promoteBody':
+    'Un administrador puede leer todas las cuentas del sistema, cambiar roles, desactivar cuentas y editar el catálogo de variables.',
+  'adminUsers.demoteBody':
+    'Esta cuenta pierde el acceso a las pantallas de administración y a las demás cuentas.',
+  'adminUsers.roleClaimNote':
+    'El cambio se escribe en el token de la cuenta y llega a sus sesiones abiertas la próxima vez que se renueve: dentro de una hora, o de inmediato si vuelve a iniciar sesión.',
+  'adminUsers.promoteConfirm': 'Hacer administrador',
+  'adminUsers.demoteConfirm': 'Hacer usuario',
+  'adminUsers.roleSaving': 'Guardando…',
+  'adminUsers.roleChanged': '{name} ahora es {role}.',
+  'adminUsers.roleFailed': 'No se pudo cambiar el rol.',
+  'adminUsers.selfActions': 'No puedes cambiar tu propio rol ni tu acceso.',
+  'adminUsers.disable': 'Desactivar',
+  'adminUsers.disableLabel': 'Desactivar {name}',
+  'adminUsers.enable': 'Reactivar',
+  'adminUsers.enableLabel': 'Reactivar {name}',
+  'adminUsers.disableTitle': '¿Desactivar {name}?',
+  'adminUsers.disableBody':
+    'No podrá volver a iniciar sesión hasta que un administrador reactive la cuenta, y ninguna sesión abierta podrá renovarse.',
+  'adminUsers.disableWindow':
+    'Una sesión abierta en este momento sigue leyendo sus propios datos hasta que su token caduque: como mucho, una hora. Para cortar el acceso de inmediato, elimina la cuenta.',
+  'adminUsers.disableKeeps':
+    'No se elimina nada. Sus reportes, resultados e historial quedan tal cual, y vuelven intactos si se reactiva la cuenta.',
+  'adminUsers.disableReason': 'Motivo (opcional)',
+  'adminUsers.disableReasonHint':
+    'Se registra en la bitácora de auditoría junto a quién lo hizo y cuándo. No se le muestra al titular de la cuenta.',
+  'adminUsers.disableConfirm': 'Desactivar cuenta',
+  'adminUsers.disabling': 'Desactivando…',
+  'adminUsers.disabledToast': '{name} ya no puede iniciar sesión.',
+  'adminUsers.enableTitle': '¿Reactivar {name}?',
+  'adminUsers.enableBody':
+    'Podrá iniciar sesión de inmediato y encontrará sus reportes e historial tal como los dejó.',
+  'adminUsers.enableConfirm': 'Reactivar cuenta',
+  'adminUsers.enabling': 'Reactivando…',
+  'adminUsers.enabledToast': '{name} ya puede iniciar sesión.',
+  'adminUsers.accessFailed': 'No se pudo cambiar el acceso de la cuenta.',
+
+
+  // ── Administración: trabajos de procesamiento (KAN-20, KAN-51) ────────
+  'adminJobs.intro':
+    'Extracciones que no han terminado, y las que fallaron. Solo identificadores de reporte y de cuenta: en esta pantalla no aparece ningún nombre de archivo ni ningún resultado.',
+  'adminJobs.loadingLabel': 'Cargando la cola de procesamiento',
+  'adminJobs.loadFailed': 'No se pudo cargar la cola de procesamiento.',
+  'adminJobs.search': 'Buscar trabajos',
+  'adminJobs.searchPlaceholder': 'Id de reporte, id de usuario o código de fallo',
+  'adminJobs.emptyTitle': 'No hay nada en la cola',
+  'adminJobs.emptyBody':
+    'Todos los reportes subidos terminaron de procesarse. Los trabajos aparecen aquí mientras se ejecutan, y se quedan si fallan.',
+  'adminJobs.noMatchTitle': 'Ningún trabajo coincide',
+  'adminJobs.noMatchBody': 'Quita un filtro o busca otro identificador.',
+  'adminJobs.showing': 'Mostrando {visible} de {total}.',
+  'adminJobs.filterState': 'Filtrar por estado',
+  'adminJobs.chipAll': 'Todos ({count})',
+  'adminJobs.chipInFlight': 'En curso ({count})',
+  'adminJobs.chipStalled': 'Detenidos ({count})',
+  'adminJobs.chipFailed': 'Fallidos ({count})',
+  'adminJobs.stalledAlertOne': '{count} trabajo lleva más tiempo del que puede durar una ejecución.',
+  'adminJobs.stalledAlertMany':
+    '{count} trabajos llevan más tiempo del que puede durar una ejecución.',
+  'adminJobs.stalledAlertBody':
+    'El procesamiento se ejecuta una sola vez y no se reinicia solo, así que estos trabajos perdieron su proceso y no van a terminar. Reprocesarlos es lo que los recupera.',
+  'adminJobs.tableCaption': 'Trabajos de extracción en curso y trabajos que fallaron',
+  'adminJobs.columnJob': 'Reporte',
+  'adminJobs.columnState': 'Estado',
+  'adminJobs.columnStarted': 'Intento iniciado',
+  'adminJobs.columnDuration': 'Duración',
+  'adminJobs.columnAttempts': 'Intentos',
+  'adminJobs.columnFailure': 'Motivo',
+  'adminJobs.columnActions': 'Acciones',
+  'adminJobs.ownerLabel': 'Cuenta {uid}',
+  'adminJobs.stateWaiting': 'En espera',
+  'adminJobs.stateRunning': 'Ejecutándose',
+  'adminJobs.stateStalled': 'Detenido',
+  'adminJobs.stateFailed': 'Fallido',
+  'adminJobs.startedUnknown': 'Sin registrar',
+  'adminJobs.durationHours': '{hours} h {minutes} min',
+  'adminJobs.durationMinutes': '{minutes} min {seconds} s',
+  'adminJobs.durationSeconds': '{seconds} s',
+  'adminJobs.durationNone': 'Sin registrar',
+  'adminJobs.durationNoneLabel':
+    'De una ejecución que falló no queda registrada la hora de término, así que no se conoce su duración.',
+  'adminJobs.attemptsFirst': 'Primera ejecución',
+  'adminJobs.attemptsSpent': 'Reintento {count} de {max}',
+  'adminJobs.noFailure': 'Todavía en curso',
+  'adminJobs.retry': 'Reprocesar',
+  'adminJobs.retrying': 'Reprocesando…',
+  'adminJobs.retryLabel': 'Reprocesar el reporte {report}',
+  'adminJobs.retryRunning': 'Todavía dentro del tiempo que puede durar una ejecución.',
+  'adminJobs.retryPermanent': 'Una segunda lectura fallaría de la misma manera.',
+  'adminJobs.retryExhausted': 'Reintentado {max} veces sin éxito.',
+  'adminJobs.retrySucceeded': 'El reporte {report} terminó de procesarse.',
+  'adminJobs.retryFailedAgain': 'El reporte {report} volvió a fallar.',
+  'adminJobs.retryNote':
+    'Reprocesar ejecuta el mismo proceso que la subida, con el mismo costo, y a un administrador se le aplican los mismos límites que a la persona dueña de la cuenta. Queda registrado en el historial de auditoría.',
+  'adminJobs.loadMore': 'Cargar más trabajos',
+  'adminJobs.limitNote':
+    'Mostrando {count} trabajos. La búsqueda solo alcanza los trabajos ya cargados: carga más para llegar al resto.',
+
+
+  // ── Administración: panorama (KAN-18) ─────────────────────────────────
+  'adminOverview.intro':
+    'El estado del sistema en conjunto. Solo conteos y capacidad: en esta pantalla no aparece ningún valor de laboratorio ni los resultados de ninguna cuenta.',
+  'adminOverview.loadingLabel': 'Cargando el panorama del sistema',
+  'adminOverview.loadFailed': 'No se pudo cargar el panorama.',
+  'adminOverview.healthOk': 'Funcionamiento normal',
+  'adminOverview.healthAttention': 'Requiere atención',
+  'adminOverview.healthBlocked': 'Las cargas están desactivadas',
+  'adminOverview.healthBlockedBody':
+    'El interruptor general está activado, así que ninguna cuenta puede subir un reporte. Se libera cuando el almacenamiento vuelve a estar por debajo del límite.',
+  'adminOverview.healthAttentionBody':
+    'Nada está bloqueado, pero algo de lo siguiente pide una revisión.',
+  'adminOverview.healthOkBody':
+    'Ningún reporte falló y el almacenamiento está holgado dentro de su límite.',
+  'adminOverview.accountsHeading': 'Cuentas',
+  'adminOverview.accountsTotal': 'Registradas',
+  'adminOverview.accountsAdmins': 'Con acceso de administrador',
+  'adminOverview.accountsDisabled': 'Desactivadas',
+  'adminOverview.accountsLink': 'Administrar cuentas',
+  'adminOverview.reportsHeading': 'Reportes',
+  'adminOverview.reportsTotal': 'Subidos',
+  'adminOverview.reportsProcessed': 'Procesados',
+  'adminOverview.reportsFailed': 'Fallidos',
+  'adminOverview.reportsFailedNote':
+    'Cada falla es una persona cuyo reporte nunca regresó. {ticket} construye la cola de reintentos.',
+  'adminOverview.catalogHeading': 'Catálogo de variables',
+  'adminOverview.catalogTotal': 'Entradas',
+  'adminOverview.catalogNeedsReview': 'Pendientes de revisión',
+  'adminOverview.catalogLink': 'Abrir el catálogo',
+  'adminOverview.storageHeading': 'Almacenamiento',
+  'adminOverview.storageUsed': '{used} de {limit} en uso',
+  'adminOverview.storageUploadsOn': 'Se aceptan cargas',
+  'adminOverview.storageUploadsOff': 'Se rechazan cargas',
+  'adminOverview.auditHeading': 'Acciones administrativas recientes',
+  'adminOverview.auditEmpty': 'Todavía no se ha hecho nada.',
+  'adminOverview.auditNote':
+    'Las escribe el servidor, nunca el navegador. El registro completo vive en la colección auditLogs.',
+  'adminOverview.auditRoleChanged': 'Cambio de rol',
+  'adminOverview.auditUserDisabled': 'Cuenta desactivada',
+  'adminOverview.auditUserEnabled': 'Cuenta reactivada',
+  'adminOverview.auditAccountDeleted': 'Cuenta eliminada por su titular',
+  'adminOverview.auditReportRetried': 'Reporte reprocesado por un administrador',
+  'adminOverview.auditUnknown': 'Acción registrada',
+  'adminOverview.auditActor': 'por {actor}',
+  'adminOverview.auditActorRedacted': 'por una cuenta eliminada',
+  'adminOverview.auditTarget': 'sobre {target}',
+  'adminOverview.auditNoTarget': 'sin cuenta señalada',
+  'adminOverview.refresh': 'Actualizar',
+  'adminOverview.refreshing': 'Actualizando…',
+  'common.admin': 'Administrador',
+  'common.adminAccessLabel': 'Tienes acceso de administrador',
+
+
+  // ── Paginación ────────────────────────────────────────────────────────
+  'pagination.showing': 'Mostrando {from}–{to} de {total}',
+  'pagination.previous': 'Anterior',
+  'pagination.next': 'Siguiente',
+  'pagination.goToPage': 'Ir a la página {page}',
+  'pagination.catalogPages': 'Páginas del catálogo',
+  'pagination.accountPages': 'Páginas de cuentas',
+  'pagination.jobPages': 'Páginas de trabajos',
+
+
+  // ── Menú de la cuenta ─────────────────────────────────────────────────
+  'account.menuLabel': 'Menú de la cuenta — {email}',
+  'account.signedInAs': 'Sesión iniciada como',
+  'account.verifyEmail': 'Verifica tu correo electrónico',
+  'account.summary.heading': 'Tu ficha',
+  'account.summary.hint': 'Pasa el cursor por un título —o tócalo— para ver lo que guardaste.',
+  'account.summary.empty': 'Todavía no has guardado nada aquí.',
+  'account.summary.fillIn': 'Completa tu perfil',
+  'account.summary.edit': 'Editar en tu perfil',
+
+
+  'common.signingOut': 'Cerrando tu sesión…',
 };
