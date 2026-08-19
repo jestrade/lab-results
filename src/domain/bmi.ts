@@ -10,14 +10,29 @@
  * is no version of that document worth keeping, so the index is derived at the
  * moment it is shown.
  *
- * ── Why there is no category here ─────────────────────────────────────────
+ * ── The bands, and what they are not ──────────────────────────────────────
  *
- * Deliberately absent: any function that turns 27.4 into a word. The ratio is
- * arithmetic on two numbers the reader gave us; "overweight" is a clinical
- * judgement about a person, and this product does not make those (spec §51).
- * The same rule already governs trends, which name a direction and refuse to
- * say whether it is welcome.
+ * `bmiBand` puts an index into one of the four WHO categories, and the
+ * interface draws a red, amber or green signal beside it. Two constraints come
+ * with that, and neither is optional.
+ *
+ * **The band is for adults.** Under eighteen, body mass index is read against
+ * age-and-sex percentile charts, not these four fixed numbers, and the same
+ * ratio that is "normal" for a 40-year-old can sit anywhere on a child's
+ * chart. Every screen that shows a band has to say so — the copy key is
+ * `profile.bmiAdultsOnly`, and it is not decoration.
+ *
+ * **The colour is never the message.** A band always renders with its name and
+ * an icon beside the colour, the same rule `domain/status.ts` enforces for
+ * every other status in this app: remove the colour and the reader still sees
+ * "Obesity" next to a warning glyph.
+ *
+ * What is still deliberately absent is advice. A band names where a number
+ * falls on a published table. It does not say what to do about it, and nothing
+ * in this file should ever start.
  */
+
+import type { MessageKey } from '@/i18n/messages';
 
 /**
  * The range of measurements accepted.
@@ -68,4 +83,60 @@ export function bodyMassIndex(weightKg: number | null, heightCm: number | null):
 
   const metres = heightCm / 100;
   return Math.round((weightKg / (metres * metres)) * 10) / 10;
+}
+
+/** The four WHO categories, as printed on the table this app follows. */
+export type BmiBand = 'underweight' | 'normal' | 'overweight' | 'obese';
+
+/** The traffic light beside the figure. Green, amber, red. */
+export type BmiSignal = 'ok' | 'caution' | 'alert';
+
+export interface BmiBandEntry {
+  labelKey: MessageKey;
+  /** Phosphor icon. Decorative — the label is what carries the meaning. */
+  icon: string;
+  signal: BmiSignal;
+}
+
+/**
+ * Band → what to draw.
+ *
+ * Both ends of the scale get amber rather than one of them getting green by
+ * default: being under the range is a finding, not the absence of one, and a
+ * green light under 18.5 would say the opposite of what the table says.
+ * Red is kept for the one band the table itself sets apart.
+ */
+export const BMI_BANDS: Record<BmiBand, BmiBandEntry> = {
+  underweight: {
+    labelKey: 'profile.bmiBand.underweight',
+    icon: 'ph-arrow-down',
+    signal: 'caution',
+  },
+  normal: { labelKey: 'profile.bmiBand.normal', icon: 'ph-check-circle', signal: 'ok' },
+  overweight: { labelKey: 'profile.bmiBand.overweight', icon: 'ph-arrow-up', signal: 'caution' },
+  obese: { labelKey: 'profile.bmiBand.obese', icon: 'ph-warning-circle', signal: 'alert' },
+};
+
+/** Where the bands meet. */
+export const BMI_UNDERWEIGHT_BELOW = 18.5;
+export const BMI_NORMAL_BELOW = 25;
+export const BMI_OVERWEIGHT_BELOW = 30;
+
+/**
+ * The band an index falls in, or `null` when there is no index to place.
+ *
+ * The printed table reads "18.5 – 24.9" and "25.0 – 29.9", which leaves a
+ * hairline gap at 24.95 that no reader ever means. The boundaries here are
+ * continuous — below 25 is normal, below 30 is above normal — so every index
+ * lands in exactly one band and none falls between two.
+ *
+ * Adults only. See the note at the top of this file: this is not a scale for
+ * anyone under eighteen, and the interface must say so wherever it is shown.
+ */
+export function bmiBand(bmi: number | null): BmiBand | null {
+  if (bmi === null || !Number.isFinite(bmi)) return null;
+  if (bmi < BMI_UNDERWEIGHT_BELOW) return 'underweight';
+  if (bmi < BMI_NORMAL_BELOW) return 'normal';
+  if (bmi < BMI_OVERWEIGHT_BELOW) return 'overweight';
+  return 'obese';
 }

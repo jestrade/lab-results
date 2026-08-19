@@ -1,10 +1,66 @@
-import { describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
 import { expectNoA11yViolations } from '@/test/axe';
+import type { HealthContext, UserProfile } from '@/domain/types';
 import { AccountMenu } from '../AccountMenu';
+
+// Mocked rather than allowed through: `subscribeToProfile` reaches
+// `getDb()`, which throws when the Firebase config is absent — as it is in
+// CI, which has no root `.env`.
+const subscribeToProfile = vi.hoisted(() => vi.fn());
+vi.mock('@/services/profiles', () => ({ subscribeToProfile }));
+
+function stamp(iso: string) {
+  return { toDate: () => new Date(iso) } as never;
+}
+
+function makeContext(overrides: Partial<HealthContext> = {}): HealthContext {
+  return {
+    dateOfBirth: null,
+    biologicalSex: null,
+    pregnancyStatus: null,
+    weightKg: null,
+    heightCm: null,
+    medications: null,
+    conditions: null,
+    familyConditions: null,
+    ongoingSymptoms: null,
+    updatedAt: null,
+    ...overrides,
+  };
+}
+
+function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
+  return {
+    uid: 'test-uid',
+    email: 'test@example.com',
+    displayName: 'Test User',
+    role: 'user',
+    disabled: false,
+    consents: {
+      termsAcceptedAt: stamp('2026-01-01'),
+      aiProcessingAcceptedAt: stamp('2026-01-01'),
+      documentsVersion: '2026-07-01',
+    },
+    preferences: { notifyOnProcessed: true, notifyOnCritical: true },
+    healthContext: null,
+    identityDocument: null,
+    createdAt: stamp('2026-01-15T12:00:00Z'),
+    updatedAt: null,
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+/** Deliver a profile to whichever subscription the open panel made. */
+function emit(profile: UserProfile | null) {
+  act(() => {
+    (subscribeToProfile.mock.calls.at(-1)?.[1] as (p: UserProfile | null) => void)(profile);
+  });
+}
 
 function renderMenu(auth = signedInAuth(), onSignOut = vi.fn()) {
   const result = renderWithProviders(<AccountMenu onSignOut={onSignOut} />, { auth });
@@ -16,6 +72,11 @@ function trigger() {
 }
 
 describe('AccountMenu', () => {
+  beforeEach(() => {
+    subscribeToProfile.mockReset();
+    subscribeToProfile.mockReturnValue(() => {});
+  });
+
   it('shows one control, not five, until it is opened', () => {
     renderMenu();
 
@@ -119,6 +180,163 @@ describe('AccountMenu', () => {
     await user.tab();
     expect(trigger()).not.toHaveFocus();
     expect(screen.queryByRole('button', { name: /Sign out/ })).not.toBeInTheDocument();
+  });
+
+  it('does not listen to the profile until the panel is opened', async () => {
+    // A listener held on every page is a Firestore read per navigation for a
+    // panel most readers never open.
+    const user = userEvent.setup();
+    renderMenu();
+
+    expect(subscribeToProfile).not.toHaveBeenCalled();
+    await user.click(trigger());
+    expect(subscribeToProfile).toHaveBeenCalledWith(
+      'test-uid',
+      expect.any(Function),
+      expect.any(Function),
+    );
+  });
+
+  it('lists the record behind the avatar, headings first', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(
+      makeProfile({
+        identityDocument: {
+          type: 'cedula',
+          number: '1020304050',
+          placeOfIssue: 'Bogotá',
+          updatedAt: null,
+        },
+        healthContext: makeContext({
+          weightKg: 70,
+          heightCm: 175,
+          conditions: 'Hypothyroidism',
+          familyConditions: 'Type 2 diabetes — father',
+        }),
+      }),
+    );
+
+    expect(await screen.findByText('Identity document')).toBeInTheDocument();
+    expect(screen.getByText('Body mass index')).toBeInTheDocument();
+    expect(screen.getByText('Ongoing conditions')).toBeInTheDocument();
+    expect(screen.getByText('Family illnesses')).toBeInTheDocument();
+  });
+
+  it('carries the saved value on the row itself, not only on hover', async () => {
+    // Hover is the convenience. The value lives in the row's accessible name,
+    // so a screen reader and a phone both reach it without one.
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(
+      makeProfile({
+        healthContext: makeContext({ familyConditions: 'Type 2 diabetes — father' }),
+      }),
+    );
+
+    expect(
+      await screen.findByRole('button', { name: /Family illnesses.*Type 2 diabetes — father/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the index beside the two numbers it was computed from', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile({ healthContext: makeContext({ weightKg: 70, heightCm: 175 }) }));
+
+    expect(await screen.findByText('22.9')).toBeInTheDocument();
+    // A ratio with no sight of its inputs is a number nobody can check.
+    expect(screen.getByText('70 kg · 175 cm')).toBeInTheDocument();
+  });
+
+  it('never signals with colour alone', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile({ healthContext: makeContext({ weightKg: 95, heightCm: 175 }) }));
+
+    // The dot is aria-hidden and decorative. What must survive greyscale is
+    // the band's name beside it.
+    expect(await screen.findByText('Obesity')).toBeInTheDocument();
+  });
+
+  it('says the bands are an adult scale wherever it shows one', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile({ healthContext: makeContext({ weightKg: 70, heightCm: 175 }) }));
+
+    expect(await screen.findByText(/apply to adults only/i)).toBeInTheDocument();
+  });
+
+  it('draws the index even when there is nothing to compute it from', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile());
+
+    // A figure that comes and goes as the profile is filled in reads as the
+    // app losing it. It reads `—` instead.
+    expect(await screen.findByText('Body mass index')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+    // No band, so no caveat about a scale that is not being shown.
+    expect(screen.queryByText(/apply to adults only/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the measurements without claiming an index from one of them', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile({ healthContext: makeContext({ weightKg: 70 }) }));
+
+    expect(await screen.findByText('70 kg')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('leaves out the fields the reader never filled in', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile({ healthContext: makeContext({ conditions: 'Hypothyroidism' }) }));
+
+    // A row per empty field would fill the panel with the shape of a record
+    // that does not exist.
+    expect(await screen.findByText('Ongoing conditions')).toBeInTheDocument();
+    expect(screen.queryByText('Medications')).not.toBeInTheDocument();
+    expect(screen.queryByText('Date of birth')).not.toBeInTheDocument();
+  });
+
+  it('offers a way to fill the record in when there is nothing saved', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile());
+
+    expect(await screen.findByText(/Nothing saved here yet/)).toBeInTheDocument();
+    // The index is drawn regardless, so "nothing saved" is about the rows.
+    expect(screen.getByText('Body mass index')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Fill in your profile/ })).toHaveAttribute(
+      'href',
+      '/profile',
+    );
+  });
+
+  it('opens a row on click, for a screen with no hover to give', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.click(trigger());
+    emit(makeProfile({ healthContext: makeContext({ conditions: 'Hypothyroidism' }) }));
+
+    const row = await screen.findByRole('button', { name: /Ongoing conditions/ });
+    expect(row).not.toHaveAttribute('data-pinned');
+
+    await user.click(row);
+    expect(row).toHaveAttribute('data-pinned', 'true');
+    // Still open — pressing a row is using the panel, not dismissing it.
+    expect(trigger()).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('has no accessibility violations, open or shut', async () => {

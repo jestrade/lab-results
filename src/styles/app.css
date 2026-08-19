@@ -1758,6 +1758,126 @@ dialog.dialog-wide .dialog-body {
   width: 100%;
 }
 
+/* The derived index, set apart from the fields it is computed from so it does
+   not read as a fourth thing to fill in. */
+.profile-bmi {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--r-card);
+  background: var(--color-neutral-100);
+}
+.profile-bmi-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.profile-bmi-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.profile-bmi p {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* The traffic light.
+   Colour is the last layer here, never the first: every one of these carries
+   an icon and the band's name, so the pill still says "Obesity" in greyscale,
+   on paper and to a screen reader (spec §60, KAN-53). */
+.bmi-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bmi-pill[data-signal='ok'] {
+  background: var(--feedback-success-bg);
+  color: var(--feedback-success-ink);
+}
+.bmi-pill[data-signal='caution'] {
+  background: var(--feedback-warning-bg);
+  color: var(--feedback-warning-ink);
+}
+.bmi-pill[data-signal='alert'] {
+  background: var(--feedback-danger-bg);
+  color: var(--feedback-danger-ink);
+}
+
+/* The published table, so the light can be checked rather than believed. */
+.bmi-scale {
+  flex: 1 1 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.bmi-scale-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+/* The reader's own band, marked by weight and a ground as well as by colour —
+   someone who cannot tell the dots apart still sees which row is theirs. */
+/* Three markers, not one: a ground, a ring and bolder text. In light the
+   card ground sits a shade off the panel behind it and would carry the row on
+   its own only just — the ring is what makes "this one is mine" unmissable in
+   both themes, and neither of the three is a colour a reader has to name. */
+.bmi-scale-row[data-current='true'] {
+  background: var(--card-bg);
+  box-shadow: inset 0 0 0 1px var(--color-divider);
+  color: var(--color-text);
+  font-weight: 600;
+}
+.bmi-scale-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.bmi-scale-row[data-signal='ok'] .bmi-scale-dot {
+  background: var(--feedback-success-ink);
+}
+.bmi-scale-row[data-signal='caution'] .bmi-scale-dot {
+  background: var(--feedback-warning-ink);
+}
+.bmi-scale-row[data-signal='alert'] .bmi-scale-dot {
+  background: var(--feedback-danger-ink);
+}
+.bmi-scale-range {
+  font-variant-numeric: tabular-nums;
+}
+
+.bmi-adults {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+.bmi-adults i {
+  flex: none;
+  margin-top: 2px;
+}
+
 /* ── language switcher (KAN-8) ─────────────────────────────────────────── */
 
 /* The compact switcher in the headers. Sized to disappear into the chrome:
@@ -2263,6 +2383,132 @@ dialog.dialog-wide .dialog-body {
 }
 .account-panel-action:hover {
   background: var(--color-neutral-100);
+}
+
+/* ── the record behind the avatar (KAN-27) ──────────────────────────────── */
+
+.account-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.account-summary-hint,
+.account-summary-empty {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+/* Always drawn, signal or not. The dot is the traffic light; the band's name
+   sits beside it, because a coloured dot on its own says nothing. */
+.account-bmi {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 7px 8px;
+  margin: 0 -8px;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-100);
+}
+.account-bmi-dot {
+  align-self: center;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-text-faint);
+}
+.account-bmi[data-signal='ok'] .account-bmi-dot {
+  background: var(--feedback-success-ink);
+}
+.account-bmi[data-signal='caution'] .account-bmi-dot {
+  background: var(--feedback-warning-ink);
+}
+.account-bmi[data-signal='alert'] .account-bmi-dot {
+  background: var(--feedback-danger-ink);
+}
+.account-bmi-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.account-bmi-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.account-bmi-band {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.account-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.account-summary-item {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.account-summary-item:hover,
+.account-summary-item:focus-visible,
+.account-summary-item[data-pinned='true'] {
+  background: var(--color-neutral-100);
+}
+.account-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Collapsed to nothing, NOT `display: none`.
+   A zero-height clip keeps the value in the accessibility tree, so the row
+   reads as "Past illnesses, pneumonia 2019" without anyone having to hover —
+   which matters, because hover is the one route a screen reader and a phone
+   both lack. */
+.account-summary-value {
+  height: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  /* Free text is stored one item per line, and a summary that reflows a
+     medication list into a paragraph has lost the list. */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.account-summary-item:hover .account-summary-value,
+.account-summary-item:focus-visible .account-summary-value,
+.account-summary-item[data-pinned='true'] .account-summary-value {
+  /* Capped and scrollable: a reader with a long medication list must not push
+     the sign-out button off the bottom of the screen. */
+  height: auto;
+  max-height: 7.5em;
+  overflow-y: auto;
+}
+
+/* Reduced motion is not the issue here — there is no animation — but a reader
+   who cannot use a pointer at all still needs the row to open, which is what
+   the pinned state above is for. */
+@media (hover: none) {
+  .account-summary-hint {
+    /* Pointing at a heading is not an instruction a touch screen can follow. */
+    font-style: italic;
+  }
 }
 
 /* No narrow-screen override. `position: fixed` was tried here and is a trap:

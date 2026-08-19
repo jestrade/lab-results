@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  BMI_BANDS,
   MAX_HEIGHT_CM,
   MAX_WEIGHT_KG,
   MIN_HEIGHT_CM,
   MIN_WEIGHT_KG,
+  bmiBand,
   bodyMassIndex,
   isPlausibleHeightCm,
   isPlausibleWeightKg,
@@ -79,5 +81,50 @@ describe('bodyMassIndex', () => {
     expect(bodyMassIndex(70, 1.7)).toBeNull();
     expect(bodyMassIndex(0, 175)).toBeNull();
     expect(bodyMassIndex(Number.NaN, 175)).toBeNull();
+  });
+});
+
+describe('bmiBand', () => {
+  it.each([
+    [17.9, 'underweight'],
+    [18.5, 'normal'],
+    [22.9, 'normal'],
+    [24.9, 'normal'],
+    [25, 'overweight'],
+    [29.9, 'overweight'],
+    [30, 'obese'],
+    [41.2, 'obese'],
+  ])('places %s in the %s band', (bmi, band) => {
+    expect(bmiBand(bmi)).toBe(band);
+  });
+
+  it('leaves no index between two bands', () => {
+    // The printed table reads "18.5 – 24.9" then "25.0 – 29.9", which on a
+    // literal reading drops 24.95 on the floor. The boundaries are continuous
+    // so that every index lands in exactly one band.
+    expect(bmiBand(24.95)).toBe('normal');
+    expect(bmiBand(29.95)).toBe('overweight');
+  });
+
+  it('has no band without an index', () => {
+    expect(bmiBand(null)).toBeNull();
+    expect(bmiBand(Number.NaN)).toBeNull();
+  });
+
+  it('gives green to one band and red to one band', () => {
+    // The traffic light: normal is the only clear signal, obesity the only
+    // alert, and both ends of "not normal" are the same amber. Being under the
+    // range is a finding, not the absence of one.
+    expect(BMI_BANDS.normal.signal).toBe('ok');
+    expect(BMI_BANDS.obese.signal).toBe('alert');
+    expect(BMI_BANDS.underweight.signal).toBe('caution');
+    expect(BMI_BANDS.overweight.signal).toBe('caution');
+  });
+
+  it('gives every band an icon and a label, so colour is never the message', () => {
+    for (const entry of Object.values(BMI_BANDS)) {
+      expect(entry.icon).toMatch(/^ph-/);
+      expect(entry.labelKey).toMatch(/^profile\.bmiBand\./);
+    }
   });
 });

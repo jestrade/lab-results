@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
 import { expectNoA11yViolations } from '@/test/axe';
 import type { AuthContextValue } from '@/auth/AuthContext';
-import type { UserProfile } from '@/domain/types';
+import type { HealthContext, UserProfile } from '@/domain/types';
 import type * as AccountModule from '@/services/account';
 import { Profile } from '../Profile';
 
@@ -66,6 +66,24 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     createdAt: stamp('2026-01-15T12:00:00Z'),
     updatedAt: null,
     deletedAt: null,
+    ...overrides,
+  };
+}
+
+/** A stored health context. Fields not named are unanswered, as they are for
+ * a reader who filled in only part of the form. */
+function makeContext(overrides: Partial<HealthContext> = {}): HealthContext {
+  return {
+    dateOfBirth: null,
+    biologicalSex: null,
+    pregnancyStatus: null,
+    weightKg: null,
+    heightCm: null,
+    medications: null,
+    conditions: null,
+    familyConditions: null,
+    ongoingSymptoms: null,
+    updatedAt: null,
     ...overrides,
   };
 }
@@ -435,8 +453,11 @@ describe('Profile', () => {
       dateOfBirth: null,
       biologicalSex: 'female',
       pregnancyStatus: null,
+      weightKg: null,
+      heightCm: null,
       medications: 'Levothyroxine 50mcg',
       conditions: null,
+      familyConditions: null,
       ongoingSymptoms: null,
     });
   });
@@ -446,15 +467,11 @@ describe('Profile', () => {
     renderPage();
     emit(
       makeProfile({
-        healthContext: {
+        healthContext: makeContext({
           dateOfBirth: '1990-04-02',
           biologicalSex: 'female',
-          pregnancyStatus: null,
           medications: 'Levothyroxine 50mcg',
-          conditions: null,
-          ongoingSymptoms: null,
-          updatedAt: null,
-        },
+        }),
       }),
     );
 
@@ -473,15 +490,12 @@ describe('Profile', () => {
     renderPage();
     emit(
       makeProfile({
-        healthContext: {
+        healthContext: makeContext({
           dateOfBirth: '1990-04-02',
           biologicalSex: 'female',
           pregnancyStatus: 'not_pregnant',
           medications: 'Levothyroxine 50mcg',
-          conditions: null,
-          ongoingSymptoms: null,
-          updatedAt: null,
-        },
+        }),
       }),
     );
 
@@ -494,20 +508,210 @@ describe('Profile', () => {
     expect(screen.getByLabelText(/^medications/i)).toHaveValue('Levothyroxine 50mcg');
   });
 
+  it('saves the weight and height as numbers, not as the text typed', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.type(await screen.findByLabelText(/weight/i), '70.5');
+    await user.type(screen.getByLabelText(/height/i), '175');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(updateHealthContext).toHaveBeenCalledWith(
+      'test-uid',
+      expect.objectContaining({ weightKg: 70.5, heightCm: 175 }),
+    );
+  });
+
+  it('shows the body mass index as soon as both measurements are there', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    const weight = await screen.findByLabelText(/weight/i);
+    await user.type(weight, '70');
+    // One measurement is not an index, and a half-computed number would be
+    // worse than none.
+    expect(screen.getByText('—')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/height/i), '175');
+    // 70 / 1.75² = 22.857…
+    expect(await screen.findByText('22.9')).toBeInTheDocument();
+  });
+
+  it('computes the index without waiting for a save', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile({ healthContext: makeContext({ weightKg: 70, heightCm: 175 }) }));
+
+    expect(await screen.findByText('22.9')).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText(/weight/i));
+    await user.type(screen.getByLabelText(/weight/i), '80');
+
+    // Derived, never stored — the figure follows the fields rather than the
+    // document, so a correction is reflected before it is written.
+    expect(await screen.findByText('26.1')).toBeInTheDocument();
+    expect(updateHealthContext).not.toHaveBeenCalled();
+  });
+
+  it('signals the band the index falls in, in words as well as colour', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.type(await screen.findByLabelText(/weight/i), '95');
+    await user.type(screen.getByLabelText(/height/i), '175');
+
+    // 95 / 1.75² = 31.0 — over the table's last threshold. The colour is the
+    // last layer; the word is what survives greyscale and a screen reader.
+    expect(await screen.findByText('31.0')).toBeInTheDocument();
+    expect(screen.getAllByText('Obesity').length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ['45', 'Below the normal range'],
+    ['70', 'Normal'],
+    ['85', 'Above the normal range'],
+    ['95', 'Obesity'],
+  ])('puts %s kg at 175 cm in the %s band', async (weight, band) => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.type(await screen.findByLabelText(/weight/i), weight);
+    await user.type(screen.getByLabelText(/height/i), '175');
+
+    expect(screen.getAllByText(band).length).toBeGreaterThan(0);
+  });
+
+  it('shows the published table, so the signal can be checked', async () => {
+    renderPage();
+    emit(makeProfile());
+
+    // A coloured light with no scale beside it is a verdict the reader cannot
+    // check against anything.
+    expect(await screen.findByText('Under 18.5')).toBeInTheDocument();
+    expect(screen.getByText('18.5 – 24.9')).toBeInTheDocument();
+    expect(screen.getByText('25.0 – 29.9')).toBeInTheDocument();
+    expect(screen.getByText('30.0 and over')).toBeInTheDocument();
+  });
+
+  it('says the table is an adult scale', async () => {
+    renderPage();
+    emit(makeProfile());
+
+    // Under eighteen the index is read against percentile charts, and a parent
+    // checking a child against these four numbers is reading the wrong chart.
+    expect(await screen.findByText(/apply to adults only/i)).toBeInTheDocument();
+  });
+
+  it('keeps the index on screen before there is anything to compute it from', async () => {
+    renderPage();
+    emit(makeProfile());
+
+    // A figure that appears and disappears as the fields fill in reads as the
+    // app losing it.
+    expect(await screen.findByText('Body mass index')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('says the index is arithmetic rather than an assessment', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.type(await screen.findByLabelText(/weight/i), '70');
+    await user.type(screen.getByLabelText(/height/i), '175');
+
+    // The band names where the number falls on a published table. It still
+    // refuses to say what to do about it.
+    expect(screen.getByText(/not a judgement about your health/i)).toBeInTheDocument();
+    expect(screen.queryByText(/you should|we recommend|talk to your doctor/i)).toBeNull();
+  });
+
+  it('refuses a height typed in metres instead of storing it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.type(await screen.findByLabelText(/height/i), '1.75');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(updateHealthContext).not.toHaveBeenCalled();
+    expect(await screen.findByText(/enter a height in centimetres/i)).toBeInTheDocument();
+  });
+
+  it('refuses a weight that is not a number', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.type(await screen.findByLabelText(/weight/i), 'seventy');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(updateHealthContext).not.toHaveBeenCalled();
+    expect(await screen.findByText(/enter a weight in kilograms/i)).toBeInTheDocument();
+  });
+
+  it('does not complain about measurements left blank', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.selectOptions(await screen.findByLabelText(/biological sex/i), 'male');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    // Every field here is optional; an empty weight is an answer, not an error.
+    expect(updateHealthContext).toHaveBeenCalledWith(
+      'test-uid',
+      expect.objectContaining({ weightKg: null, heightCm: null }),
+    );
+  });
+
+  it('keeps family illnesses apart from the ongoing ones', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    emit(makeProfile());
+
+    await user.type(await screen.findByLabelText(/ongoing conditions/i), 'Hypothyroidism');
+    await user.type(screen.getByLabelText(/family illnesses/i), 'Type 2 diabetes — father');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    // Two lists, because a thyroid of your own and a father's diabetes are two
+    // different facts about two different people.
+    expect(updateHealthContext).toHaveBeenCalledWith(
+      'test-uid',
+      expect.objectContaining({
+        conditions: 'Hypothyroidism',
+        familyConditions: 'Type 2 diabetes — father',
+      }),
+    );
+  });
+
+  it('shows the stored illness history in the form rather than an empty one', async () => {
+    renderPage();
+    emit(
+      makeProfile({
+        healthContext: makeContext({
+          weightKg: 62,
+          heightCm: 168,
+          familyConditions: 'Type 2 diabetes — father',
+        }),
+      }),
+    );
+
+    expect(await screen.findByLabelText(/weight/i)).toHaveValue('62');
+    expect(screen.getByLabelText(/height/i)).toHaveValue('168');
+    expect(screen.getByLabelText(/family illnesses/i)).toHaveValue('Type 2 diabetes — father');
+  });
+
   it('confirms before removing the whole health context', async () => {
     const user = userEvent.setup();
     renderPage();
     emit(
       makeProfile({
-        healthContext: {
-          dateOfBirth: '1990-04-02',
-          biologicalSex: null,
-          pregnancyStatus: null,
-          medications: null,
-          conditions: null,
-          ongoingSymptoms: null,
-          updatedAt: null,
-        },
+        healthContext: makeContext({ dateOfBirth: '1990-04-02' }),
       }),
     );
 

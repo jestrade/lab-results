@@ -180,15 +180,8 @@ export interface HealthContext {
   /** What the reader lives with now. */
   conditions: string | null;
   /**
-   * What they have had and no longer have. Kept apart from `conditions`
-   * because the difference matters to anyone reading the record: a pneumonia
-   * in 2019 and a pneumonia today are not the same fact, and one list holding
-   * both would leave a reader unable to say which they meant.
-   */
-  pastConditions: string | null;
-  /**
    * What runs in the family. About relatives, not about the reader — so it is
-   * never mixed into the two lists above, which are about their own body.
+   * never mixed into the list above, which is about their own body.
    */
   familyConditions: string | null;
   ongoingSymptoms: string | null;

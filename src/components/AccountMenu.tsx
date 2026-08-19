@@ -17,6 +17,26 @@
  * controlling a plain region is the honest description, and it keeps Tab
  * working the way it does everywhere else.
  *
+ * ── The record, and why hovering is not the only way in ───────────────────
+ *
+ * The panel also lists what the profile holds — the identity document and the
+ * lists of what the reader lives with. Each row shows its heading and reveals
+ * the value on hover, which is what was asked for and is a good way to keep a
+ * summary this dense readable.
+ *
+ * The body mass index sits above that list rather than in it, and is always
+ * drawn: the rows are "what you saved", the index is "what your account says
+ * about your body", and one of those should not blink out of existence when a
+ * field is cleared. Its traffic light never travels alone — the band's name is
+ * beside it, and the adults-only caveat under it.
+ *
+ * It is not the *only* way in, because hover is not available to everyone. The
+ * value is always in the accessibility tree — collapsed to zero height, never
+ * `display: none` — so a screen reader reads "Past illnesses, pneumonia 2019"
+ * from the row itself. The row is a button, so a tap opens it on a touch
+ * screen and a keyboard reader gets it on focus. Hover is the convenience;
+ * none of the three is the only door.
+ *
  * ── What deliberately stays visible ───────────────────────────────────────
  *
  * One thing: the dot on the trigger when the address is unverified. Grouping
@@ -28,14 +48,19 @@
  * privilege rather than a task, and it reads inside the panel.
  */
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/auth/useAuth';
 import { useI18n } from '@/i18n/useI18n';
+import { BMI_BANDS } from '@/domain/bmi';
+import { summariseBody, summariseProfile } from '@/domain/profileSummary';
+import type { UserProfile } from '@/domain/types';
+import { subscribeToProfile } from '@/services/profiles';
 
 import { Icon } from './Icon';
 import { LanguageSwitcher } from './LanguagePicker';
+import { Skeleton } from './Skeleton';
 import { Tag } from './Tag';
 
 export interface AccountMenuProps {
@@ -44,14 +69,38 @@ export interface AccountMenuProps {
 
 export function AccountMenu({ onSignOut }: AccountMenuProps) {
   const { user, isAdmin, isEmailVerified } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null | undefined>(undefined);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const email = user?.email ?? '';
+
+  /**
+   * Subscribed only while the panel is open.
+   *
+   * A listener held on every page would be a Firestore read on every
+   * navigation, for a panel most readers never open, to draw rows nobody is
+   * looking at. Opening it costs one read and the rows appear; closing it
+   * releases the listener. The skeleton below is what that costs, and it is
+   * the honest trade.
+   */
+  useEffect(() => {
+    if (!open || !user) return;
+    return subscribeToProfile(
+      user.uid,
+      (next) => setProfile(next),
+      // A summary that cannot load is not worth an error banner in a menu —
+      // the row list simply stays empty and the profile link still works.
+      () => setProfile(null),
+    );
+  }, [open, user]);
+
+  const summary = useMemo(() => summariseProfile(profile ?? null, locale), [profile, locale]);
+  const body = useMemo(() => summariseBody(profile ?? null, locale), [profile, locale]);
 
   useEffect(() => {
     if (!open) return;
@@ -141,6 +190,61 @@ export function AccountMenu({ onSignOut }: AccountMenuProps) {
 
           <div className="account-panel-rule" />
 
+          <div className="account-summary">
+            <span className="account-panel-label">{t('account.summary.heading')}</span>
+
+            {profile === undefined ? (
+              <Skeleton height={84} radius="var(--radius-md)" />
+            ) : (
+              <>
+                {/* Unconditional. The index reads `—` until there is something
+                    to compute it from, rather than the row vanishing — a
+                    figure that comes and goes reads as the app losing it. */}
+                <div className="account-bmi" data-signal={body.band ? BMI_BANDS[body.band].signal : undefined}>
+                  <span className="account-bmi-dot" aria-hidden="true" />
+                  <span className="account-bmi-label">{t('profile.bmi')}</span>
+                  <span className="account-bmi-value">{body.index ?? '—'}</span>
+                  {body.band ? (
+                    <span className="account-bmi-band">{t(BMI_BANDS[body.band].labelKey)}</span>
+                  ) : null}
+                </div>
+                {body.measurements ? (
+                  <p className="account-summary-hint">{body.measurements}</p>
+                ) : null}
+                {body.band ? (
+                  <p className="account-summary-hint">{t('profile.bmiAdultsOnly')}</p>
+                ) : null}
+
+                <hr style={{ margin: '1px 0' }} />
+
+                {summary.length > 0 ? (
+                  <>
+                    <p className="account-summary-hint">{t('account.summary.hint')}</p>
+                    <ul className="account-summary-list">
+                      {summary.map((item) => (
+                        <SummaryRow
+                          key={item.key}
+                          itemKey={item.key}
+                          label={item.label}
+                          value={item.value}
+                        />
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="account-summary-empty">{t('account.summary.empty')}</p>
+                )}
+
+                <Link className="account-panel-link" to="/profile" onClick={() => setOpen(false)}>
+                  {summary.length === 0 ? t('account.summary.fillIn') : t('account.summary.edit')}
+                  <Icon name="arrow-right" size={13} />
+                </Link>
+              </>
+            )}
+          </div>
+
+          <div className="account-panel-rule" />
+
           <div className="account-panel-row">
             <LanguageSwitcher />
           </div>
@@ -154,6 +258,47 @@ export function AccountMenu({ onSignOut }: AccountMenuProps) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * One row of the record: a heading, and the value under it.
+ *
+ * A `<button>` rather than a styled `<div>` with a hover rule, for one reason:
+ * a touch screen has no hover. The pointer reveal is CSS on `:hover`, the
+ * keyboard reveal is CSS on `:focus-visible`, and the tap reveal is this state
+ * — three routes to the same row, none of them the only one.
+ *
+ * The value is inside the button, so the button's accessible name is "Past
+ * illnesses, pneumonia 2019" and a screen reader never has to trigger anything
+ * to reach it. That is why the collapsed state is `height: 0; overflow:
+ * hidden` and not `display: none` — the latter would take the value out of the
+ * accessibility tree and make hover the only way to read a medical record.
+ */
+function SummaryRow({
+  itemKey,
+  label,
+  value,
+}: {
+  itemKey: string;
+  label: string;
+  value: string;
+}) {
+  const [pinned, setPinned] = useState(false);
+
+  return (
+    <li>
+      <button
+        type="button"
+        className="account-summary-item"
+        data-item={itemKey}
+        data-pinned={pinned ? 'true' : undefined}
+        onClick={() => setPinned((current) => !current)}
+      >
+        <span className="account-summary-label">{label}</span>
+        <span className="account-summary-value">{value}</span>
+      </button>
+    </li>
   );
 }
 
