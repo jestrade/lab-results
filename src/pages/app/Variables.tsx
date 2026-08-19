@@ -21,7 +21,6 @@ import type { Locale } from '@/domain/locales';
 import { isOutOfRange } from '@/domain/status';
 import type { LabVariable, VariableSeries } from '@/domain/types';
 import {
-  categoryLabel,
   describeSparkline,
   filterParams,
   groupByCategory,
@@ -44,6 +43,7 @@ import {
   fetchVariableCatalog,
   subscribeToVariableSeries,
 } from '@/services/variables';
+import { useVariableCategories } from '@/hooks/useVariableCategories';
 
 /**
  * Laboratory variables (KAN-45).
@@ -77,6 +77,7 @@ export function Variables() {
 
   const [series, setSeries] = useState<VariableSeries[] | null>(null);
   const [catalog, setCatalog] = useState<Map<string, LabVariable> | null>(null);
+  const categories = useVariableCategories();
   const [error, setError] = useState<string | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -181,16 +182,14 @@ export function Variables() {
   /**
    * Categories the user actually has results in — not the whole catalog.
    *
-   * Ordered by `CATEGORY_ORDER` via `groupByCategory` below rather than by
-   * first appearance, so the filter chips sit in the same order as the
-   * sections they scroll to.
+   * Ordered by the catalog via `groupByCategory` below rather than by first
+   * appearance, so the filter chips sit in the same order as the sections
+   * they scroll to.
    */
-  const availableCategories = useMemo(() => {
-    const present = new Set(inWindow.map((entry) => entry.category));
-    return groupByCategory(inWindow, locale)
-      .map((group) => group.category)
-      .filter((category) => present.has(category));
-  }, [inWindow, locale]);
+  const availableCategories = useMemo(
+    () => groupByCategory(inWindow, categories, locale).map((group) => group.category),
+    [inWindow, categories, locale],
+  );
 
   const visible = useMemo(
     () =>
@@ -203,7 +202,10 @@ export function Variables() {
     [inWindow, query, category, outOfRangeOnly],
   );
 
-  const groups = useMemo(() => groupByCategory(visible, locale), [visible, locale]);
+  const groups = useMemo(
+    () => groupByCategory(visible, categories, locale),
+    [visible, categories, locale],
+  );
   /** The flat orderings. Only read when `sort` is not `category`. */
   const ordered = useMemo(() => sortSeries(visible, sort, locale), [visible, sort, locale]);
   const hasFilters = hasActiveFilters({ query, category, outOfRangeOnly, sort, period });
@@ -287,7 +289,7 @@ export function Variables() {
                   aria-pressed={category === option}
                   onClick={() => updateFilters({ category: option })}
                 >
-                  {categoryLabel(option, locale)}
+                  {categories.label(option, locale)}
                 </button>
               ))}
             </div>

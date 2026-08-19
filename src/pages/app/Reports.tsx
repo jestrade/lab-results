@@ -7,6 +7,7 @@ import { DataTable, type Column } from '@/components/DataTable';
 import { EmptyState } from '@/components/EmptyState';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
+import { PdfViewerModal } from '@/components/PdfViewerModal';
 import { SkeletonTable } from '@/components/Skeleton';
 import { ReportStatusBadge } from '@/components/StatusBadge';
 import { Tag } from '@/components/Tag';
@@ -67,6 +68,19 @@ export function Reports() {
   const [deleting, setDeleting] = useState(false);
   /** Id of the report being reprocessed — one at a time, and only its own row spins. */
   const [retrying, setRetrying] = useState<string | null>(null);
+
+  /**
+   * The report whose PDF is on screen, and the URL the frame is pointing at.
+   *
+   * One piece of state rather than three, because they are only ever true
+   * together: closing the dialog must not leave a stale URL behind for the
+   * next report to flash before its own resolves.
+   */
+  const [preview, setPreview] = useState<{
+    report: Report;
+    url: string | null;
+    error: string | null;
+  } | null>(null);
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [confirmingBulk, setConfirmingBulk] = useState(false);
@@ -134,12 +148,29 @@ export function Reports() {
     };
   }, [reports]);
 
+  /**
+   * Shows the stored PDF over the list rather than in a new tab (spec §40).
+   *
+   * The dialog opens on the click, before the download URL exists — the URL
+   * costs a round trip to Storage, and waiting for it would leave the button
+   * looking dead for as long as that takes. The failure is reported inside the
+   * dialog the reader is already looking at, not in a toast beside it.
+   */
   async function handleOpenPdf(report: Report) {
+    setPreview({ report, url: null, error: null });
     try {
       const url = await getReportDownloadUrl(report);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // A second row can be pressed, or the dialog closed, while this
+      // resolves. Only the report currently on screen may take the URL.
+      setPreview((current) =>
+        current?.report.id === report.id ? { ...current, url } : current,
+      );
     } catch {
-      push(t('reports.openFailed'), 'danger');
+      setPreview((current) =>
+        current?.report.id === report.id
+          ? { ...current, error: t('reports.openFailed') }
+          : current,
+      );
     }
   }
 
@@ -496,6 +527,16 @@ export function Reports() {
           />
         </>
       )}
+
+      <PdfViewerModal
+        open={preview !== null}
+        fileName={
+          preview ? preview.report.userLabel || preview.report.originalFileName : ''
+        }
+        src={preview?.url ?? null}
+        error={preview?.error ?? null}
+        onClose={() => setPreview(null)}
+      />
 
       <Modal
         open={pendingDelete !== null}

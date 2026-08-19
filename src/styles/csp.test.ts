@@ -61,6 +61,15 @@ describe('content security policy', () => {
     expect(frameSrc).toContain('https://accounts.google.com');
   });
 
+  it('frames the Storage host the report viewer points at', () => {
+    // The reports list shows a stored PDF in a dialog rather than handing it
+    // to a new tab, and the frame's src is the Firebase Storage download URL.
+    // Drop this and the dialog opens onto a blank rectangle in production
+    // only — the dev variant also allows the Storage emulator.
+    expect(productionCsp).toMatch(/frame-src[^;]*https:\/\/firebasestorage\.googleapis\.com/);
+    expect(developmentCsp).toMatch(/frame-src[^;]*127\.0\.0\.1:9199/);
+  });
+
   it('keeps font-src locked to self, which requires fonts never be inlined', () => {
     // If this ever needs `data:`, the real fix is build.assetsInlineLimit in
     // vite.config.ts, not loosening the policy.

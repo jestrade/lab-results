@@ -1,4 +1,39 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const firestore = vi.hoisted(() => ({
+  getFirestore: vi.fn(),
+  FieldValue: { serverTimestamp: () => 'ts' },
+  // A real class, because `millis()` narrows with `instanceof`. Nothing below
+  // needs a resolved timestamp, so the documents carry plain values and every
+  // `millis()` answers null — the shape a report written before
+  // `processingStartedAt` existed has, and the one the policy treats as stale.
+  Timestamp: class Timestamp {},
+}));
+const storage = vi.hoisted(() => ({ getStorage: vi.fn() }));
+const pipeline = vi.hoisted(() => ({ processReport: vi.fn() }));
+
+vi.mock('firebase-admin/firestore', () => firestore);
+vi.mock('firebase-admin/storage', () => storage);
+vi.mock('./pipeline', () => pipeline);
+vi.mock('firebase-functions/logger', () => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+}));
+// `onCall` returns the handler itself here, so it can be called directly —
+// same arrangement as `userAdmin.test.ts`.
+vi.mock('firebase-functions/v2/https', () => ({
+  onCall: (_options: unknown, handler: unknown) => handler,
+  HttpsError: class HttpsError extends Error {
+    constructor(
+      readonly code: string,
+      message: string,
+    ) {
+      super(message);
+    }
+  },
+}));
 
 import {
   MAX_RETRIES,
@@ -6,12 +41,18 @@ import {
   STALE_PROCESSING_MS,
   isPermanentFailure,
   retryDecision,
+  retryReport,
 } from './retry';
 
 /**
- * The callable itself is a thin shell around `processReport`; what is worth
+ * Most of the callable is a thin shell around `processReport`; what is worth
  * testing is the policy that decides whether a user's report is run through
  * the pipeline a second time — and, more to the point, when it is not.
+ *
+ * The shell is exercised at one point, and it is the one where getting it
+ * wrong is a privacy failure rather than an inconvenience: who is allowed to
+ * ask for somebody else's report to be reprocessed, and what is written down
+ * when they do (KAN-20).
  */
 
 const NOW = Date.UTC(2026, 7, 5, 12, 0, 0);
@@ -135,5 +176,131 @@ describe('retryDecision', () => {
       NOW,
     );
     expect(decision).toMatchObject({ allowed: false, reason: 'permanent-failure' });
+  });
+});
+
+/**
+ * Who may ask for a report to be reprocessed.
+ *
+ * The console's job list (KAN-20) shows work stranded across every account,
+ * so an admin has to be able to act on a report they do not own — and that is
+ * the only widening. The policy, the budget and the refusals are the same for
+ * them as for the account holder, the run is performed as the *owner*, and the
+ * act is written to the audit trail.
+ */
+describe('retryReport, as a caller', () => {
+  /** Every effect, in the order it happened — order is part of the contract. */
+  let journal: string[];
+  let added: Record<string, unknown>[];
+  let report: Record<string, unknown>;
+
+  function makeDb() {
+    const ref = { id: 'r1' };
+    return {
+      collection: (name: string) => ({
+        doc: () => ({
+          ...ref,
+          collection: () => ({ listDocuments: async () => [] }),
+          set: async (data: Record<string, unknown>) => {
+            journal.push(`set:${name}/r1:status=${String(data.status)}`);
+          },
+          get: async () => ({ exists: true, data: () => report }),
+        }),
+        add: async (data: Record<string, unknown>) => {
+          journal.push(`add:${name}:${String(data.action)}`);
+          added.push(data);
+        },
+      }),
+      runTransaction: async (work: (tx: unknown) => Promise<unknown>) =>
+        work({
+          get: async () => ({ exists: true, data: () => report }),
+          set: (_ref: unknown, data: Record<string, unknown>) => {
+            journal.push(`claim:status=${String(data.status)}:attempt=${String(data.retryCount)}`);
+          },
+        }),
+    };
+  }
+
+  function call(auth: { uid: string; token: Record<string, unknown> }) {
+    return (retryReport as unknown as (request: unknown) => Promise<{ status: string }>)({
+      auth,
+      data: { reportId: 'r1' },
+    });
+  }
+
+  const owner = { uid: 'owner-1', token: {} };
+  const admin = { uid: 'admin-1', token: { role: 'admin' } };
+  const stranger = { uid: 'stranger-1', token: {} };
+
+  beforeEach(() => {
+    journal = [];
+    added = [];
+    report = {
+      ownerId: 'owner-1',
+      status: 'failed',
+      warnings: [{ code: 'extraction/timeout' }],
+      storagePath: 'users/owner-1/reports/r1.pdf',
+      retryCount: 0,
+    };
+    firestore.getFirestore.mockReturnValue(makeDb());
+    storage.getStorage.mockReturnValue({
+      bucket: () => ({ name: 'bucket', file: () => ({ exists: async () => [true] }) }),
+    });
+    pipeline.processReport.mockReset();
+    pipeline.processReport.mockResolvedValue(undefined);
+  });
+
+  it('refuses a signed-in stranger', async () => {
+    await expect(call(stranger)).rejects.toMatchObject({ code: 'permission-denied' });
+    expect(pipeline.processReport).not.toHaveBeenCalled();
+  });
+
+  it('lets an admin rescue a report they do not own', async () => {
+    await call(admin);
+    expect(pipeline.processReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs as the owner, not as the admin who pressed the button', async () => {
+    // Whose AI-processing consent is checked, and whose variable series the
+    // results land on. Passing the caller would have read the admin's consent
+    // and written somebody else's blood work onto the admin's account.
+    await call(admin);
+    expect(pipeline.processReport).toHaveBeenCalledWith(
+      expect.objectContaining({ ownerId: 'owner-1' }),
+    );
+  });
+
+  it('records an admin acting on somebody else’s record', async () => {
+    await call(admin);
+
+    expect(journal).toContain('add:auditLogs:report.retried');
+    expect(added[0]).toMatchObject({
+      action: 'report.retried',
+      actorId: 'admin-1',
+      targetId: 'owner-1',
+      reportId: 'r1',
+      attempt: 1,
+    });
+  });
+
+  it('writes no audit entry when the owner retries their own report', async () => {
+    // Everyday use of a feature the owner already has on their file list.
+    // Logging it would bury the entries that matter under the ones that do not.
+    await call(owner);
+
+    expect(journal).not.toContain('add:auditLogs:report.retried');
+    expect(pipeline.processReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives an admin no exemption from the attempt cap', async () => {
+    report.retryCount = MAX_RETRIES;
+    await expect(call(admin)).rejects.toMatchObject({ code: 'resource-exhausted' });
+    expect(pipeline.processReport).not.toHaveBeenCalled();
+  });
+
+  it('gives an admin no exemption from a failure a second reading cannot fix', async () => {
+    report.warnings = [{ code: 'extraction/no-text-layer' }];
+    await expect(call(admin)).rejects.toMatchObject({ code: 'failed-precondition' });
+    expect(pipeline.processReport).not.toHaveBeenCalled();
   });
 });

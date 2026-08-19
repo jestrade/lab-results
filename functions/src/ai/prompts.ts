@@ -158,6 +158,17 @@ them; omit either if it does not.
 );
 
 /**
+ * The version stored on every entry the enrichment pass writes.
+ *
+ * Separate from the template because the template is built per call — the
+ * category list comes from Firestore — and the version has to be quotable
+ * without building one. Bumped to 2.0.0 when the categories stopped being
+ * part of the wording: entries written before that were told a fixed list,
+ * and that is exactly the kind of difference the version exists to record.
+ */
+export const VARIABLE_CATALOG_ENTRY_VERSION = '2.0.0';
+
+/**
  * Fills in a catalog entry for a test nobody has curated yet (KAN-8, KAN-15).
  *
  * Runs once per newly discovered variable, on the test's *name* alone — no
@@ -170,11 +181,23 @@ them; omit either if it does not.
  * mis-filed variable is not a cosmetic problem — the grid groups by category,
  * and a lipid marker filed under thyroid tells the reader the laboratory
  * grouped it that way.
+ *
+ * ── Why the categories are interpolated rather than written out ──────────
+ *
+ * They are `variableCategories` documents, so the list an admin can add to has
+ * to reach the model without a deploy. The wording around them is fixed and
+ * versioned as usual; the ids are data, and a project that has added a panel
+ * gets a prompt that knows about it.
+ *
+ * `other` is named separately in the rules below and does not depend on the
+ * collection containing it — the fallback has to be available on a project
+ * whose categories have not been seeded.
  */
-export const VARIABLE_CATALOG_ENTRY = prompt(
-  'variable-explanation',
-  '1.1.0',
-  `
+export function variableCatalogEntry(categories: readonly string[]): AiPrompt {
+  return prompt(
+    'variable-explanation',
+    VARIABLE_CATALOG_ENTRY_VERSION,
+    `
 You are given laboratory test names taken from real reports, one per line, each
 with an id. They may be in English or Spanish, abbreviated, or written the way
 one particular laboratory prints them.
@@ -189,10 +212,7 @@ For each one, return:
   why a clinician might order it.
 - descriptionEs: the same explanation in Spanish. A translation of the same
   content — not a different explanation, and not longer.
-- category: exactly one of complete_blood_count, coagulation, lipid_profile,
-  glucose_metabolism, liver_function, kidney_function, thyroid, electrolytes,
-  iron_metabolism, vitamins, hormones, inflammation, allergy, tumour_markers,
-  urinalysis, faecal, semen_analysis, other.
+- category: exactly one of ${categories.join(', ')}.
 - unit: the unit this test is most commonly reported in, or null. This is
   reference information only; it is never used to interpret a value.
 
@@ -208,7 +228,8 @@ Absolute rules for this task:
   the test and is shown to everyone.
 - Do not say whether high or low values are good, bad, or concerning.
 `,
-);
+  );
+}
 
 /** Connectivity probe. Carries no report data and no personal content. */
 export const HEALTH_CHECK = prompt(

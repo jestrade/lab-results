@@ -32,7 +32,6 @@
 import { LOCALES, type Locale } from './locales';
 import { readPage } from './pagination';
 import type { LabVariable, VariableCategory, VariableOrigin } from './types';
-import { CATEGORY_ORDER } from './variables';
 
 /**
  * One catalog entry as the editor holds it.
@@ -340,7 +339,10 @@ export function readFilters(params: URLSearchParams): CatalogFilters {
 
   return {
     query: params.get('q') ?? '',
-    category: isCategory(category) ? category : 'all',
+    // Any non-empty id, for the reason `readFilters` in domain/variables.ts
+    // gives: the ids are Firestore documents now, so there is no compiled-in
+    // list to check a URL against and no loaded one this early.
+    category: category?.trim() ? category.trim() : 'all',
     origin: origin === 'catalog' || origin === 'discovered' ? origin : 'all',
     needsReview: params.get('review') === '1',
     page: readPage(params),
@@ -356,10 +358,6 @@ export function filterParams(filters: CatalogFilters): URLSearchParams {
   // Page one is the absence of a page, so a pristine view has a clean URL.
   if (filters.page > 1) params.set('page', String(filters.page));
   return params;
-}
-
-function isCategory(value: string | null): value is VariableCategory {
-  return value !== null && (CATEGORY_ORDER as readonly string[]).includes(value);
 }
 
 /**

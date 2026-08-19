@@ -45,37 +45,41 @@ export type ReferenceRangeSource =
 export type UserRole = 'user' | 'admin';
 
 /**
- * The panel a test belongs to.
+ * The panel a test belongs to — the id of a `variableCategories` document.
  *
  * These are the groups a laboratory prints on a report, not a taxonomy of our
- * own — which is why `semen_analysis` and `coagulation` are here beside
- * `thyroid`, and why `iron_metabolism` is separate from `vitamins`: ferritin
- * and serum iron are iron studies, and a reader looking for them under
- * vitamins is a reader who cannot find their own result.
+ * own, and they are reference data rather than a union baked into the build.
+ * A laboratory that prints a panel we have never seen is a document an admin
+ * adds; it should not be a deploy, and it must not be two deploys across an
+ * app and a functions codebase that can disagree in between.
+ *
+ * So this is `string`, and the set of ids that exist is whatever the
+ * collection holds — see `src/domain/categories.ts` for the value object the
+ * app reads it into, and `seeds/categories.json` for what a fresh project
+ * starts with.
  *
  * `other` is the honest answer, never a dumping ground. The extraction
  * pipeline is told to choose it rather than guess (see `ai/prompts.ts`), and
  * an entry that stays there is one the catalog has not been taught yet.
  */
-export type VariableCategory =
-  | 'complete_blood_count'
-  | 'coagulation'
-  | 'lipid_profile'
-  | 'glucose_metabolism'
-  | 'liver_function'
-  | 'kidney_function'
-  | 'thyroid'
-  | 'electrolytes'
-  | 'iron_metabolism'
-  | 'vitamins'
-  | 'hormones'
-  | 'inflammation'
-  | 'allergy'
-  | 'tumour_markers'
-  | 'urinalysis'
-  | 'faecal'
-  | 'semen_analysis'
-  | 'other';
+export type VariableCategory = string;
+
+/**
+ * `variableCategories/{categoryId}` — one panel heading on the variables grid.
+ *
+ * Reference data on the same terms as `variables/{variableId}`: readable by
+ * any signed-in user, written only by an admin.
+ */
+export interface LabVariableCategory {
+  id: string;
+  /** Heading per locale. These are panel names, not literal translations. */
+  names: Translated;
+  /**
+   * Where it sits on the grid. Sorted on, not indexed by, so gaps and
+   * duplicates are legal — a duplicate just falls through to the id.
+   */
+  order: number;
+}
 
 /** `users/{uid}` */
 export interface UserProfile {

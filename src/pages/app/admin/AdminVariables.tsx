@@ -13,7 +13,7 @@ import { Tag } from '@/components/Tag';
 import { useToast } from '@/components/useToast';
 import { LOCALE_LABEL, LOCALES, type Locale } from '@/domain/locales';
 import type { LabVariable, VariableCategory } from '@/domain/types';
-import { CATEGORY_ORDER, categoryLabel } from '@/domain/variables';
+import { OTHER_CATEGORY, type CategoryCatalog } from '@/domain/categories';
 import {
   deriveId,
   draftToDocument,
@@ -37,6 +37,7 @@ import {
   updateVariable,
   VariableExistsError,
 } from '@/services/adminCatalog';
+import { useVariableCategories } from '@/hooks/useVariableCategories';
 import { useI18n } from '@/i18n/useI18n';
 import type { I18nContextValue } from '@/i18n/I18nContext';
 import type { MessageKey } from '@/i18n/messages';
@@ -74,6 +75,8 @@ import type { MessageKey } from '@/i18n/messages';
 export function AdminVariables() {
   const { t, locale } = useI18n();
   const { push } = useToast();
+
+  const categories = useVariableCategories();
 
   const [catalog, setCatalog] = useState<LabVariable[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,11 +130,31 @@ export function AdminVariables() {
     [all],
   );
 
-  /** Panels the catalog actually has entries in, in the grid's fixed order. */
-  const availableCategories = useMemo(() => {
-    const present = new Set(all.map((entry) => entry.category));
-    return CATEGORY_ORDER.filter((category) => present.has(category));
-  }, [all]);
+  /** Panels the catalog actually has entries in, in the grid's order. */
+  const availableCategories = useMemo(
+    () => categories.sort(all.map((entry) => entry.category), locale),
+    [all, categories, locale],
+  );
+
+  /**
+   * What the editor's category select offers.
+   *
+   * The collection's own list, plus any category an existing entry is already
+   * filed under, plus `other`. The second part is what stops an edit from
+   * quietly re-filing a variable: if a category document was deleted while
+   * entries still pointed at it, a select built only from the collection would
+   * show the first option as selected and save that on the next submit. The
+   * third is the fallback the pipeline uses, which has to be choosable even
+   * on a project whose categories have not been seeded.
+   */
+  const editableCategories = useMemo(
+    () =>
+      categories.sort(
+        [...categories.ids, ...all.map((entry) => entry.category), OTHER_CATEGORY],
+        locale,
+      ),
+    [all, categories, locale],
+  );
 
   const rows = useMemo(
     () =>
@@ -168,8 +191,8 @@ export function AdminVariables() {
     {
       key: 'category',
       header: t('adminVariables.columnCategory'),
-      sortValue: (row) => categoryLabel(row.category, locale),
-      render: (row) => categoryLabel(row.category, locale),
+      sortValue: (row) => categories.label(row.category, locale),
+      render: (row) => categories.label(row.category, locale),
     },
     {
       key: 'unit',
@@ -290,7 +313,7 @@ export function AdminVariables() {
                   pressed={filters.category === category}
                   onClick={() => updateFilters({ category })}
                 >
-                  {categoryLabel(category, locale)}
+                  {categories.label(category, locale)}
                 </FilterChip>
               ))}
             </div>
@@ -361,6 +384,8 @@ export function AdminVariables() {
         <VariableEditor
           variable={editing === 'new' ? null : editing}
           catalog={all}
+          categories={categories}
+          categoryOptions={editableCategories}
           onClose={() => setEditing(null)}
           onSaved={(message) => {
             push(message, 'success');
@@ -428,6 +453,8 @@ const ERROR_MESSAGE: Record<DraftErrorCode, MessageKey> = {
 function VariableEditor({
   variable,
   catalog,
+  categories,
+  categoryOptions,
   onClose,
   onSaved,
   t,
@@ -435,6 +462,9 @@ function VariableEditor({
 }: {
   variable: LabVariable | null;
   catalog: readonly LabVariable[];
+  categories: CategoryCatalog;
+  /** The ids the select offers — see `editableCategories` above. */
+  categoryOptions: readonly VariableCategory[];
   onClose: () => void;
   onSaved: (message: string) => void;
   t: I18nContextValue['t'];
@@ -619,9 +649,9 @@ function VariableEditor({
                 value={draft.category}
                 onChange={(event) => set('category', event.target.value as VariableCategory)}
               >
-                {CATEGORY_ORDER.map((category) => (
+                {categoryOptions.map((category) => (
                   <option key={category} value={category}>
-                    {categoryLabel(category, locale)}
+                    {categories.label(category, locale)}
                   </option>
                 ))}
               </select>

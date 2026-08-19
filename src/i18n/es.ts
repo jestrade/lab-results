@@ -180,16 +180,10 @@ export const es: Messages = {
   'sparkline.steady':
     '{name} apenas cambió, de {from} a {to}, a lo largo de {count} mediciones.',
 
-  // ── Not found / coming soon ───────────────────────────────────────────
+  // ── Not found ─────────────────────────────────────────────────────────
   'notFound.title': 'Esa página no existe',
   'notFound.body': 'Puede que el enlace esté anticuado o que la página haya cambiado de sitio.',
   'notFound.back': 'Volver al inicio',
-  'comingSoon.title': 'Todavía sin construir',
-  'comingSoon.body': '{description} Esta pantalla la construye {ticket}.',
-  'comingSoon.adminOverviewBody':
-    'Métricas de todo el sistema: usuarios, reportes, fallos y tiempo medio de procesamiento.',
-  'comingSoon.adminJobsBody':
-    'Trabajos de extracción en curso y fallidos, con sus duraciones y controles de reintento.',
 
   // ── Account settings ──────────────────────────────────────────────────
   'settings.aiHeading': 'Procesamiento con IA',
@@ -252,6 +246,10 @@ export const es: Messages = {
   'reports.viewDetailsLabel': 'Ver el detalle de {file}',
   'reports.originalPdf': 'PDF original',
   'reports.originalPdfLabel': 'Abrir el PDF original de {file}',
+  'reports.pdfLoading': 'Abriendo el PDF…',
+  'reports.pdfFrameTitle': 'PDF original de {file}',
+  'reports.openInNewTab': 'Abrir en una pestaña nueva',
+  'reports.openInNewTabLabel': 'Abrir {file} en una pestaña nueva del navegador',
   'reports.delete': 'Eliminar',
   'reports.deleteLabel': 'Eliminar {file}',
   'reports.caption': 'Tus reportes de laboratorio',
@@ -1063,6 +1061,67 @@ export const es: Messages = {
   'adminUsers.accessFailed': 'No se pudo cambiar el acceso de la cuenta.',
 
 
+  // ── Administración: trabajos de procesamiento (KAN-20, KAN-51) ────────
+  'adminJobs.intro':
+    'Extracciones que no han terminado, y las que fallaron. Solo identificadores de reporte y de cuenta: en esta pantalla no aparece ningún nombre de archivo ni ningún resultado.',
+  'adminJobs.loadingLabel': 'Cargando la cola de procesamiento',
+  'adminJobs.loadFailed': 'No se pudo cargar la cola de procesamiento.',
+  'adminJobs.search': 'Buscar trabajos',
+  'adminJobs.searchPlaceholder': 'Id de reporte, id de usuario o código de fallo',
+  'adminJobs.emptyTitle': 'No hay nada en la cola',
+  'adminJobs.emptyBody':
+    'Todos los reportes subidos terminaron de procesarse. Los trabajos aparecen aquí mientras se ejecutan, y se quedan si fallan.',
+  'adminJobs.noMatchTitle': 'Ningún trabajo coincide',
+  'adminJobs.noMatchBody': 'Quita un filtro o busca otro identificador.',
+  'adminJobs.showing': 'Mostrando {visible} de {total}.',
+  'adminJobs.filterState': 'Filtrar por estado',
+  'adminJobs.chipAll': 'Todos ({count})',
+  'adminJobs.chipInFlight': 'En curso ({count})',
+  'adminJobs.chipStalled': 'Detenidos ({count})',
+  'adminJobs.chipFailed': 'Fallidos ({count})',
+  'adminJobs.stalledAlertOne': '{count} trabajo lleva más tiempo del que puede durar una ejecución.',
+  'adminJobs.stalledAlertMany':
+    '{count} trabajos llevan más tiempo del que puede durar una ejecución.',
+  'adminJobs.stalledAlertBody':
+    'El procesamiento se ejecuta una sola vez y no se reinicia solo, así que estos trabajos perdieron su proceso y no van a terminar. Reprocesarlos es lo que los recupera.',
+  'adminJobs.tableCaption': 'Trabajos de extracción en curso y trabajos que fallaron',
+  'adminJobs.columnJob': 'Reporte',
+  'adminJobs.columnState': 'Estado',
+  'adminJobs.columnStarted': 'Intento iniciado',
+  'adminJobs.columnDuration': 'Duración',
+  'adminJobs.columnAttempts': 'Intentos',
+  'adminJobs.columnFailure': 'Motivo',
+  'adminJobs.columnActions': 'Acciones',
+  'adminJobs.ownerLabel': 'Cuenta {uid}',
+  'adminJobs.stateWaiting': 'En espera',
+  'adminJobs.stateRunning': 'Ejecutándose',
+  'adminJobs.stateStalled': 'Detenido',
+  'adminJobs.stateFailed': 'Fallido',
+  'adminJobs.startedUnknown': 'Sin registrar',
+  'adminJobs.durationHours': '{hours} h {minutes} min',
+  'adminJobs.durationMinutes': '{minutes} min {seconds} s',
+  'adminJobs.durationSeconds': '{seconds} s',
+  'adminJobs.durationNone': 'Sin registrar',
+  'adminJobs.durationNoneLabel':
+    'De una ejecución que falló no queda registrada la hora de término, así que no se conoce su duración.',
+  'adminJobs.attemptsFirst': 'Primera ejecución',
+  'adminJobs.attemptsSpent': 'Reintento {count} de {max}',
+  'adminJobs.noFailure': 'Todavía en curso',
+  'adminJobs.retry': 'Reprocesar',
+  'adminJobs.retrying': 'Reprocesando…',
+  'adminJobs.retryLabel': 'Reprocesar el reporte {report}',
+  'adminJobs.retryRunning': 'Todavía dentro del tiempo que puede durar una ejecución.',
+  'adminJobs.retryPermanent': 'Una segunda lectura fallaría de la misma manera.',
+  'adminJobs.retryExhausted': 'Reintentado {max} veces sin éxito.',
+  'adminJobs.retrySucceeded': 'El reporte {report} terminó de procesarse.',
+  'adminJobs.retryFailedAgain': 'El reporte {report} volvió a fallar.',
+  'adminJobs.retryNote':
+    'Reprocesar ejecuta el mismo proceso que la subida, con el mismo costo, y a un administrador se le aplican los mismos límites que a la persona dueña de la cuenta. Queda registrado en el historial de auditoría.',
+  'adminJobs.loadMore': 'Cargar más trabajos',
+  'adminJobs.limitNote':
+    'Mostrando {count} trabajos. La búsqueda solo alcanza los trabajos ya cargados: carga más para llegar al resto.',
+
+
   // ── Administración: panorama (KAN-18) ─────────────────────────────────
   'adminOverview.intro':
     'El estado del sistema en conjunto. Solo conteos y capacidad: en esta pantalla no aparece ningún valor de laboratorio ni los resultados de ninguna cuenta.',
@@ -1104,6 +1163,7 @@ export const es: Messages = {
   'adminOverview.auditUserDisabled': 'Cuenta desactivada',
   'adminOverview.auditUserEnabled': 'Cuenta reactivada',
   'adminOverview.auditAccountDeleted': 'Cuenta eliminada por su titular',
+  'adminOverview.auditReportRetried': 'Reporte reprocesado por un administrador',
   'adminOverview.auditUnknown': 'Acción registrada',
   'adminOverview.auditActor': 'por {actor}',
   'adminOverview.auditActorRedacted': 'por una cuenta eliminada',
@@ -1122,6 +1182,7 @@ export const es: Messages = {
   'pagination.goToPage': 'Ir a la página {page}',
   'pagination.catalogPages': 'Páginas del catálogo',
   'pagination.accountPages': 'Páginas de cuentas',
+  'pagination.jobPages': 'Páginas de trabajos',
 
 
   // ── Menú de la cuenta ─────────────────────────────────────────────────

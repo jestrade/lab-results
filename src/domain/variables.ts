@@ -9,7 +9,8 @@
 
 import { messageFor } from '@/i18n/catalogs';
 import type { MessageKey } from '@/i18n/messages';
-import { DEFAULT_LOCALE, translate, type Locale, type Translated } from './locales';
+import { NO_CATEGORIES, type CategoryCatalog } from './categories';
+import { DEFAULT_LOCALE, translate, type Locale } from './locales';
 import { present, rangeSourceLabel, TREND } from './status';
 import type {
   LabVariable,
@@ -18,47 +19,6 @@ import type {
   VariableCategory,
   VariableSeries,
 } from './types';
-
-/**
- * The group headings on the variables grid, per locale.
- *
- * These are the panel names a laboratory prints — "Biometría hemática" is what
- * a Mexican report calls a complete blood count, not a literal translation of
- * the English phrase. Translating the words rather than naming the panel would
- * produce headings no Spanish-speaking reader recognises from their own report.
- */
-export const CATEGORY_NAME: Record<VariableCategory, Translated> = {
-  complete_blood_count: { en: 'Complete blood count', es: 'Biometría hemática' },
-  coagulation: { en: 'Coagulation', es: 'Pruebas de coagulación' },
-  lipid_profile: { en: 'Lipid profile', es: 'Perfil de lípidos' },
-  glucose_metabolism: { en: 'Glucose metabolism', es: 'Metabolismo de la glucosa' },
-  liver_function: { en: 'Liver function', es: 'Función hepática' },
-  kidney_function: { en: 'Kidney function', es: 'Función renal' },
-  thyroid: { en: 'Thyroid', es: 'Tiroides' },
-  electrolytes: { en: 'Electrolytes', es: 'Electrolitos' },
-  iron_metabolism: { en: 'Iron studies', es: 'Metabolismo del hierro' },
-  vitamins: { en: 'Vitamins', es: 'Vitaminas' },
-  hormones: { en: 'Hormones', es: 'Hormonas' },
-  inflammation: { en: 'Inflammation', es: 'Inflamación' },
-  allergy: { en: 'Allergy (IgE)', es: 'Perfil de alergias (IgE)' },
-  tumour_markers: { en: 'Tumour markers', es: 'Marcadores tumorales' },
-  urinalysis: { en: 'Urinalysis', es: 'Examen general de orina' },
-  faecal: { en: 'Stool', es: 'Coprológico' },
-  semen_analysis: { en: 'Semen analysis', es: 'Espermatograma' },
-  other: { en: 'Other', es: 'Otros' },
-};
-
-export function categoryLabel(category: VariableCategory, locale: Locale): string {
-  return translate(CATEGORY_NAME[category], locale);
-}
-
-/** English labels, for contexts with no locale to hand (tests, logs). */
-export const CATEGORY_LABEL: Record<VariableCategory, string> = Object.fromEntries(
-  (Object.keys(CATEGORY_NAME) as VariableCategory[]).map((category) => [
-    category,
-    CATEGORY_NAME[category][DEFAULT_LOCALE],
-  ]),
-) as Record<VariableCategory, string>;
 
 /** The name to show for a series, in the reader's language. */
 export function seriesName(series: VariableSeries, locale: Locale): string {
@@ -109,32 +69,6 @@ export function withCatalog(
     };
   });
 }
-
-/**
- * Display order for category groups. Fixed rather than alphabetical so the
- * grid does not reshuffle as a user's panels change — a variable should stay
- * where they last saw it.
- */
-export const CATEGORY_ORDER: readonly VariableCategory[] = [
-  'complete_blood_count',
-  'coagulation',
-  'lipid_profile',
-  'glucose_metabolism',
-  'liver_function',
-  'kidney_function',
-  'thyroid',
-  'electrolytes',
-  'iron_metabolism',
-  'vitamins',
-  'hormones',
-  'inflammation',
-  'allergy',
-  'tumour_markers',
-  'urinalysis',
-  'faecal',
-  'semen_analysis',
-  'other',
-];
 
 /**
  * Points below which no direction is reported.
@@ -478,6 +412,7 @@ export function sortSeries(
 
 export function groupByCategory(
   all: VariableSeries[],
+  categories: CategoryCatalog = NO_CATEGORIES,
   locale: Locale = DEFAULT_LOCALE,
 ): CategoryGroup[] {
   const buckets = new Map<VariableCategory, VariableSeries[]>();
@@ -489,9 +424,15 @@ export function groupByCategory(
 
   const collator = new Intl.Collator(locale);
 
-  return CATEGORY_ORDER.filter((category) => buckets.has(category)).map((category) => ({
+  // Driven by the categories the reader actually has results in, ordered by
+  // the catalog — not by the catalog filtered down to those. The difference
+  // shows when the catalog has not loaded, or when a category document has
+  // been deleted out from under a series: iterating the catalog would drop
+  // those cards off the grid entirely, and they are still the reader's own
+  // results. `sort` keeps them, at the end.
+  return categories.sort(buckets.keys(), locale).map((category) => ({
     category,
-    label: categoryLabel(category, locale),
+    label: categories.label(category, locale),
     series: buckets
       .get(category)!
       .slice()
@@ -546,11 +487,18 @@ const PARAM = {
  * still honours the search: one unreadable field is not a reason to discard
  * the ones next to it.
  *
- * The category is checked against the catalog's own list, not against the
- * categories this account has results in. Those are not known until the
- * subscription delivers, and validating against them here would drop a
- * legitimate `?category=thyroid` on the first render, before the data it
- * refers to had arrived.
+ * The category is the one field with no list to check against. It used to be
+ * validated against a compiled-in union; now the ids live in Firestore and are
+ * not known on the first render, and validating against the categories this
+ * account has results in was never an option either — those arrive with the
+ * subscription, so a legitimate `?category=thyroid` would be dropped before
+ * the data it refers to had loaded.
+ *
+ * So any non-empty id is taken at face value. An id nothing matches shows an
+ * empty grid with its "showing 0 of N" line and a control to clear the filter,
+ * which is a readable state; silently widening it to `all` would show the
+ * reader a full grid and no sign that the link they followed asked for
+ * something else.
  */
 export function readFilters(params: URLSearchParams): VariableFilters {
   const category = params.get(PARAM.category);
@@ -559,9 +507,7 @@ export function readFilters(params: URLSearchParams): VariableFilters {
 
   return {
     query: params.get(PARAM.query) ?? DEFAULT_FILTERS.query,
-    category: CATEGORY_ORDER.includes(category as VariableCategory)
-      ? (category as VariableCategory)
-      : DEFAULT_FILTERS.category,
+    category: category?.trim() ? category.trim() : DEFAULT_FILTERS.category,
     // Present and "1" — not merely present. `?flagged=0` reads as off to
     // anyone who writes it, and honouring presence alone would turn it on.
     outOfRangeOnly: params.get(PARAM.outOfRangeOnly) === '1',

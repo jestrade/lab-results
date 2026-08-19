@@ -55,6 +55,24 @@ export function formatShortDate(date: Date, locale: Locale): string {
 }
 
 /**
+ * "15 Mar 2026, 14:03" — a date with the time of day.
+ *
+ * For the administration console, where the thing being shown is an instant a
+ * machine recorded rather than a day: two extraction attempts on the same
+ * afternoon are a different picture from two on the same date, and a cell that
+ * showed only the date would flatten them into each other.
+ */
+export function formatDateTime(date: Date, locale: Locale): string {
+  return new Intl.DateTimeFormat(intlTag(locale), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+/**
  * ── Dates that are calendar dates, not instants ───────────────────────────
  *
  * A report's date is stored as UTC midnight of the day the laboratory printed

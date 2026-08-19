@@ -187,16 +187,10 @@ export const en = {
   'sparkline.fell': '{name} fell from {from} to {to} across {count} measurements.',
   'sparkline.steady': '{name} changed little from {from} to {to} across {count} measurements.',
 
-  // ── Not found / coming soon ───────────────────────────────────────────
+  // ── Not found ─────────────────────────────────────────────────────────
   'notFound.title': 'That page does not exist',
   'notFound.body': 'The link may be out of date, or the page may have moved.',
   'notFound.back': 'Back to the start',
-  'comingSoon.title': 'Not built yet',
-  'comingSoon.body': '{description} This screen is built by {ticket}.',
-  'comingSoon.adminOverviewBody':
-    'System-wide metrics: users, reports, failures and average processing time.',
-  'comingSoon.adminJobsBody':
-    'Live and failed extraction jobs, with durations and retry controls.',
 
   // ── Account settings ──────────────────────────────────────────────────
   'settings.aiHeading': 'AI processing',
@@ -259,6 +253,10 @@ export const en = {
   'reports.viewDetailsLabel': 'View details for {file}',
   'reports.originalPdf': 'Original PDF',
   'reports.originalPdfLabel': 'Open the original PDF for {file}',
+  'reports.pdfLoading': 'Opening the PDF…',
+  'reports.pdfFrameTitle': 'Original PDF of {file}',
+  'reports.openInNewTab': 'Open in a new tab',
+  'reports.openInNewTabLabel': 'Open {file} in a new browser tab',
   'reports.delete': 'Delete',
   'reports.deleteLabel': 'Delete {file}',
   'reports.caption': 'Your laboratory reports',
@@ -1079,7 +1077,7 @@ export const en = {
   'adminJobs.columnJob': 'Report',
   'adminJobs.columnState': 'State',
   'adminJobs.columnStarted': 'Attempt started',
-  'adminJobs.columnDuration': 'Running for',
+  'adminJobs.columnDuration': 'Duration',
   'adminJobs.columnAttempts': 'Attempts',
   'adminJobs.columnFailure': 'Reason',
   'adminJobs.columnActions': 'Actions',

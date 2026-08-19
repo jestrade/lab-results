@@ -30,43 +30,19 @@
 import * as logger from 'firebase-functions/logger';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
+import { OTHER_CATEGORY } from './categories';
 import { findMatch, normaliseName, variableId, type MatchCandidate } from './matching';
 
 /**
- * Mirrors `VariableCategory` in `src/domain/types.ts`.
+ * The id of a `variableCategories` document — see `./categories.ts`.
  *
- * Duplicated because `functions/` compiles from its own rootDir and cannot
- * import the app's domain types. The two lists must move together — a
- * category written here that the app does not know renders as "Other".
+ * A string rather than a union. The list used to be duplicated here because
+ * `functions/` compiles from its own rootDir and cannot import the app's
+ * domain types, and the duplicate came with a comment asking the next reader
+ * to keep the two in step. Neither copy is the source of truth now; the
+ * collection is, and both halves of the system read it.
  */
-export const VARIABLE_CATEGORIES = [
-  'complete_blood_count',
-  'coagulation',
-  'lipid_profile',
-  'glucose_metabolism',
-  'liver_function',
-  'kidney_function',
-  'thyroid',
-  'electrolytes',
-  'iron_metabolism',
-  'vitamins',
-  'hormones',
-  'inflammation',
-  'allergy',
-  'tumour_markers',
-  'urinalysis',
-  'faecal',
-  'semen_analysis',
-  'other',
-] as const;
-
-export type VariableCategory = (typeof VARIABLE_CATEGORIES)[number];
-
-export function isCategory(value: unknown): value is VariableCategory {
-  return (
-    typeof value === 'string' && (VARIABLE_CATEGORIES as readonly string[]).includes(value)
-  );
-}
+export type VariableCategory = string;
 
 /** Mirrors `Locale` in `src/domain/locales.ts`. */
 export const LOCALES = ['en', 'es'] as const;
@@ -110,7 +86,12 @@ export function toCatalogEntry(id: string, data: Record<string, unknown>): Catal
     names,
     descriptions,
     aliases,
-    category: isCategory(data.category) ? data.category : 'other',
+    // Read as written, not validated against the collection: this is a sync
+    // read of a stored document, and a category whose document an admin has
+    // since deleted is still what this entry says it is. The reader labels an
+    // unknown id from the id — see `categoryCatalog` in the app — which beats
+    // silently re-filing somebody's entry under `other` on the way past.
+    category: typeof data.category === 'string' && data.category ? data.category : OTHER_CATEGORY,
     defaultUnit: typeof data.defaultUnit === 'string' ? data.defaultUnit : null,
     origin: data.origin === 'discovered' ? 'discovered' : 'catalog',
     needsEnrichment: data.needsEnrichment === true,
@@ -272,7 +253,7 @@ async function createDiscovered(
     names: Object.fromEntries(LOCALES.map((locale) => [locale, rawName])),
     descriptions: {},
     aliases: [rawName],
-    category: 'other' as VariableCategory,
+    category: OTHER_CATEGORY,
     defaultUnit: null,
     origin: 'discovered' as const,
     needsEnrichment: true,

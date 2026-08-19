@@ -5,10 +5,10 @@ import { usePageViews } from '@/hooks/usePageViews';
 import { AppLayout } from '@/layouts/AppLayout';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { AccountSettings } from '@/pages/app/AccountSettings';
+import { AdminJobs } from '@/pages/app/admin/AdminJobs';
 import { AdminOverview } from '@/pages/app/admin/AdminOverview';
 import { AdminUsers } from '@/pages/app/admin/AdminUsers';
 import { AdminVariables } from '@/pages/app/admin/AdminVariables';
-import { ComingSoon } from '@/pages/app/ComingSoon';
 import { ReportDetails } from '@/pages/app/ReportDetails';
 import { NotFound } from '@/pages/app/NotFound';
 import { Profile } from '@/pages/app/Profile';
@@ -95,18 +95,7 @@ export function AppRoutes() {
             <Route path="admin" element={<AdminOverview />} />
             <Route path="admin/users" element={<AdminUsers />} />
             <Route path="admin/variables" element={<AdminVariables />} />
-            <Route
-              path="admin/jobs"
-              element={
-                <ComingSoon
-                  kickerKey="nav.administration"
-                  titleKey="nav.adminJobs"
-                  ticket="KAN-20 / KAN-51"
-                  icon="queue"
-                  descriptionKey="comingSoon.adminJobsBody"
-                />
-              }
-            />
+            <Route path="admin/jobs" element={<AdminJobs />} />
           </Route>
         </Route>
       </Route>

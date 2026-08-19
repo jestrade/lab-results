@@ -78,7 +78,21 @@ const STRICT = {
   // now that authDomain is the Hosting domain — hence 'self'), Google's
   // account chooser, and the legacy *.firebaseapp.com handler, kept so that
   // reverting authDomain does not silently break sign-in again.
-  'frame-src': ["'self'", 'https://accounts.google.com', 'https://*.firebaseapp.com'],
+  //
+  // firebasestorage.googleapis.com is the fourth, and it is a product decision
+  // rather than an auth one: the reports list shows a stored PDF in a dialog
+  // instead of throwing the reader into a new tab, and the download URL is
+  // what the frame points at. The host serves the object with
+  // `Content-Disposition: inline` and no X-Frame-Options, so the browser's own
+  // PDF viewer renders it. It is not a wildcard: only the Firebase Storage
+  // download endpoint, which already only answers for a URL carrying the
+  // object's token.
+  'frame-src': [
+    "'self'",
+    'https://accounts.google.com',
+    'https://*.firebaseapp.com',
+    'https://firebasestorage.googleapis.com',
+  ],
   'object-src': ["'none'"],
   'base-uri': ["'none'"],
   'form-action': ["'self'"],
@@ -100,6 +114,11 @@ export const developmentCsp = serialise({
   ...STRICT,
   'script-src': [...STRICT['script-src'], "'unsafe-inline'", "'unsafe-eval'"],
   'connect-src': [...STRICT['connect-src'], 'ws://localhost:*', 'ws://127.0.0.1:*'],
+  // Against the emulators, a stored PDF lives on the Storage emulator rather
+  // than on firebasestorage.googleapis.com — see connectStorageEmulator in
+  // src/lib/firebase.ts. Without this the report viewer works in production
+  // and shows an empty frame on every developer's machine.
+  'frame-src': [...STRICT['frame-src'], 'http://127.0.0.1:9199', 'http://localhost:9199'],
 });
 
 /** Headers shared by dev, preview and Hosting. HSTS is Hosting-only. */

@@ -1186,6 +1186,76 @@ dialog.dialog {
   margin: auto;
 }
 
+/* ── PDF viewer dialog (spec §40) ──────────────────────────────────────────
+ *
+ * Broadsheet's `.dialog` is 440px wide, which is right for a sentence and two
+ * buttons and useless for a page of A4. This variant takes the viewport it
+ * needs and caps itself so the dialog never grows past the window — the frame
+ * inside is the part that scrolls, not the page behind it.
+ */
+dialog.dialog-wide {
+  width: min(1040px, 100vw - 2 * var(--space-4));
+  max-width: none;
+  max-height: min(92vh, 100vh - 2 * var(--space-4));
+}
+
+/* `.dialog` is already a column flexbox; `min-height: 0` is what lets this
+   child shrink inside it rather than overflowing the dialog's own height. */
+dialog.dialog-wide .dialog-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  /* The body is dimmed to 0.85 for supporting prose. A document being read
+     off the screen must not be. */
+  opacity: 1;
+}
+
+.pdf-frame {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: min(68vh, 640px);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.pdf-frame iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  /* The browser's own PDF viewer paints its toolbar on a dark ground; leaving
+     the frame transparent shows the dialog through it mid-load. */
+  background: var(--color-bg);
+}
+
+.pdf-frame-pending {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* On a phone the dialog is the whole screen, and the padding that frames a
+   confirmation is width the document needs more. */
+@media (max-width: 640px) {
+  dialog.dialog-wide {
+    width: 100vw;
+    max-height: 100vh;
+    padding: var(--space-3);
+    border-radius: 0;
+  }
+  .pdf-frame {
+    min-height: 60vh;
+  }
+}
+
 /* ── AI processing consent gate (spec §54) ─────────────────────────────── */
 
 .consent-gate {
@@ -1735,6 +1805,16 @@ dialog.dialog {
   font-size: 12px;
   color: var(--color-text-muted);
   word-break: break-all;
+}
+
+/* The same identifier when it *is* the row's title — the report id on the
+   processing queue, where nothing else names the job. Monospaced for the same
+   reason as above, but at full contrast: a muted heading reads as secondary
+   information, and here it is the only information. */
+.admin-code-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 /* The id of an entry that already exists, shown in the editor where the input

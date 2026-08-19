@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
@@ -476,6 +476,94 @@ describe('Reports', () => {
 
     emit([makeReport()]);
     expect(await screen.findByText(/1 report selected/)).toBeInTheDocument();
+  });
+
+  /**
+   * The original PDF opens over the list rather than in a new tab: checking a
+   * value against the page it came from is a glance, not a departure.
+   */
+  describe('the original PDF', () => {
+    it('is framed in a dialog instead of being handed to a new tab', async () => {
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      getReportDownloadUrl.mockResolvedValue('https://storage.example/panel.pdf');
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeReport()]);
+
+      await user.click(await screen.findByRole('button', { name: /open the original pdf/i }));
+
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByTitle(/original pdf of quest-panel/i)).toHaveAttribute(
+        'src',
+        'https://storage.example/panel.pdf',
+      );
+      expect(openSpy).not.toHaveBeenCalled();
+      openSpy.mockRestore();
+    });
+
+    it('opens the dialog before the URL resolves, so the click is never dead', async () => {
+      // Resolving the download URL is a round trip to Storage. Waiting for it
+      // before showing anything makes the button look broken on a slow link.
+      let resolve: (url: string) => void = () => {};
+      getReportDownloadUrl.mockReturnValue(new Promise<string>((r) => (resolve = r)));
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeReport()]);
+
+      await user.click(await screen.findByRole('button', { name: /open the original pdf/i }));
+
+      const dialog = await screen.findByRole('dialog');
+      // The spinner names itself for screen readers; the visible copy beside
+      // it is aria-hidden so the wait is announced once, not twice.
+      expect(within(dialog).getByRole('status')).toHaveTextContent(/opening the pdf/i);
+
+      await act(async () => resolve('https://storage.example/panel.pdf'));
+      expect(await within(dialog).findByTitle(/original pdf of quest-panel/i)).toBeInTheDocument();
+    });
+
+    it('offers the new tab as an escape for browsers that cannot frame a PDF', async () => {
+      getReportDownloadUrl.mockResolvedValue('https://storage.example/panel.pdf');
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeReport()]);
+
+      await user.click(await screen.findByRole('button', { name: /open the original pdf/i }));
+
+      const link = await screen.findByRole('link', { name: /open quest-panel.*new browser tab/i });
+      expect(link).toHaveAttribute('href', 'https://storage.example/panel.pdf');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    });
+
+    it('says why it could not open, inside the dialog the reader is looking at', async () => {
+      getReportDownloadUrl.mockRejectedValue(new Error('storage/object-not-found'));
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeReport()]);
+
+      await user.click(await screen.findByRole('button', { name: /open the original pdf/i }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/could not be opened/i);
+    });
+
+    it('ignores a URL that arrives after its dialog was closed', async () => {
+      // Otherwise a slow resolution reopens the viewer over a reader who has
+      // already moved on, or shows one report's PDF under another's name.
+      let resolve: (url: string) => void = () => {};
+      getReportDownloadUrl.mockReturnValue(new Promise<string>((r) => (resolve = r)));
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeReport()]);
+
+      await user.click(await screen.findByRole('button', { name: /open the original pdf/i }));
+      await screen.findByRole('dialog');
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+
+      await act(async () => resolve('https://storage.example/panel.pdf'));
+      await waitFor(() =>
+        expect(screen.queryByTitle(/original pdf of quest-panel/i)).not.toBeInTheDocument(),
+      );
+    });
   });
 
   it('reports a subscription failure instead of showing an empty list', async () => {

@@ -227,40 +227,18 @@ export function mapColumns(header) {
 }
 
 /**
- * Free-text panel names, in both languages, mapped to the app's categories.
+ * The category a sheet group heading names, or `other`.
  *
  * The sheet groups variables the way a laboratory report does — "Biometría
- * hemática", "Perfil de lípidos" — and the app groups by a fixed enum, because
- * `CATEGORY_ORDER` has to produce the same layout every time. This is the
- * join between the two vocabularies.
+ * hemática", "Perfil de lípidos" — and the app groups by category id. This is
+ * the join between the two vocabularies, and the keywords that drive it live
+ * on the category documents themselves (`seeds/categories.json`, and
+ * `variableCategories` once seeded) rather than in this file: a project that
+ * adds a panel should be able to teach the importer its Spanish name without
+ * editing a script.
  *
  * Matching is on substrings of the folded heading, so "PERFIL LIPÍDICO
  * COMPLETO" and "Lipid profile (fasting)" both land on `lipid_profile`.
- */
-const CATEGORY_KEYWORDS = [
-  ['complete_blood_count', ['biometriahematica', 'hemograma', 'citometriahematica', 'completebloodcount', 'cbc', 'bloodcount', 'hematologia', 'hematology']],
-  ['lipid_profile', ['lipid', 'lipido', 'colesterol', 'cholesterol', 'trigliceri', 'triglyceri']],
-  ['glucose_metabolism', ['glucosa', 'glucose', 'glucemia', 'diabet', 'hemoglobinaglucosilada', 'hba1c', 'insulin', 'metabolismodelaglucosa']],
-  ['liver_function', ['hepatic', 'higado', 'liver', 'funcionhepatica', 'transaminas', 'bilirrubin', 'bilirubin']],
-  ['kidney_function', ['renal', 'rinon', 'kidney', 'funcionrenal', 'creatinin', 'urea', 'nefro']],
-  ['thyroid', ['tiroid', 'thyroid', 'tsh']],
-  // "minerals" deliberately absent: the commonest panel heading containing it
-  // is "Vitamins and Minerals", which belongs under vitamins. Electrolyte
-  // panels are named for the electrolytes in practice.
-  ['electrolytes', ['electrolit', 'electrolyt', 'ionograma']],
-  ['vitamins', ['vitamin', 'vitamina', 'mineral']],
-  ['hormones', ['hormon', 'endocrin', 'esteroid', 'steroid', 'fertilidad', 'fertility']],
-  ['inflammation', ['inflamac', 'inflammat', 'reactantes', 'acutephase', 'pcr', 'crp', 'sedimentacion']],
-  ['urinalysis', ['orina', 'urin', 'egopcompleto', 'ego', 'uroanalisis']],
-];
-
-const VALID_CATEGORIES = new Set([
-  ...CATEGORY_KEYWORDS.map(([category]) => category),
-  'other',
-]);
-
-/**
- * The app category for a sheet group heading.
  *
  * Returns `other` for anything unrecognised rather than picking the nearest
  * match. A variable in the wrong group is not a cosmetic error — the grid's
@@ -268,13 +246,17 @@ const VALID_CATEGORIES = new Set([
  * thyroid reads as a claim about how the panel was ordered. `other` is
  * visibly a gap; a confident mis-grouping is not.
  */
-export function toCategory(raw) {
-  const folded = fold(raw);
+export function toCategory(raw, categories) {
+  const trimmed = String(raw ?? '').trim();
+  const folded = fold(trimmed);
   if (!folded) return 'other';
-  if (VALID_CATEGORIES.has(String(raw).trim())) return String(raw).trim();
 
-  for (const [category, keywords] of CATEGORY_KEYWORDS) {
-    if (keywords.some((keyword) => folded.includes(keyword))) return category;
+  // An exact id passes through untouched, which is what a sheet with a
+  // `category` column of ids relies on.
+  if (categories.some((category) => category.id === trimmed)) return trimmed;
+
+  for (const { id, keywords } of categories) {
+    if ((keywords ?? []).some((keyword) => folded.includes(keyword))) return id;
   }
   return 'other';
 }
