@@ -3,7 +3,7 @@
   "reviewedBy": "Claude (Opus 5), for jesuestrada@gmail.com",
   "sourceCatalogSize": 178,
   "pendingReviewed": 85,
-  "note": "Reviewed content lands here before it lands in Firestore, for the reason docs/variables.md gives about config/variables.json: this is shown to every reader as an explanation of their own blood test, so it goes through the repository where it can be diffed, reviewed and rolled back. `enrich` is safe to apply. `merge` and `undecided` are not applied by any script — see the report.",
+  "note": "Reviewed content lands here before it lands in Firestore, for the reason docs/variables.md gives about config/variables.json: this is shown to every reader as an explanation of their own blood test, so it goes through the repository where it can be diffed, reviewed and rolled back. `enrich` and `reclassify` are safe to apply and the script is idempotent. `merge` and `remove` are not applied by any script — they move or delete stored history and need a person.",
   "enrich": [
     {
       "id": "mch",
@@ -382,7 +382,7 @@
         "en": "How long a sample of plasma takes to clot once a clotting trigger is added. It reports on one of the two arms of the clotting sequence, and is the measurement the INR is derived from.",
         "es": "Cuánto tarda en coagular una muestra de plasma tras añadir un activador de la coagulación. Informa sobre una de las dos vías de la coagulación y es la medición de la que se deriva el INR."
       },
-      "category": "other",
+      "category": "coagulation",
       "defaultUnit": "seconds",
       "aliases": [
         "TIEMPO DE PROTROMBINA (TP)",
@@ -402,7 +402,7 @@
         "en": "How long plasma takes to clot when a different trigger is used from the one in the prothrombin time. The two tests together indicate which part of the clotting sequence is behaving unusually.",
         "es": "Cuánto tarda el plasma en coagular cuando se usa un activador distinto al del tiempo de protrombina. Las dos pruebas juntas indican qué parte de la secuencia de coagulación se comporta de forma inusual."
       },
-      "category": "other",
+      "category": "coagulation",
       "defaultUnit": "seconds",
       "aliases": [
         "TIEMPO DE TROMBOPLASTINA PARCIAL ACTIVADO (TTPa)",
@@ -423,7 +423,7 @@
         "en": "The prothrombin time expressed on a standard scale, so that a result means the same thing whichever laboratory produced it. It exists because the raw clotting time varies with the reagent each laboratory uses.",
         "es": "El tiempo de protrombina expresado en una escala estándar, de modo que un resultado signifique lo mismo sin importar qué laboratorio lo produjo. Existe porque el tiempo de coagulación bruto varía según el reactivo de cada laboratorio."
       },
-      "category": "other",
+      "category": "coagulation",
       "defaultUnit": null,
       "aliases": [
         "INR",
@@ -442,7 +442,7 @@
         "en": "The total amount of IgE antibody in the blood, added up across every allergen rather than for one in particular. It is the general counterpart to the allergen-specific RAST IgE tests.",
         "es": "La cantidad total de anticuerpo IgE en la sangre, sumada sobre todos los alérgenos en lugar de uno en particular. Es la contraparte general de las pruebas RAST IgE específicas por alérgeno."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "IU/mL",
       "aliases": [
         "INMUNOGLOBULINA IgE",
@@ -695,7 +695,7 @@
         "en": "The amount of IgE antibody in the blood directed specifically at house dust mite. A raised result means the immune system has been sensitised to it, which is not the same as having symptoms from it.",
         "es": "La cantidad de anticuerpo IgE en la sangre dirigida específicamente contra el ácaro del polvo doméstico. Un resultado elevado significa que el sistema inmunitario se ha sensibilizado, lo que no equivale a tener síntomas por ello."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "Alergeno Acaro, Anticuerpos IgE",
@@ -714,7 +714,7 @@
         "en": "The amount of IgE antibody directed specifically at Aspergillus fumigatus, a mould found in soil, compost and damp indoor spaces. Sensitisation is not the same as illness.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Aspergillus fumigatus, un moho presente en el suelo, el compost y espacios interiores húmedos. La sensibilización no equivale a enfermedad."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE ALERGENO: Aspergillus fumigatus",
@@ -732,7 +732,7 @@
         "en": "The amount of IgE antibody directed specifically at Candida albicans, a yeast that lives harmlessly on most people and can also provoke an allergic response in some.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Candida albicans, una levadura que vive de forma inofensiva en la mayoría de las personas y que en algunas puede provocar una respuesta alérgica."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE ALERGENO: Candida Albicans(Monilia), IgE",
@@ -751,7 +751,7 @@
         "en": "The amount of IgE antibody directed specifically at ant venom or ant body proteins, measured after a sting or as part of an allergy panel.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra el veneno o las proteínas de la hormiga, medida tras una picadura o como parte de un panel de alergia."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE ALERGENO: HORMIGA",
@@ -770,7 +770,7 @@
         "en": "The amount of IgE antibody directed specifically at natural rubber latex. It is often requested before surgery or for people whose work brings them into repeated contact with latex gloves.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra el látex de caucho natural. Suele solicitarse antes de una cirugía o para personas cuyo trabajo implica contacto repetido con guantes de látex."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE ALERGENO: LATEX",
@@ -789,7 +789,7 @@
         "en": "The amount of IgE antibody directed specifically at Alternaria, an outdoor mould whose spores rise in warm, dry weather and around harvested crops.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Alternaria, un moho de exteriores cuyas esporas aumentan con el clima cálido y seco y alrededor de las cosechas."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE ALTERNARIA TENUIS",
@@ -808,7 +808,7 @@
         "en": "The amount of IgE antibody directed specifically at cockroach proteins, which persist in household dust long after the insects themselves are gone.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra proteínas de cucaracha, que permanecen en el polvo doméstico mucho después de que los insectos ya no están."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE CUCARACHA",
@@ -827,7 +827,7 @@
         "en": "The amount of IgE antibody directed specifically at wool, usually requested when clothing or bedding is suspected of provoking a skin or airway reaction.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra la lana, normalmente solicitada cuando se sospecha que la ropa o la ropa de cama provoca una reacción cutánea o respiratoria."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE LANA",
@@ -846,7 +846,7 @@
         "en": "The amount of IgE antibody directed specifically at Penicillium, a mould common in damp buildings and on spoiled food. This is an allergy to the mould itself, which is a separate question from an allergy to penicillin the medicine.",
         "es": "La cantidad de anticuerpo IgE dirigida específicamente contra Penicillium, un moho frecuente en edificios húmedos y en alimentos en mal estado. Es una alergia al moho, cuestión distinta de la alergia al medicamento penicilina."
       },
-      "category": "other",
+      "category": "allergy",
       "defaultUnit": "kU/L",
       "aliases": [
         "RAST IgE PENICILLIUM (HONGO)",
@@ -1051,14 +1051,14 @@
     {
       "id": "ph",
       "into": "ph-urinario-automatizado",
-      "confidence": "medium",
-      "reason": "Same reasoning as ASPECTO: the surrounding dipstick terms point at urine, and ph-semen already exists separately."
+      "confidence": "high",
+      "reason": "Confirmed from the stored data: laboratory range 4.8-7.4 and values 5-7. Semen pH runs 7.2-8.0, so this is the urine reading."
     },
     {
       "id": "proteinas",
       "into": "proteinas-en-orina-automatizadas",
-      "confidence": "medium",
-      "reason": "Reads as the dipstick protein from its neighbours — but PROTEINAS is also how serum total protein is printed, and those are different tests in different fluids. Confirm against a report."
+      "confidence": "high",
+      "reason": "Confirmed from the stored data: the unit is mg/dL, which is the urine dipstick scale. Serum total protein is reported in g/dL."
     },
     {
       "id": "glucosa-en-plasma",
@@ -1069,27 +1069,29 @@
     {
       "id": "bilirrubina-total",
       "into": "bilirubin",
-      "confidence": "medium",
-      "reason": "An unqualified \"Bilirubin\" almost always means the total. Worth confirming, since folding a total into a fraction would corrupt a series."
-    }
-  ],
-  "ambiguous": [
+      "confidence": "high",
+      "reason": "Confirmed from the stored range text — \"Mujer: 0.3-0.98 Hombre: 0.3-1.14\" mg/dL — which is a total bilirubin range; the direct fraction runs to about 0.3."
+    },
     {
       "id": "basofilos-2",
-      "printedName": "BASOFILOS.",
-      "question": "Percentage or absolute count? The same report prints BASOFILOS %, BASOFILOS Abs and this. Reading the source PDF settles it; guessing would put a percentage and a cell count into one history."
+      "into": "basofilos",
+      "confidence": "high",
+      "reason": "Resolved from the stored data, not the name: unit 10^3 cell/uL with a laboratory range of 0.02-0.1. A basophil *percentage* runs 0-2%, so this is the absolute count."
     },
     {
       "id": "monocitos-2",
-      "printedName": "MONOCITOS.",
-      "question": "Same question as BASOFILOS."
+      "into": "monocitos-abs",
+      "confidence": "high",
+      "reason": "Resolved from the stored data: unit 10^3 cell/uL, laboratory range 0.1-0.7. A monocyte percentage runs about 2-10%, so this is the absolute count."
     },
     {
       "id": "neutrofilos-2",
-      "printedName": "NEUTROFILOS.",
-      "question": "Same question as BASOFILOS."
+      "into": "neutrofilos-no-absoluto",
+      "confidence": "high",
+      "reason": "Resolved from the stored data: unit 10^3 cell/uL, laboratory range 2.5-7.5. A neutrophil percentage runs about 40-70%, so this is the absolute count."
     }
   ],
+  "ambiguous": [],
   "remove": [
     {
       "id": "pt-control-dia",
@@ -1339,5 +1341,6 @@
       "category": "iron_metabolism",
       "reason": "Ferritin and serum iron were filed under vitamins, which they are not. Iron studies are their own panel, and a reader looking for their ferritin under \"Vitamins\" is a reader who cannot find their own result."
     }
-  ]
+  ],
+  "resolvedOn": "2026-08-18"
 }
