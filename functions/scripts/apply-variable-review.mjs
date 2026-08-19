@@ -26,6 +26,14 @@
  *   remove     the laboratory's own quality-control rows. Deleting is cheap to
  *              do and impossible to notice afterwards, so it stays manual.
  *
+ * It does write `reclassify`, which is a different kind of change from an
+ * enrichment and validated differently: those entries have already been
+ * reviewed, so the "must still carry needsEnrichment" check that protects the
+ * enrichments from overwriting somebody else's work would reject every one of
+ * them. What it checks instead is that the category being written is one the
+ * app knows — a category the grid cannot name renders as "Other", silently,
+ * on somebody's result.
+ *
  * ── Aliases are unioned, never replaced ──────────────────────────────────
  *
  * Every spelling already on a document came from a real report. The review
@@ -72,7 +80,30 @@ snapshot.forEach((doc) => stored.set(doc.id, doc.data()));
 // say so rather than to write over whatever is there now.
 
 const problems = [];
-const buckets = ['enrich', 'merge', 'ambiguous', 'remove'];
+const buckets = ['merge', 'ambiguous', 'remove'];
+
+/** Has this entry already been written by this same review? */
+function alreadyApplied(entry, current) {
+  return (
+    current.needsEnrichment === false &&
+    current.canonicalName === entry.canonicalName &&
+    current.category === entry.category &&
+    (current.descriptions?.en ?? null) === (entry.descriptions.en ?? null)
+  );
+}
+
+/**
+ * Mirrors `VariableCategory` in `src/domain/types.ts` and `VARIABLE_CATEGORIES`
+ * in `functions/src/variables/catalog.ts`. A third copy is one too many, and it
+ * is here only because this script runs from source without a build step —
+ * `variables.test.ts` fails if any of them drift apart.
+ */
+const CATEGORIES = new Set([
+  'complete_blood_count', 'coagulation', 'lipid_profile', 'glucose_metabolism',
+  'liver_function', 'kidney_function', 'thyroid', 'electrolytes', 'iron_metabolism',
+  'vitamins', 'hormones', 'inflammation', 'allergy', 'tumour_markers',
+  'urinalysis', 'faecal', 'semen_analysis', 'other',
+]);
 
 for (const bucket of buckets) {
   for (const entry of review[bucket] ?? []) {
@@ -89,9 +120,46 @@ for (const bucket of buckets) {
   }
 }
 
+/**
+ * Enrichments are checked differently, because re-running a review that has
+ * already landed must be a no-op rather than an error.
+ *
+ * The flag alone cannot tell "this script wrote it an hour ago" apart from
+ * "an admin has since edited it in the console" — both leave
+ * `needsEnrichment: false`. So the content decides: an entry that already says
+ * what the review says is skipped, and one that says something else is a real
+ * conflict and stops the run.
+ */
+const toEnrich = [];
+for (const entry of review.enrich ?? []) {
+  const current = stored.get(entry.id);
+  if (!current) {
+    problems.push(`enrich: "${entry.id}" is no longer in the catalog.`);
+    continue;
+  }
+  if (alreadyApplied(entry, current)) continue;
+  if (current.needsEnrichment !== true) {
+    problems.push(
+      `enrich: "${entry.id}" has been edited since this review was written — refusing to overwrite.`,
+    );
+    continue;
+  }
+  toEnrich.push(entry);
+}
+
 for (const entry of review.merge ?? []) {
   if (!stored.has(entry.into) && !(review.enrich ?? []).some((e) => e.id === entry.into)) {
     problems.push(`merge: "${entry.id}" points at "${entry.into}", which does not exist.`);
+  }
+}
+
+for (const entry of review.reclassify ?? []) {
+  if (!stored.has(entry.id)) {
+    problems.push(`reclassify: "${entry.id}" is no longer in the catalog.`);
+    continue;
+  }
+  if (!CATEGORIES.has(entry.category)) {
+    problems.push(`reclassify: "${entry.id}" wants category "${entry.category}", which the app does not have.`);
   }
 }
 
@@ -111,7 +179,7 @@ console.log(
 );
 
 let written = 0;
-for (const entry of review.enrich) {
+for (const entry of toEnrich) {
   const current = stored.get(entry.id);
   // Union, so a printed spelling that is the reason this entry exists cannot
   // be dropped by a review that did not happen to list it.
@@ -143,10 +211,24 @@ for (const entry of review.enrich) {
   written += 1;
 }
 
+let reclassified = 0;
+for (const entry of review.reclassify ?? []) {
+  const current = stored.get(entry.id);
+  if (current.category === entry.category) continue;
+
+  reclassified += 1;
+  if (dryRun) {
+    console.log(`  ${entry.id}: ${current.category} -> ${entry.category}`);
+    continue;
+  }
+  await db.collection('variables').doc(entry.id).update({ category: entry.category });
+}
+
 if (dryRun) {
-  console.log(`\nDry run. ${review.enrich.length} entries would be written; nothing was.`);
+  console.log(`\nDry run. ${toEnrich.length} enrichments and ${reclassified} reclassifications would be written; nothing was.`);
 } else {
-  console.log(`Enriched ${written} catalog entries.`);
+  console.log(`Reclassified ${reclassified} catalog entries.`);
+  console.log(`Enriched ${written} catalog entries (${review.enrich.length - toEnrich.length} were already applied).`);
   console.log(
     `\nStill open: ${review.merge.length} merges, ${(review.ambiguous ?? []).length} ambiguous, ` +
       `${(review.remove ?? []).length} to remove. None were touched.`,

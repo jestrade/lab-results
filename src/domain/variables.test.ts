@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CATEGORY_LABEL,
+  CATEGORY_NAME,
   CATEGORY_ORDER,
   DEFAULT_FILTERS,
   describeSparkline,
@@ -648,5 +649,49 @@ describe('hasActiveFilters', () => {
     // "Showing 2 of 2" under a reordered grid would be explaining an absence
     // that is not there.
     expect(hasActiveFilters({ ...DEFAULT_FILTERS, sort: 'recent' })).toBe(false);
+  });
+});
+
+/**
+ * Guards for the category list, which lives in four places at once: the app's
+ * union, the panel names, the display order, and a hand-kept copy in
+ * `functions/` that cannot import from here because it compiles from its own
+ * rootDir. The comment on that copy says the two must move together; these are
+ * what make "must" mean something.
+ */
+describe('the category list', () => {
+  it('gives every category a panel name in both languages', () => {
+    for (const category of CATEGORY_ORDER) {
+      expect(CATEGORY_NAME[category]?.en, `${category} has no English name`).toBeTruthy();
+      expect(CATEGORY_NAME[category]?.es, `${category} has no Spanish name`).toBeTruthy();
+    }
+  });
+
+  it('orders every category exactly once', () => {
+    const named = Object.keys(CATEGORY_NAME).sort();
+    expect([...CATEGORY_ORDER].sort()).toEqual(named);
+    expect(new Set(CATEGORY_ORDER).size).toBe(CATEGORY_ORDER.length);
+  });
+
+  it('ends on "other", which is the fallback rather than a panel', () => {
+    expect(CATEGORY_ORDER.at(-1)).toBe('other');
+  });
+
+  it('matches the copy the extraction pipeline compiles against', async () => {
+    // A category the pipeline writes and the app does not know renders as
+    // "Other" — silently, on somebody's result. Read as text for the same
+    // reason the trend-engine guard above is: `functions/` compiles from its
+    // own rootDir and cannot be imported here.
+    const catalog = await readFile(
+      resolve(process.cwd(), 'functions/src/variables/catalog.ts'),
+      'utf8',
+    );
+    const listed = catalog
+      .split('export const VARIABLE_CATEGORIES = [')[1]!
+      .split(']')[0]!
+      .match(/'[a-z_]+'/g)!
+      .map((quoted) => quoted.replaceAll("'", ''));
+
+    expect(listed).toEqual([...CATEGORY_ORDER]);
   });
 });

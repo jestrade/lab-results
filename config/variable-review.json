@@ -1101,5 +1101,243 @@
       "printedName": "PTT CONTROL DIA",
       "reason": "The same, for the partial thromboplastin time."
     }
+  ],
+  "reclassifiedOn": "2026-08-18",
+  "reclassify": [
+    {
+      "id": "anormalidades-cabeza-espermatozoides",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "anormalidades-cola-espermatozoides",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "aspecto-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "bacterias-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "color-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "eritrocitos-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-con-morfologia-anormal",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-con-morfologia-normal",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-inmoviles-imv",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-muertos",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-total-eyaculado",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-vivos-moviles",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "espermatozoides-x-ml",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "leucocitos-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "licuefaccion-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "motilidad-no-progresiva-np",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "periodo-abstinencia-sexual",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "ph-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "progresion-lineal-lenta-o-no-lineal-np",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "progresion-lineal-rapida-pr",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "viscosidad-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "volumen-semen",
+      "category": "semen_analysis",
+      "reason": "A spermogram is one panel a laboratory prints as a block — volume, count, motility, morphology and the sample's own properties. Filed under \"other\" it was twenty-two unrelated-looking cards."
+    },
+    {
+      "id": "alergeno-acaro-anticuerpos-ige",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "inmunoglobulina-ige",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-aspergillus-fumigatus",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-caballo",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-candida-albicans-monilia-ige",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-hormiga",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-latex",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alergeno-plumas-paloma",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-algodon",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-alternaria-tenuis",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-blomia-tropicalis",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-caspa-pelo-gato",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-caspa-pelo-perro",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-cucaracha",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-dematophagoide-pteronyssinus",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-lana",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-mosquito",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "rast-ige-penicillium-hongo",
+      "category": "allergy",
+      "reason": "Allergen-specific IgE plus the total. Sixteen of these differ only by which allergen was tested, so they read as one panel or as noise."
+    },
+    {
+      "id": "inr",
+      "category": "coagulation",
+      "reason": "PT, aPTT and the INR derived from PT. They are ordered and read together, and none of them belongs to any panel the catalog previously had."
+    },
+    {
+      "id": "tiempo-protrombina-tp",
+      "category": "coagulation",
+      "reason": "PT, aPTT and the INR derived from PT. They are ordered and read together, and none of them belongs to any panel the catalog previously had."
+    },
+    {
+      "id": "tiempo-tromboplastina-parcial-activado-ttpa",
+      "category": "coagulation",
+      "reason": "PT, aPTT and the INR derived from PT. They are ordered and read together, and none of them belongs to any panel the catalog previously had."
+    },
+    {
+      "id": "antigeno-especifico-prostata-total-tpsa",
+      "category": "tumour_markers",
+      "reason": "PSA is a tumour marker, not a hormone and not a kidney test. The panel will grow — CEA, AFP, CA-125 — and having it named is what stops the next one landing in \"other\"."
+    },
+    {
+      "id": "sangre-oculta-humano-especifica-en-materia-fecal",
+      "category": "faecal",
+      "reason": "A stool study, which is neither urine nor blood. Same reasoning as the tumour markers: the panel exists on real reports and will grow."
+    },
+    {
+      "id": "ferritin",
+      "category": "iron_metabolism",
+      "reason": "Ferritin and serum iron were filed under vitamins, which they are not. Iron studies are their own panel, and a reader looking for their ferritin under \"Vitamins\" is a reader who cannot find their own result."
+    },
+    {
+      "id": "serum-iron",
+      "category": "iron_metabolism",
+      "reason": "Ferritin and serum iron were filed under vitamins, which they are not. Iron studies are their own panel, and a reader looking for their ferritin under \"Vitamins\" is a reader who cannot find their own result."
+    }
   ]
 }

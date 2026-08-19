@@ -189,9 +189,10 @@ For each one, return:
   why a clinician might order it.
 - descriptionEs: the same explanation in Spanish. A translation of the same
   content — not a different explanation, and not longer.
-- category: exactly one of complete_blood_count, lipid_profile,
+- category: exactly one of complete_blood_count, coagulation, lipid_profile,
   glucose_metabolism, liver_function, kidney_function, thyroid, electrolytes,
-  vitamins, hormones, inflammation, urinalysis, other.
+  iron_metabolism, vitamins, hormones, inflammation, allergy, tumour_markers,
+  urinalysis, faecal, semen_analysis, other.
 - unit: the unit this test is most commonly reported in, or null. This is
   reference information only; it is never used to interpret a value.
 

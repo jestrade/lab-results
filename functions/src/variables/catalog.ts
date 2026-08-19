@@ -41,16 +41,22 @@ import { findMatch, normaliseName, variableId, type MatchCandidate } from './mat
  */
 export const VARIABLE_CATEGORIES = [
   'complete_blood_count',
+  'coagulation',
   'lipid_profile',
   'glucose_metabolism',
   'liver_function',
   'kidney_function',
   'thyroid',
   'electrolytes',
+  'iron_metabolism',
   'vitamins',
   'hormones',
   'inflammation',
+  'allergy',
+  'tumour_markers',
   'urinalysis',
+  'faecal',
+  'semen_analysis',
   'other',
 ] as const;
 

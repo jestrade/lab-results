@@ -29,16 +29,22 @@ import type {
  */
 export const CATEGORY_NAME: Record<VariableCategory, Translated> = {
   complete_blood_count: { en: 'Complete blood count', es: 'Biometría hemática' },
+  coagulation: { en: 'Coagulation', es: 'Pruebas de coagulación' },
   lipid_profile: { en: 'Lipid profile', es: 'Perfil de lípidos' },
   glucose_metabolism: { en: 'Glucose metabolism', es: 'Metabolismo de la glucosa' },
   liver_function: { en: 'Liver function', es: 'Función hepática' },
   kidney_function: { en: 'Kidney function', es: 'Función renal' },
   thyroid: { en: 'Thyroid', es: 'Tiroides' },
   electrolytes: { en: 'Electrolytes', es: 'Electrolitos' },
+  iron_metabolism: { en: 'Iron studies', es: 'Metabolismo del hierro' },
   vitamins: { en: 'Vitamins', es: 'Vitaminas' },
   hormones: { en: 'Hormones', es: 'Hormonas' },
   inflammation: { en: 'Inflammation', es: 'Inflamación' },
+  allergy: { en: 'Allergy (IgE)', es: 'Perfil de alergias (IgE)' },
+  tumour_markers: { en: 'Tumour markers', es: 'Marcadores tumorales' },
   urinalysis: { en: 'Urinalysis', es: 'Examen general de orina' },
+  faecal: { en: 'Stool', es: 'Coprológico' },
+  semen_analysis: { en: 'Semen analysis', es: 'Espermatograma' },
   other: { en: 'Other', es: 'Otros' },
 };
 
@@ -111,16 +117,22 @@ export function withCatalog(
  */
 export const CATEGORY_ORDER: readonly VariableCategory[] = [
   'complete_blood_count',
+  'coagulation',
   'lipid_profile',
   'glucose_metabolism',
   'liver_function',
   'kidney_function',
   'thyroid',
   'electrolytes',
+  'iron_metabolism',
   'vitamins',
   'hormones',
   'inflammation',
+  'allergy',
+  'tumour_markers',
   'urinalysis',
+  'faecal',
+  'semen_analysis',
   'other',
 ];
 

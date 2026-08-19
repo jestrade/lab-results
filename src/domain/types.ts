@@ -44,18 +44,37 @@ export type ReferenceRangeSource =
 
 export type UserRole = 'user' | 'admin';
 
+/**
+ * The panel a test belongs to.
+ *
+ * These are the groups a laboratory prints on a report, not a taxonomy of our
+ * own — which is why `semen_analysis` and `coagulation` are here beside
+ * `thyroid`, and why `iron_metabolism` is separate from `vitamins`: ferritin
+ * and serum iron are iron studies, and a reader looking for them under
+ * vitamins is a reader who cannot find their own result.
+ *
+ * `other` is the honest answer, never a dumping ground. The extraction
+ * pipeline is told to choose it rather than guess (see `ai/prompts.ts`), and
+ * an entry that stays there is one the catalog has not been taught yet.
+ */
 export type VariableCategory =
   | 'complete_blood_count'
+  | 'coagulation'
   | 'lipid_profile'
   | 'glucose_metabolism'
   | 'liver_function'
   | 'kidney_function'
   | 'thyroid'
   | 'electrolytes'
+  | 'iron_metabolism'
   | 'vitamins'
   | 'hormones'
   | 'inflammation'
+  | 'allergy'
+  | 'tumour_markers'
   | 'urinalysis'
+  | 'faecal'
+  | 'semen_analysis'
   | 'other';
 
 /** `users/{uid}` */
