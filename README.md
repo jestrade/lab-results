@@ -9,6 +9,7 @@ It is not a medical device, and every AI-generated statement is labelled as such
 See [the medical disclaimer](src/domain/disclaimers.ts).
 
 React + TypeScript + Vite on Firebase (Auth, Firestore, Storage, Hosting).
+Bilingual (English and Spanish) with light, dark and system themes.
 
 ## Getting started
 
@@ -38,22 +39,32 @@ src/
   auth/         Session, role and route guards
   components/   The component library (KAN-39)
   domain/       Types, status tables and regulated copy — no React
+  hooks/        Cross-page state: locale, AI consent, storage quota, page views
+  i18n/         Message catalogs, the provider, and per-locale formatting
   layouts/      Public, auth-split and authenticated shells
   lib/          Firebase, environment and monitoring plumbing
-  pages/        Screens, grouped by who can reach them
+  pages/        Screens, grouped by who can reach them (pages/app/admin needs
+                the admin role)
   services/     Firestore and Storage access
   styles/       Broadsheet base, LabResults theme, app layout
+  test/         Render helpers, the axe harness and the Vitest setup
+  theme/        Light/dark/system preference, resolved and persisted
 firestore.rules storage.rules   The real security boundary
 config/quotas.json              Every capacity limit, in one place
 config/retry.json               When a failed report may be processed again
 config/variables.json           The laboratory-variable catalog, as imported
                                 from the maintained spreadsheet
+config/variable-review.json     Curation decisions applied to that catalog
+config/csp.mjs                  One Content-Security-Policy for dev, preview
+                                and hosting
 functions/                      Cloud Functions: the extraction pipeline, usage
-                                accounting, roles, account deletion, retries
-functions/scripts/              Catalog import and backfill (docs/variables.md)
+                                accounting, roles, account deletion, retries,
+                                trend analysis and catalog enrichment
+functions/scripts/              Catalog import, curation, merges and backfill
+                                (docs/variables.md)
 ```
 
-## Two rules worth knowing before you write code
+## Three rules worth knowing before you write code
 
 **Status is never colour alone.** Every status carries an icon and a text label
 from `domain/status.ts`. See the design-system doc.
@@ -69,10 +80,22 @@ the numbers live in one file, `config/quotas.json`. See
 [docs/quotas.md](docs/quotas.md) — and note that upload *operations*, not
 stored bytes, are what actually binds.
 
-## Phase 1 scope
+## What is built
 
-This repository currently covers Phase 1: the design system and app shell,
-authentication, the public pages, the report-upload flow, the Firestore/Storage
-data model and rules, plus test infrastructure, CI/CD, observability and the
-security baseline. Screens built in later phases resolve to a placeholder naming
-the ticket that builds them.
+**Public** — landing, the legal pages, and the full authentication flow:
+sign-in, registration, password reset and email verification.
+
+**The app** — uploading a report and watching it process; the report list and a
+detail page for each; the laboratory-variable grid at `/variables`, which is the
+home screen, and a page per variable with its history, reference band and zoom;
+the profile and account settings, including the AI consent gate and account
+deletion.
+
+**Administration** — an overview, account management, and the variable-catalog
+review queue. The job dashboard is still a placeholder naming the ticket that
+builds it.
+
+**The pipeline** — extraction, classification against the range printed on the
+report, duplicate detection, usage accounting and quota enforcement, retries,
+trend analysis, matching each printed name to the catalog, catalog enrichment,
+and AI analysis behind an explicit consent gate.
