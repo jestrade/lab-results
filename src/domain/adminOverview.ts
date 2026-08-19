@@ -84,6 +84,9 @@ const AUDIT_LABEL: Record<string, MessageKey> = {
   'user.disabled': 'adminOverview.auditUserDisabled',
   'user.enabled': 'adminOverview.auditUserEnabled',
   'account.deleted': 'adminOverview.auditAccountDeleted',
+  // Written only when the actor is not the report's owner — an admin rescuing
+  // a stranded job from /admin/jobs (KAN-20).
+  'report.retried': 'adminOverview.auditReportRetried',
 };
 
 export function auditLabel(action: string): MessageKey {

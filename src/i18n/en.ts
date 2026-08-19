@@ -1053,6 +1053,66 @@ export const en = {
   'adminUsers.accessFailed': 'The account’s access could not be changed.',
 
 
+  // ── Administration: processing jobs (KAN-20, KAN-51) ──────────────────
+  'adminJobs.intro':
+    'Extraction runs that have not finished, and the ones that failed. Report and account identifiers only — no file name, and no result, appears on this screen.',
+  'adminJobs.loadingLabel': 'Loading the processing queue',
+  'adminJobs.loadFailed': 'The processing queue could not be loaded.',
+  'adminJobs.search': 'Search jobs',
+  'adminJobs.searchPlaceholder': 'Report id, user id or failure code',
+  'adminJobs.emptyTitle': 'Nothing in the queue',
+  'adminJobs.emptyBody':
+    'Every report that has been uploaded finished processing. Jobs appear here while they run, and stay if they fail.',
+  'adminJobs.noMatchTitle': 'No job matches',
+  'adminJobs.noMatchBody': 'Clear a filter, or search for a different identifier.',
+  'adminJobs.showing': 'Showing {visible} of {total}.',
+  'adminJobs.filterState': 'Filter by state',
+  'adminJobs.chipAll': 'All ({count})',
+  'adminJobs.chipInFlight': 'In flight ({count})',
+  'adminJobs.chipStalled': 'Stalled ({count})',
+  'adminJobs.chipFailed': 'Failed ({count})',
+  'adminJobs.stalledAlertOne': '{count} job has been running longer than a run can take.',
+  'adminJobs.stalledAlertMany': '{count} jobs have been running longer than a run can take.',
+  'adminJobs.stalledAlertBody':
+    'Processing runs once and does not restart itself, so these have lost their worker and will not finish. Reprocessing is what recovers them.',
+  'adminJobs.tableCaption': 'Extraction jobs in flight and jobs that failed',
+  'adminJobs.columnJob': 'Report',
+  'adminJobs.columnState': 'State',
+  'adminJobs.columnStarted': 'Attempt started',
+  'adminJobs.columnDuration': 'Running for',
+  'adminJobs.columnAttempts': 'Attempts',
+  'adminJobs.columnFailure': 'Reason',
+  'adminJobs.columnActions': 'Actions',
+  'adminJobs.ownerLabel': 'Account {uid}',
+  'adminJobs.stateWaiting': 'Waiting',
+  'adminJobs.stateRunning': 'Running',
+  'adminJobs.stateStalled': 'Stalled',
+  'adminJobs.stateFailed': 'Failed',
+  'adminJobs.startedUnknown': 'Not recorded',
+  'adminJobs.durationHours': '{hours} h {minutes} min',
+  'adminJobs.durationMinutes': '{minutes} min {seconds} s',
+  'adminJobs.durationSeconds': '{seconds} s',
+  'adminJobs.durationNone': 'Not recorded',
+  'adminJobs.durationNoneLabel':
+    'A run that failed has no finishing time recorded, so its duration is not known.',
+  'adminJobs.attemptsFirst': 'First run',
+  'adminJobs.attemptsSpent': 'Retry {count} of {max}',
+  'adminJobs.noFailure': 'Still running',
+  'adminJobs.retry': 'Reprocess',
+  'adminJobs.retrying': 'Reprocessing…',
+  'adminJobs.retryLabel': 'Reprocess report {report}',
+  'adminJobs.retryRunning': 'Still within the time a run can take.',
+  'adminJobs.retryPermanent': 'A second reading would fail the same way.',
+  'adminJobs.retryExhausted': 'Retried {max} times without success.',
+  'adminJobs.retrySucceeded': 'Report {report} finished processing.',
+  'adminJobs.retryFailedAgain': 'Report {report} failed again.',
+  'adminJobs.retryNote':
+    'Reprocessing runs the same pipeline the upload did, at the same cost, and the same limits apply to an admin as to the account holder. It is written to the audit log.',
+  'adminJobs.loadMore': 'Load more jobs',
+  'adminJobs.limitNote':
+    'Showing {count} jobs. Search covers the jobs loaded so far — load more to reach the rest.',
+
+
   // ── Administration: overview (KAN-18) ─────────────────────────────────
   'adminOverview.intro':
     'The state of the system as a whole. Counts and capacity only — no laboratory value and no account’s results appear on this screen.',
@@ -1093,6 +1153,7 @@ export const en = {
   'adminOverview.auditUserDisabled': 'Account disabled',
   'adminOverview.auditUserEnabled': 'Account re-enabled',
   'adminOverview.auditAccountDeleted': 'Account deleted by its owner',
+  'adminOverview.auditReportRetried': 'Report reprocessed by an admin',
   'adminOverview.auditUnknown': 'Recorded action',
   'adminOverview.auditActor': 'by {actor}',
   'adminOverview.auditActorRedacted': 'by a deleted account',
@@ -1111,6 +1172,7 @@ export const en = {
   'pagination.goToPage': 'Go to page {page}',
   'pagination.catalogPages': 'Catalog pages',
   'pagination.accountPages': 'Account pages',
+  'pagination.jobPages': 'Job pages',
 
 
   // ── Account menu ──────────────────────────────────────────────────────

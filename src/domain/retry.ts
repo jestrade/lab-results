@@ -13,7 +13,7 @@
  */
 
 import policy from '../../config/retry.json';
-import type { Report, ReportWarning } from './types';
+import type { ReportWarning } from './types';
 
 /** Retries allowed per report, on top of the automatic first run. */
 export const MAX_RETRIES = policy.maxRetriesPerReport;
@@ -32,12 +32,29 @@ const IN_FLIGHT: readonly string[] = ['uploaded', 'queued', 'processing'];
  * page will still be a scanned page, and a report rejected on capacity no
  * longer has an object to read.
  */
-export function isPermanentFailure(warnings: ReportWarning[]): boolean {
+export function isPermanentFailure(warnings: readonly ReportWarning[]): boolean {
   const code = warnings[0]?.code;
   if (!code) return false;
   return (
     PERMANENT_CODES.includes(code) || PERMANENT_PREFIXES.some((prefix) => code.startsWith(prefix))
   );
+}
+
+/**
+ * What the decision above is made of.
+ *
+ * A structural subset rather than `Report`, so the same policy can be asked
+ * about a row that is not a whole report — the admin console's job list holds
+ * a deliberately narrow shape with no file name and no results on it (see
+ * `domain/adminJobs.ts`), and a policy that demanded the full document would
+ * have been copied rather than reused. `Report` satisfies this as it stands.
+ */
+export interface RetryCandidate {
+  status: string;
+  warnings: readonly ReportWarning[];
+  retryCount?: number;
+  processingStartedAt?: { toMillis(): number } | null;
+  uploadedAt?: { toMillis(): number } | null;
 }
 
 /**
@@ -49,7 +66,7 @@ export function isPermanentFailure(warnings: ReportWarning[]): boolean {
  * alive. The trigger runs once and does not retry itself, so without this a
  * stranded report stays stranded.
  */
-export function canRetryReport(report: Report, now: number = Date.now()): boolean {
+export function canRetryReport(report: RetryCandidate, now: number = Date.now()): boolean {
   if ((report.retryCount ?? 0) >= MAX_RETRIES) return false;
 
   if (IN_FLIGHT.includes(report.status)) {
@@ -67,7 +84,7 @@ export function canRetryReport(report: Report, now: number = Date.now()): boolea
  * What to say under a failed report, given that "upload it again" is the wrong
  * advice when a button can do it without spending an upload.
  */
-export function retryHint(report: Report): string {
+export function retryHint(report: RetryCandidate): string {
   if (canRetryReport(report)) return '';
   if (report.status === 'failed' && (report.retryCount ?? 0) >= MAX_RETRIES) {
     return `Retried ${MAX_RETRIES} times without success.`;
