@@ -1096,4 +1096,6 @@ export const es: Messages = {
   'account.signedInAs': 'Sesión iniciada como',
   'account.verifyEmail': 'Verifica tu correo electrónico',
 
+
+  'common.signingOut': 'Cerrando tu sesión…',
 };

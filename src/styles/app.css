@@ -2084,3 +2084,50 @@ dialog.dialog {
    the panel lands just below the fold and reads as a menu that does not open.
    Anchoring to the trigger and capping at 90vw keeps it on screen at every
    width without a second positioning scheme to keep in step. */
+
+/* ── auth transition (KAN-25) ──────────────────────────────────────────── */
+
+/* Covers the whole viewport rather than the control that started it: what is
+   about to change is who the application thinks you are, and every number on
+   the page behind belongs to the session being ended. Sitting above the
+   sidebar's z-index also means a second, impatient click cannot reach
+   anything mid-teardown. */
+.auth-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-bg, #fff) 82%, transparent);
+  backdrop-filter: blur(2px);
+  animation: auth-transition-in 160ms ease-out;
+}
+.auth-transition-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 28px;
+  border-radius: var(--r-card);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+}
+.auth-transition-label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@keyframes auth-transition-in {
+  from {
+    opacity: 0;
+  }
+}
+/* The veil is confirmation that the click landed; someone who asked for less
+   motion still needs that, so only the fade goes. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-transition {
+    animation: none;
+  }
+}

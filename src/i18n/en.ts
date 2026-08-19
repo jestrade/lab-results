@@ -1084,4 +1084,6 @@ export const en = {
   'account.signedInAs': 'Signed in as',
   'account.verifyEmail': 'Verify your email address',
 
+
+  'common.signingOut': 'Signing you out…',
 } as const;
