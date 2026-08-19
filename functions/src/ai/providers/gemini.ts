@@ -40,7 +40,7 @@ export function createGeminiProvider(config: AiConfig, apiKey: string): AiProvid
 
       const response = await callWithRetry(config, () =>
         withTimeout(
-          config.timeoutMs,
+          options.timeoutMs ?? config.timeoutMs,
           client.models.generateContent({
             model: config.model,
             contents: options.input,

@@ -35,21 +35,54 @@ import { clearCatalogCache, isCategory, type VariableCategory } from './catalog'
  * ── Sized against the response, not the request ──────────────────────────
  *
  * Each entry comes back as two names and two descriptions of two to three
- * sentences — roughly 170 tokens once JSON scaffolding is counted. Forty of
- * them is about 7,000 tokens, and asking for that in a 4,096-token budget is
- * not a truncated description: the JSON stops mid-string, the whole response
- * fails to parse, and *every* variable in the batch is left unenriched.
+ * sentences. An overrun is not a truncated description: the JSON stops
+ * mid-string, the whole response fails to parse, and *every* variable in the
+ * batch is left unenriched.
  *
- * Observed exactly that way on a real backfill — a batch of 40 failed with
- * `invalid-response` while a batch of 3 in the same run succeeded. Twelve
- * against `MAX_OUTPUT_TOKENS` leaves roughly four times the headroom needed,
- * which is the right margin for a limit whose overrun costs the batch rather
- * than one row.
+ * This number and `MAX_OUTPUT_TOKENS` have to be read together, and for a
+ * long time they were not. The estimate here used to say 170 tokens per
+ * entry. Measured against the live provider it is closer to 1,235 — three
+ * entries came back as 3,704 output tokens — so a chunk of twelve needs about
+ * 14,800 and was being asked for inside 8,192. Every full chunk failed, the
+ * failure was caught and logged as a warning, and eighty-five placeholders
+ * accumulated in production before anyone read the logs.
+ *
+ * Twelve is kept, and the budget was raised to fit it with room. Fewer, larger
+ * calls also spend less of the free tier's per-minute allowance, which is the
+ * other thing that stops this feature working.
  */
 export const ENRICHMENT_CHUNK = 12;
 
-/** Output budget per call. Generous next to `ENRICHMENT_CHUNK` on purpose. */
-const MAX_OUTPUT_TOKENS = 8192;
+/**
+ * Output budget per call.
+ *
+ * Sized from measurement rather than estimate: about 1,235 output tokens per
+ * entry, so a full chunk of twelve needs roughly 14,800. Thirty-two thousand
+ * is a little over twice that — the right margin for a limit whose overrun
+ * costs the whole batch rather than one row — and well inside what the model
+ * will emit.
+ *
+ * Note this is the budget *with* `thinkingBudget: 0`. The provider is more
+ * verbose with thinking disabled, not less: the same three entries came back
+ * as 426 output tokens when allowed to think and 3,704 when not. The trade is
+ * deliberate — thinking tokens are billed the same and are not the answer —
+ * but it is why this number cannot be derived from the length of the text a
+ * person would write.
+ */
+const MAX_OUTPUT_TOKENS = 32_768;
+
+/**
+ * How long one chunk may take.
+ *
+ * The provider default is 30 seconds, which suits classifying one result and
+ * not this. Three entries under a response schema took 14.6 seconds, so a
+ * chunk of twelve is comfortably past the default even when nothing is wrong.
+ *
+ * Ninety seconds is the margin a network call of this size deserves, and it is
+ * bounded: `MAX_ENRICHMENT_BATCH` allows four chunks per invocation, so the
+ * worst case is six minutes inside a function that may run for nine.
+ */
+const CHUNK_TIMEOUT_MS = 90_000;
 
 /**
  * Ceiling on one invocation, across chunks.
@@ -205,6 +238,7 @@ async function enrichChunk(chunk: readonly EnrichmentTarget[]): Promise<number> 
       responseSchema: RESPONSE_SCHEMA as unknown as Record<string, unknown>,
       parse: (raw) => parseEnrichment(raw, ids),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
+      timeoutMs: CHUNK_TIMEOUT_MS,
     });
     entries = data;
   } catch (error) {

@@ -34,3 +34,4 @@ export { deleteAccount } from './deleteAccount';
 export { clearVariableData } from './clearVariables';
 export { retryReport } from './retry';
 export { aiHealthCheck } from './ai/healthCheck';
+export { enrichCatalogBacklog } from './variables/sweep';

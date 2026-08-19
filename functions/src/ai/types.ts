@@ -62,6 +62,17 @@ export interface AiGenerateOptions<T> {
    */
   parse: (raw: unknown) => T;
   maxOutputTokens?: number;
+  /**
+   * Overrides the provider's configured timeout for this call.
+   *
+   * Here rather than only in configuration because the tasks are not the same
+   * shape. Classifying one result is a short question; asking for twelve
+   * catalog entries is four dozen sentences, and it was measured at 38.8s
+   * against a 30s default — every full enrichment batch timed out, silently,
+   * for as long as the feature had existed. One global number cannot be both
+   * a useful ceiling on the short calls and a workable one for the long.
+   */
+  timeoutMs?: number;
   /** 0 unless there is a reason. Clinical-adjacent text should not improvise. */
   temperature?: number;
 }
