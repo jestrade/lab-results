@@ -764,6 +764,37 @@
   gap: 10px;
   font-size: 13px;
 }
+/* A row still waiting for its date is the one thing on the page asking the
+   reader for something, so it is the one row that says so without colour
+   alone — the field and its label are inside it. */
+.upload-row[data-state='draft'] {
+  border-color: var(--color-accent);
+}
+
+/* A control that is only an icon: used where the label would repeat text
+   already in the row, and carries its name through aria-label. The hit area
+   stays at the 24px the pointer needs even though the glyph is 14. */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-card);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.icon-button:hover {
+  color: var(--color-text);
+  background: var(--color-neutral-200);
+}
+.icon-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
 
 .progress-track {
   height: 4px;

@@ -68,6 +68,26 @@ async function setStatus(
   await getFirestore().collection('reports').doc(reportId).set(fields, { merge: true });
 }
 
+/**
+ * The day the user said these tests were taken.
+ *
+ * Written by the browser when the record was created and required there since
+ * the upload form began asking for it (see `src/domain/reportDate.ts`). This
+ * pipeline used to decide the date itself, from whichever of the several dates
+ * printed on a laboratory report the model happened to pick — and when it
+ * picked wrong, every value on the report landed on the wrong day of the
+ * reader's history with nothing to reveal it. The person holding the paper
+ * knows; we ask them, and then we do not argue.
+ *
+ * Null only for reports stored before the field existed. Those still fall back
+ * to the extracted date, which is better than nothing and is all they ever had.
+ */
+async function readDeclaredDate(reportId: string): Promise<Date | null> {
+  const snap = await getFirestore().collection('reports').doc(reportId).get();
+  const stamp = snap.data()?.reportDate as { toDate?: () => Date } | null | undefined;
+  return stamp?.toDate ? stamp.toDate() : null;
+}
+
 function rangeFrom(row: {
   referenceLow?: number;
   referenceHigh?: number;
@@ -116,6 +136,10 @@ export async function processReport(report: ReportRef): Promise<void> {
     });
     return;
   }
+
+  // Read before this run writes anything, so a reprocessing reads the user's
+  // declaration rather than whatever the previous attempt left behind.
+  const declaredDate = await readDeclaredDate(report.id);
 
   // The instant matters as much as the status: a run that dies without writing
   // an outcome leaves the report here forever, and `retry.ts` uses the age of
@@ -195,12 +219,17 @@ export async function processReport(report: ReportRef): Promise<void> {
     };
   });
 
-  // One instant for the whole report, so every result from it lines up on the
-  // time axis. The report's own date when the laboratory printed one, falling
-  // back to when it was uploaded.
-  const observedAt = extraction.output.reportDate
+  // What the model read off the page. Kept, but no longer authoritative: it is
+  // stored beside the user's date as evidence, not in place of it.
+  const extractedDate = extraction.output.reportDate
     ? new Date(`${extraction.output.reportDate}T00:00:00Z`)
-    : new Date();
+    : null;
+
+  // One instant for the whole report, so every result from it lines up on the
+  // time axis. The user's declared date first, the extracted one only for the
+  // reports that predate the form asking, and the clock only when neither
+  // exists.
+  const observedAt = declaredDate ?? extractedDate ?? new Date();
 
   const batch = db.batch();
   const resultsRef = db.collection('reports').doc(report.id).collection('results');
@@ -287,7 +316,11 @@ export async function processReport(report: ReportRef): Promise<void> {
   // been processed and stored — the user's results are safe on the document
   // before we go looking for what they might duplicate, and a failure here
   // must not turn a processed report into a failed one.
-  const duplicate = await findDuplicate(report, extraction.output, classified).catch((error) => {
+  const duplicate = await findDuplicate(
+    report,
+    { ...extraction.output, reportDate: toDateKey(observedAt) },
+    classified,
+  ).catch((error) => {
     logger.warn('Duplicate check failed', { reportId: report.id, error });
     return null;
   });
@@ -304,9 +337,11 @@ export async function processReport(report: ReportRef): Promise<void> {
     resultCount: classified.length,
     outOfRangeCount: outOfRange,
     laboratoryName: extraction.output.laboratoryName ?? null,
-    reportDate: extraction.output.reportDate
-      ? new Date(`${extraction.output.reportDate}T00:00:00Z`)
-      : null,
+    extractedReportDate: extractedDate,
+    // Only ever filled in, never overwritten. A user who corrected the date on
+    // this report and then pressed retry must not find their correction undone
+    // by the same misreading that made them correct it.
+    ...(declaredDate ? {} : { reportDate: extractedDate }),
     processedAt: FieldValue.serverTimestamp(),
     warnings,
     // The pointer, kept apart from the warning text so the reports UI can link
@@ -324,6 +359,11 @@ export async function processReport(report: ReportRef): Promise<void> {
     dropped: extraction.dropped,
     duplicateOf: duplicate?.reportId ?? null,
   });
+}
+
+/** `YYYY-MM-DD` of a date's UTC day — how `duplicates.ts` compares dates. */
+function toDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
 /**

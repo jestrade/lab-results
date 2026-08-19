@@ -96,9 +96,51 @@ export interface UserProfile {
   preferences: UserPreferences;
   /** Optional context the user chose to give. Absent until they fill it in. */
   healthContext: HealthContext | null;
+  /**
+   * The identity document the reader chose to record. Absent until they fill
+   * it in — an account is usable without one.
+   */
+  identityDocument: IdentityDocument | null;
   createdAt: Timestamp;
   updatedAt: Timestamp | null;
   deletedAt: Timestamp | null;
+}
+
+/**
+ * Kinds of identity document a reader can record.
+ *
+ * The Colombian set, because that is who this is for: `cedula` is the adult
+ * national ID, `registro_civil` the one a minor carries, `pasaporte` the
+ * travel document, and `cedula_extranjeria` the ID issued to a foreign
+ * resident. Stored as these stable ids rather than as the printed Spanish
+ * names, so the label can be retranslated without rewriting every profile.
+ */
+export type IdentityDocumentType =
+  | 'cedula'
+  | 'registro_civil'
+  | 'pasaporte'
+  | 'cedula_extranjeria';
+
+/**
+ * The identity document on a profile.
+ *
+ * Every field is nullable and independent: a reader may know their number but
+ * not remember where it was issued, and a half-filled record is a truthful one
+ * rather than an error to reject. Nothing here is inferred — a guessed
+ * document number would be indistinguishable from one the reader stated.
+ *
+ * The number is kept verbatim, as printed. It is not normalised, stripped of
+ * dots, or checked against a format: identity numbers are printed differently
+ * across the four kinds above, and a validator that rejects a real document is
+ * worse than no validator at all.
+ */
+export interface IdentityDocument {
+  type: IdentityDocumentType | null;
+  /** As printed on the document. Never reformatted. */
+  number: string | null;
+  /** The city or authority that issued it, as the reader writes it. */
+  placeOfIssue: string | null;
+  updatedAt: Timestamp | null;
 }
 
 export type BiologicalSex = 'female' | 'male' | 'intersex';
@@ -122,9 +164,33 @@ export interface HealthContext {
   /** Asked because many reference ranges differ by sex, not for demographics. */
   biologicalSex: BiologicalSex | null;
   pregnancyStatus: PregnancyStatus | null;
+  /**
+   * Weight in kilograms and height in centimetres.
+   *
+   * Stored as the two measurements, never as the index they produce — see
+   * `src/domain/bmi.ts` for why a stored BMI is a third number that can
+   * disagree with the two it came from. Kilograms and centimetres rather than
+   * a unit the reader picks: a stored number whose unit is a second stored
+   * field is one migration away from being read as the wrong quantity.
+   */
+  weightKg: number | null;
+  heightCm: number | null;
   /** Free text — one per line, as the user writes them. Never parsed. */
   medications: string | null;
+  /** What the reader lives with now. */
   conditions: string | null;
+  /**
+   * What they have had and no longer have. Kept apart from `conditions`
+   * because the difference matters to anyone reading the record: a pneumonia
+   * in 2019 and a pneumonia today are not the same fact, and one list holding
+   * both would leave a reader unable to say which they meant.
+   */
+  pastConditions: string | null;
+  /**
+   * What runs in the family. About relatives, not about the reader — so it is
+   * never mixed into the two lists above, which are about their own body.
+   */
+  familyConditions: string | null;
   ongoingSymptoms: string | null;
   updatedAt: Timestamp | null;
 }

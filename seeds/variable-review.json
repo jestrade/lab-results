@@ -3,7 +3,7 @@
   "reviewedBy": "Claude (Opus 5), for jesuestrada@gmail.com",
   "sourceCatalogSize": 178,
   "pendingReviewed": 85,
-  "note": "Reviewed content lands here before it lands in Firestore, for the reason docs/variables.md gives about config/variables.json: this is shown to every reader as an explanation of their own blood test, so it goes through the repository where it can be diffed, reviewed and rolled back. `enrich` and `reclassify` are safe to apply and the script is idempotent. `merge` and `remove` are not applied by any script — they move or delete stored history and need a person.",
+  "note": "Reviewed content lands here before it lands in Firestore, for the reason docs/variables.md gives about seeds/variables.json: this is shown to every reader as an explanation of their own blood test, so it goes through the repository where it can be diffed, reviewed and rolled back. `enrich` and `reclassify` are safe to apply and the script is idempotent. `merge` and `remove` are not applied by any script — they move or delete stored history and need a person.",
   "enrich": [
     {
       "id": "mch",

@@ -52,9 +52,16 @@ src/
 firestore.rules storage.rules   The real security boundary
 config/quotas.json              Every capacity limit, in one place
 config/retry.json               When a failed report may be processed again
-config/variables.json           The laboratory-variable catalog, as imported
-                                from the maintained spreadsheet
-config/variable-review.json     Curation decisions applied to that catalog
+seeds/                          What a fresh project's reference collections
+                                start with, and the only place variable data
+                                or category definitions are written down:
+                                categories.json (the grid's panels),
+                                variables.json (the catalog, as imported from
+                                the maintained spreadsheet) and
+                                variable-review.json (curation decisions
+                                applied to it). Read by the seeding scripts,
+                                never at runtime — Firestore is the source of
+                                truth once seeded.
 config/csp.mjs                  One Content-Security-Policy for dev, preview
                                 and hosting
 functions/                      Cloud Functions: the extraction pipeline, usage

@@ -22,7 +22,14 @@ import { useI18n } from '@/i18n/useI18n';
 import type { I18nContextValue } from '@/i18n/I18nContext';
 import type { MessageKey } from '@/i18n/messages';
 import type { Locale } from '@/domain/locales';
-import type { BiologicalSex, HealthContext, PregnancyStatus, UserProfile } from '@/domain/types';
+import type {
+  BiologicalSex,
+  HealthContext,
+  IdentityDocument,
+  IdentityDocumentType,
+  PregnancyStatus,
+  UserProfile,
+} from '@/domain/types';
 import {
   DELETION_CONFIRMATION,
   changePassword,
@@ -33,21 +40,30 @@ import {
 } from '@/services/account';
 import {
   clearHealthContext,
+  clearIdentityDocument,
   subscribeToProfile,
   updateDisplayName,
   updateHealthContext,
+  updateIdentityDocument,
 } from '@/services/profiles';
 
 /**
  * Profile (KAN-27, KAN-48, KAN-23).
  *
- * Four things live here, in the order someone looks for them: who the account
- * belongs to, the password, the optional context about the person whose results
- * these are, and — last, where nothing is reached by accident — deleting the
- * account. Privacy settings stay on Account settings; consent is a decision,
- * not a detail, and burying it under a form would undo the reason that page
- * exists.
+ * Five things live here, in the order someone looks for them: who the account
+ * belongs to, the identity document that says so, the password, the optional
+ * context about the person whose results these are, and — last, where nothing
+ * is reached by accident — deleting the account. Privacy settings stay on
+ * Account settings; consent is a decision, not a detail, and burying it under
+ * a form would undo the reason that page exists.
  */
+
+const DOCUMENT_TYPE_OPTIONS: { value: IdentityDocumentType; label: MessageKey }[] = [
+  { value: 'cedula', label: 'profile.document.cedula' },
+  { value: 'registro_civil', label: 'profile.document.registroCivil' },
+  { value: 'pasaporte', label: 'profile.document.pasaporte' },
+  { value: 'cedula_extranjeria', label: 'profile.document.cedulaExtranjeria' },
+];
 
 const SEX_OPTIONS: { value: BiologicalSex; label: MessageKey }[] = [
   { value: 'female', label: 'profile.sex.female' },
@@ -69,6 +85,24 @@ const DELETED_ITEM_KEYS: MessageKey[] = [
   'profile.deleted.variables',
   'profile.deleted.account',
 ];
+
+type DocumentDraft = Omit<IdentityDocument, 'updatedAt'>;
+
+const EMPTY_DOCUMENT: DocumentDraft = {
+  type: null,
+  number: null,
+  placeOfIssue: null,
+};
+
+function documentDraftFrom(profile: UserProfile | null): DocumentDraft {
+  const document = profile?.identityDocument;
+  if (!document) return EMPTY_DOCUMENT;
+  return {
+    type: document.type ?? null,
+    number: document.number ?? null,
+    placeOfIssue: document.placeOfIssue ?? null,
+  };
+}
 
 type ContextDraft = Omit<HealthContext, 'updatedAt'>;
 
@@ -161,6 +195,13 @@ export function Profile() {
               await syncAuthDisplayName(user, displayName);
               await refresh();
             }}
+          />
+
+          <IdentityDocumentSection
+            profile={profile}
+            onSave={(draft) => updateIdentityDocument(user.uid, draft)}
+            onClear={() => clearIdentityDocument(user.uid)}
+            t={t}
           />
 
           <PasswordSection canChange={hasPasswordSignIn(user)} user={user} t={t} locale={locale} />
@@ -305,6 +346,201 @@ function IdentitySection({
           </div>
         ) : null}
       </div>
+    </section>
+  );
+}
+
+/**
+ * The identity document on the profile.
+ *
+ * Its own section rather than three more fields under "Your details", because
+ * the write is its own: the display name goes to Firestore *and* to the auth
+ * record, and folding a document number into that form would mean one Save
+ * button standing for two unrelated writes, either of which can fail alone.
+ *
+ * Kept above the health context deliberately. This says who the account holder
+ * is; that says what is true about their body. They are answered by different
+ * evidence — a card in a wallet, and a memory of a prescription — and reading
+ * one heading straight into the other invites the two to be filled in as one.
+ */
+function IdentityDocumentSection({
+  profile,
+  onSave,
+  onClear,
+  t,
+}: {
+  profile: UserProfile | null;
+  onSave: (draft: DocumentDraft) => Promise<void>;
+  onClear: () => Promise<void>;
+  t: I18nContextValue['t'];
+}) {
+  const [draft, setDraft] = useState<DocumentDraft>(() => documentDraftFrom(profile));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [numberError, setNumberError] = useState<string | null>(null);
+  const [confirmingClear, setConfirmingClear] = useState(false);
+
+  const hasAnything = Object.values(documentDraftFrom(profile)).some((value) => value !== null);
+
+  function set<K extends keyof DocumentDraft>(key: K, value: DocumentDraft[K]) {
+    setDraft((current) => ({ ...current, [key]: value }));
+    setSaved(false);
+    setNumberError(null);
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+
+    const next: DocumentDraft = {
+      type: draft.type,
+      number: normalise(draft.number),
+      placeOfIssue: normalise(draft.placeOfIssue),
+    };
+
+    // A number with no type is a string of digits nobody can act on — the same
+    // sequence means a different person depending on which document it came
+    // off. Every other combination is allowed to be incomplete.
+    if (next.number !== null && next.type === null) {
+      setNumberError(t('profile.documentNumberNeedsType'));
+      return;
+    }
+
+    setError(null);
+    setNumberError(null);
+    setSaving(true);
+    try {
+      await onSave(next);
+      setDraft(next);
+      setSaved(true);
+    } catch {
+      setError(t('profile.saveFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClear() {
+    setSaving(true);
+    try {
+      await onClear();
+      setDraft(EMPTY_DOCUMENT);
+      setConfirmingClear(false);
+      setSaved(false);
+    } catch {
+      setError(t('profile.removeFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="settings-section" aria-labelledby="profile-document">
+      <div className="settings-head">
+        <h2 id="profile-document">{t('profile.documentHeading')}</h2>
+        <Tag tone="neutral">{t('profile.optional')}</Tag>
+      </div>
+
+      <p className="muted">{t('profile.documentIntro')}</p>
+
+      {error ? (
+        <Alert tone="danger" live>
+          {error}
+        </Alert>
+      ) : null}
+
+      <form onSubmit={(event) => void handleSubmit(event)} className="profile-form" noValidate>
+        <div className="profile-grid">
+          <Field label={t('profile.documentType')}>
+            {(props) => (
+              <select
+                {...props}
+                className="input"
+                value={draft.type ?? ''}
+                onChange={(event) =>
+                  set('type', (event.target.value || null) as IdentityDocumentType | null)
+                }
+              >
+                <option value="">{t('profile.documentTypeUnset')}</option>
+                {DOCUMENT_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.label)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+
+          <Field
+            label={t('profile.documentNumber')}
+            hint={t('profile.documentNumberHint')}
+            error={numberError}
+          >
+            {(props) => (
+              <input
+                {...props}
+                className="input"
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                value={draft.number ?? ''}
+                onChange={(event) => set('number', event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+
+        <Field label={t('profile.documentPlace')} hint={t('profile.documentPlaceHint')}>
+          {(props) => (
+            <input
+              {...props}
+              className="input"
+              type="text"
+              autoComplete="off"
+              value={draft.placeOfIssue ?? ''}
+              onChange={(event) => set('placeOfIssue', event.target.value)}
+            />
+          )}
+        </Field>
+
+        <div className="profile-actions">
+          <Button type="submit" variant="primary" loading={saving} loadingLabel={t('common.saving')}>
+            {t('profile.documentSave')}
+          </Button>
+          {hasAnything ? (
+            <Button variant="secondary" onClick={() => setConfirmingClear(true)} disabled={saving}>
+              {t('profile.documentRemoveAll')}
+            </Button>
+          ) : null}
+          {/* Announced, not just coloured (KAN-53). */}
+          <span role="status" className="muted" style={{ fontSize: 13 }}>
+            {saved ? t('profile.documentSaved') : ''}
+          </span>
+        </div>
+      </form>
+
+      <Modal
+        open={confirmingClear}
+        onClose={() => (saving ? undefined : setConfirmingClear(false))}
+        title={t('profile.documentRemoveTitle')}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmingClear(false)} disabled={saving}>
+              {t('settings.keepIt')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => void handleClear()}
+              loading={saving}
+              loadingLabel={t('profile.removing')}
+            >
+              {t('profile.removeIt')}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ marginBottom: 0 }}>{t('profile.documentRemoveBody')}</p>
+      </Modal>
     </section>
   );
 }

@@ -108,6 +108,13 @@ service cloud.firestore {
       // The client creates the report record when it finishes uploading the
       // PDF, and may only ever declare it as `uploaded`. Advancing it to
       // queued/processing/processed is the pipeline's job (KAN-7).
+      //
+      // `reportDate` is the exception to principle 2 above, and required: the
+      // day the tests were taken is read off the paper by the person holding
+      // it, not inferred from the file. The model's own reading is stored
+      // separately as `extractedReportDate`, which the client may not write —
+      // otherwise "what the laboratory printed" and "what the user says" would
+      // be the same field wearing two labels.
       allow create: if isVerified()
         && request.resource.data.ownerId == uid()
         && request.resource.data.status == 'uploaded'
@@ -119,9 +126,10 @@ service cloud.firestore {
         && request.resource.data.fileSize is int
         && request.resource.data.fileSize > 0
         && request.resource.data.fileSize <= 25 * 1024 * 1024
+        && request.resource.data.reportDate is timestamp
         && createdWithout([
              'resultCount', 'outOfRangeCount', 'processedAt', 'warnings',
-             'laboratoryName', 'reportDate',
+             'laboratoryName', 'extractedReportDate',
              // A report that arrives claiming it has been retried -5 times
              // would hand its owner an unlimited reprocessing budget.
              'retryCount', 'lastRetryAt', 'processingStartedAt',
@@ -132,12 +140,18 @@ service cloud.firestore {
            ]);
 
       // Nothing the pipeline owns may be rewritten from the browser. What is
-      // left for the user is the label they typed on the upload form.
+      // left for the user is the label they typed on the upload form and the
+      // report date they declared with it — a date read off a piece of paper
+      // is the kind of thing that gets typed wrong, and a correction that
+      // needed support to apply is a correction that never happens.
       allow update: if isAdmin()
         || (isOwner(resource.data.ownerId) && untouched([
              'ownerId', 'storagePath', 'fileSize', 'contentHash', 'status',
              'uploadedAt', 'processedAt', 'resultCount', 'outOfRangeCount',
              'warnings', 'pageCount', 'supersededBy', 'duplicateOf', 'version',
+             // What the model read out of the PDF. Kept as evidence beside the
+             // user's own date, so it has to stay out of the user's reach.
+             'extractedReportDate',
              // The retry budget (KAN-7). Kept out of reach for the same reason
              // as the usage counters: a limit the client can reset is not a
              // limit, and each reprocessing spends AI calls.
@@ -193,6 +207,18 @@ service cloud.firestore {
     // readable by any signed-in user, maintained by admins.
 
     match /variables/{variableId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── variableCategories/{categoryId} ──────────────────────────────────
+    // The panels the variables grid groups by (KAN-8). Reference data on the
+    // same terms as the catalog above: every signed-in reader needs the
+    // headings to draw their own grid, and only an admin defines them.
+    //
+    // Seeded from `seeds/categories.json` — see `functions/scripts/seed.mjs`.
+
+    match /variableCategories/{categoryId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }

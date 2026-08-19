@@ -9,8 +9,8 @@
  *
  * Two stages, usable together or apart:
  *
- *   --csv <file>   parse a sheet export into config/variables.json
- *   --push         write config/variables.json into Firestore
+ *   --csv <file>   parse a sheet export into seeds/variables.json
+ *   --push         write seeds/variables.json into Firestore
  *
  * ── Why the sheet lands in git on the way through ────────────────────────
  *
@@ -34,13 +34,12 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { readCatalog } from './sheet-catalog.mjs';
+import { readSeed, CATEGORIES_SEED, VARIABLES_SEED } from './seeds.mjs';
+import { openFirestore, createAll, target } from './seed-store.mjs';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO = resolve(HERE, '../..');
-const DEFAULT_OUT = resolve(REPO, 'config/variables.json');
+const DEFAULT_OUT = VARIABLES_SEED;
 
 function parseArgs(argv) {
   const args = { csv: null, out: DEFAULT_OUT, push: false, dryRun: false };
@@ -62,7 +61,7 @@ const USAGE = `
 Feed the laboratory-variable catalog from the maintained spreadsheet.
 
   --csv <file>   Parse a Google Sheets CSV export into the catalog file
-  --out <file>   Where to write it (default: config/variables.json)
+  --out <file>   Where to write it (default: seeds/variables.json)
   --push         Write the catalog file into Firestore, creating only
   --dry-run      With --push: report what would happen, write nothing
   -h, --help     This message
@@ -85,8 +84,13 @@ async function main() {
 /** Sheet export → reviewable catalog file. */
 function convert(args) {
   const csv = readFileSync(args.csv, 'utf8');
+  // The panel-name keywords live on the category documents, seeded from
+  // `seeds/categories.json` — the importer reads them from the seed rather
+  // than Firestore because converting a sheet needs no credentials, and
+  // requiring them to parse a CSV would be a barrier to reviewing a diff.
+  const categories = readSeed(CATEGORIES_SEED, 'categories');
   const { entries, skipped, unknownColumns, recognised, sections, sectionRows } =
-    readCatalog(csv);
+    readCatalog(csv, categories);
 
   console.log(`Read ${entries.length} variables from ${args.csv}`);
   console.log(`  Columns recognised: ${recognised.join(', ') || 'none'}`);
@@ -101,8 +105,9 @@ function convert(args) {
   }
 
   // Anything landing in `other` is either genuinely uncategorised or a panel
-  // heading `toCategory` does not know. Worth printing: the fix is one line in
-  // CATEGORY_KEYWORDS, but only if somebody notices it is needed.
+  // heading no category claims. Worth printing: the fix is one keyword on one
+  // category in `seeds/categories.json`, but only if somebody notices it is
+  // needed.
   const uncategorised = entries.filter((entry) => entry.category === 'other');
   if (uncategorised.length > 0) {
     console.log(
@@ -135,50 +140,15 @@ async function push(args) {
     throw new Error(`No variables found in ${args.out}. Run with --csv first.`);
   }
 
-  const { initializeApp, applicationDefault } = await import('firebase-admin/app');
-  const { getFirestore, FieldValue } = await import('firebase-admin/firestore');
+  const { db, FieldValue } = await openFirestore();
 
-  // The emulator accepts any credential; production needs a real one, and
-  // failing here with the variable's name beats failing later with "16 UNAUTHENTICATED".
-  if (!process.env.FIRESTORE_EMULATOR_HOST && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    throw new Error(
-      'Set GOOGLE_APPLICATION_CREDENTIALS to a service-account key, or ' +
-        'FIRESTORE_EMULATOR_HOST to target the emulator.',
-    );
-  }
+  console.log(
+    `\nPushing ${variables.length} variables to ${target()}${args.dryRun ? ' (dry run)' : ''}`,
+  );
 
-  initializeApp({ credential: applicationDefault() });
-  const db = getFirestore();
-
-  const target = process.env.FIRESTORE_EMULATOR_HOST ?? 'the live project';
-  console.log(`\nPushing ${variables.length} variables to ${target}${args.dryRun ? ' (dry run)' : ''}`);
-
-  let created = 0;
-  let skipped = 0;
-
-  for (const variable of variables) {
-    const ref = db.collection('variables').doc(variable.id);
-
-    if (args.dryRun) {
-      const exists = (await ref.get()).exists;
-      if (exists) skipped += 1;
-      else created += 1;
-      continue;
-    }
-
-    try {
-      await ref.create({ ...variable, createdAt: FieldValue.serverTimestamp() });
-      created += 1;
-    } catch (error) {
-      // ALREADY_EXISTS is the expected, correct outcome on a re-run: the entry
-      // is already there and this script does not edit entries.
-      if (error?.code === 6 || /already exists/i.test(String(error?.message))) {
-        skipped += 1;
-        continue;
-      }
-      throw error;
-    }
-  }
+  const { created, skipped } = await createAll(db, FieldValue, 'variables', variables, {
+    dryRun: args.dryRun,
+  });
 
   console.log(
     args.dryRun

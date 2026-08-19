@@ -25,7 +25,12 @@ import { getDb } from '@/lib/firebase';
 import { DOCUMENTS_VERSION } from '@/domain/disclaimers';
 import { isLocale, type Locale } from '@/domain/locales';
 import { isThemePreference, type ThemePreference } from '@/domain/themes';
-import type { HealthContext, UserConsents, UserProfile } from '@/domain/types';
+import type {
+  HealthContext,
+  IdentityDocument,
+  UserConsents,
+  UserProfile,
+} from '@/domain/types';
 
 const USERS = 'users';
 
@@ -190,6 +195,42 @@ export async function updateHealthContext(
 export async function clearHealthContext(uid: string): Promise<void> {
   await updateDoc(userDocRef(uid), {
     healthContext: deleteField(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Writes the identity document on the profile.
+ *
+ * Nulls are written rather than omitted, for the same reason they are in
+ * `updateHealthContext`: omitting a cleared field would leave the old value in
+ * place, so "I deleted my document number" would quietly mean "I kept it".
+ *
+ * Written as a whole map, not as dotted paths — the three fields describe one
+ * document, and a partial write that left a passport number sitting under a
+ * type that now says `cedula` would be a record that contradicts itself.
+ */
+export async function updateIdentityDocument(
+  uid: string,
+  document: Omit<IdentityDocument, 'updatedAt'>,
+): Promise<void> {
+  await updateDoc(userDocRef(uid), {
+    identityDocument: { ...document, updatedAt: serverTimestamp() },
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Removes the identity document entirely.
+ *
+ * `deleteField` rather than a map of nulls, on the same reasoning as
+ * `clearHealthContext`: a reader who clears this is asking for the number to
+ * be gone, and a document that still carries the shape of an ID record is not
+ * the same as one that never held it.
+ */
+export async function clearIdentityDocument(uid: string): Promise<void> {
+  await updateDoc(userDocRef(uid), {
+    identityDocument: deleteField(),
     updatedAt: serverTimestamp(),
   });
 }

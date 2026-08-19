@@ -5,7 +5,11 @@ one is called in English and Spanish, what it measures, and which panel it
 belongs to. It is reference data — readable by any signed-in user, written only
 by the Admin SDK.
 
-Four things put entries in it, and only the last may change one:
+`variableCategories/{categoryId}` is the list of panels it groups by, on the
+same terms. Both are seeded from `seeds/` and read from Firestore thereafter;
+neither is a constant in the source. See [The categories](#the-categories).
+
+Four things put entries in the catalog, and only the last may change one:
 
 | Source | What it writes | When |
 | --- | --- | --- |
@@ -99,6 +103,60 @@ Every threshold here is set on that asymmetry. Where a looser rule would match
 more names at the cost of occasionally matching the wrong ones, this takes the
 extra card.
 
+## The categories
+
+The panels on the variables grid — *Biometría hemática*, *Perfil de lípidos* —
+are `variableCategories` documents, each carrying the heading per locale, the
+position it sits at, and the sheet-heading keywords the importer maps onto it.
+
+They used to be a union in `src/domain/types.ts`, a `VARIABLE_CATEGORIES` array
+in `functions/src/variables/catalog.ts`, a `CATEGORY_NAME` map and a
+`CATEGORY_ORDER` list beside it, and a `CATEGORY_KEYWORDS` table in the import
+script — five copies of one list, in two codebases that deploy separately, each
+carrying a comment asking the next reader to keep them in step. Adding a panel a
+laboratory prints took a change to all five and two deploys, and in between the
+two deploys one half of the system writes a category the other half will not
+draw.
+
+Now an admin adds a document. Both halves read the collection:
+
+* the app through `fetchVariableCategories()` and the `CategoryCatalog` value
+  object in `src/domain/categories.ts`;
+* the functions through `loadCategoryIds()` in
+  `functions/src/variables/categories.ts`, which is also what the enrichment
+  prompt lists as the categories the model may answer with.
+
+Both cache per session and per instance respectively, on the same reasoning as
+the variable catalog: reference data that changes a few times a year, read by
+everything that draws a heading.
+
+### `other` is the one id in the source
+
+It is the fallback three separate things depend on — the extraction prompt is
+told to answer with it rather than guess a panel, enrichment writes it when the
+model returns a category the collection does not have, and a stored entry whose
+category has since been deleted is shown under it. That makes it structure
+rather than data, and it is a constant in both codebases.
+
+Everything else is a document. A category id with no document is still drawn:
+the grid groups by it and labels the heading from the id itself
+(`purine_panel` → "Purine panel"), after the panels the catalog knows. Dropping
+those cards would hide somebody's own results because a category was deleted.
+
+### Seeding
+
+`seeds/categories.json` is what a fresh project starts with — the eighteen
+panels, their Spanish headings and their import keywords:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+node functions/scripts/seed.mjs --dry-run
+node functions/scripts/seed.mjs
+```
+
+It seeds `variables` from `seeds/variables.json` in the same run, creates and
+never overwrites, and is safe to re-run. Nothing at runtime reads either file.
+
 ## Translations
 
 Each entry carries `names` and `descriptions` keyed by locale (`en`, `es`).
@@ -109,8 +167,8 @@ the matcher compares against — and everything else is optional.
 reader seeing an English name has a visible gap they can report; a blank card
 looks like their result went missing.
 
-The category headings on the variables grid are translated in
-`src/domain/variables.ts` as panel names, not literal translations:
+The category headings carry their own `names` map, for the same reason and
+with the same rule: they are panel names, not literal translations.
 `complete_blood_count` is *Biometría hemática* in Spanish, which is what a
 Spanish-language laboratory actually prints.
 
@@ -126,7 +184,7 @@ Export the sheet with **File → Download → Comma-separated values**, then:
 node functions/scripts/import-variables.mjs --csv ~/Downloads/variables.csv
 ```
 
-That writes `config/variables.json` and prints what it understood: which
+That writes `seeds/variables.json` and prints what it understood: which
 columns it recognised, which it ignored, which rows it read as group headings,
 and how many variables fell into `other`. Read that report — it is how a
 renamed column or an unmapped panel becomes visible instead of silently
@@ -146,11 +204,13 @@ can be diffed, reviewed and rolled back.
 
 Column headings are matched case- and accent-insensitively against a list of
 known spellings in `sheet-catalog.mjs` (`name`, `nombre`, `variable`,
-`descripción`, `unidad`, `siglas`, …). Panel names are mapped to the app's
-categories by keyword in `CATEGORY_KEYWORDS`; anything unrecognised becomes
-`other` rather than being guessed at, and is listed in the import report.
+`descripción`, `unidad`, `siglas`, …). Panel names are mapped to categories by
+the `keywords` on each category in `seeds/categories.json`; anything
+unrecognised becomes `other` rather than being guessed at, and is listed in the
+import report.
 
-Add a spelling to either list when the sheet grows one.
+Add a spelling to the column list, or a keyword to the category, when the sheet
+grows one.
 
 Headings are parsed rather than looked up, because a bilingual sheet writes
 `Grupo / Group` and `Explicación (ES)` — neither of which is a spelling of

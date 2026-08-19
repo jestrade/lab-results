@@ -65,7 +65,7 @@ import { readFileSync } from 'node:fs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const LIB = resolve(HERE, '../lib');
-const REVIEW = resolve(HERE, '../../config/variable-review.json');
+const REVIEW = resolve(HERE, '../../seeds/variable-review.json');
 const BACKUPS = resolve(HERE, 'backups');
 
 const apply = process.argv.includes('--apply');

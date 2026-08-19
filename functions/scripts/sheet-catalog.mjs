@@ -333,7 +333,11 @@ export function slugify(value) {
  * under a blank heading; that covers blank spacer rows, notes, and the totals
  * line people leave at the bottom.
  */
-export function readCatalog(csv) {
+export function readCatalog(csv, categories) {
+  if (!Array.isArray(categories) || categories.length === 0) {
+    throw new Error('readCatalog needs the category list — see seeds/categories.json.');
+  }
+
   const rows = parseCsv(csv).filter((row) => row.some((value) => String(value).trim() !== ''));
   if (rows.length === 0) throw new Error('The CSV is empty.');
 
@@ -373,7 +377,7 @@ export function readCatalog(csv) {
     // the group explicitly and has no reason to also use headings.
     if (filled.length === 1 && mapping.category === undefined) {
       const only = filled[0].trim();
-      if (toCategory(only) !== 'other') {
+      if (toCategory(only, categories) !== 'other') {
         section = only;
         sectionRows.push(only);
         continue;
@@ -435,7 +439,7 @@ export function readCatalog(csv) {
           ].filter(Boolean),
         ),
       ],
-      category: toCategory(cell(row, mapping.category) || section),
+      category: toCategory(cell(row, mapping.category) || section, categories),
       defaultUnit: unit || null,
       origin: 'catalog',
       // Curated content. Nothing regenerates it, and the enrichment pass is

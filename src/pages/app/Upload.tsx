@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { Alert } from '@/components/Alert';
 import { Button, ButtonLink } from '@/components/Button';
+import { Field, TextInput } from '@/components/Field';
 import { FileDropzone } from '@/components/FileDropzone';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
@@ -16,8 +17,15 @@ import { useStorageQuota } from '@/hooks/useStorageQuota';
 import { Trans } from '@/i18n/Trans';
 import { useI18n } from '@/i18n/useI18n';
 import type { I18nContextValue } from '@/i18n/I18nContext';
+import type { MessageKey } from '@/i18n/messages';
 import type { Locale } from '@/domain/locales';
 import { findDuplicates, strongestSignal, type DuplicateMatch } from '@/domain/duplicates';
+import {
+  checkReportDate,
+  localToday,
+  parseReportDate,
+  type ReportDateProblem,
+} from '@/domain/reportDate';
 import {
   checkUploadAllowed,
   currentUploadPeriod,
@@ -38,6 +46,7 @@ import { toStorageErrorMessage } from '@/services/storageErrors';
  * while a failed one was sent and did not arrive.
  */
 type ItemState =
+  | 'draft'
   | 'checking'
   | 'confirming'
   | 'waiting'
@@ -53,6 +62,15 @@ interface QueueItem {
   file: File;
   state: ItemState;
   progress: number;
+  /**
+   * The day the tests were taken, as the user typed it — `YYYY-MM-DD`, the
+   * form `<input type="date">` exchanges. Kept as the string rather than a
+   * `Date` so a half-typed value stays half-typed instead of becoming a
+   * confidently wrong day.
+   */
+  reportDate: string;
+  /** What is wrong with that date. Set when the user tries to upload. */
+  dateProblem?: ReportDateProblem;
   /** Why it was rejected or how it failed. Ready to display. */
   message?: string;
   /** Existing reports this file looks like (KAN-28). */
@@ -160,10 +178,23 @@ export function Upload() {
         }
       }
 
+      // Parsed here rather than carried as a `Date` on the item: the row owns
+      // a string the user can still be editing, and this is the one moment it
+      // has to become a day. Nothing reaches this point without having passed
+      // `checkReportDate`, so a null would be a bug in this file — it is
+      // guarded rather than asserted away because the cost of being wrong is
+      // a report filed under the wrong date.
+      const reportDate = parseReportDate(item.reportDate);
+      if (!reportDate) {
+        patch(item.id, { state: 'draft', dateProblem: 'required' });
+        return;
+      }
+
       patch(item.id, { state: 'uploading', progress: 0 });
       const handle = uploadReport({
         file: item.file,
         ownerId: user.uid,
+        reportDate,
         contentHash,
         onProgress: (percent) => patch(item.id, { progress: percent }),
       });
@@ -210,14 +241,27 @@ export function Upload() {
     // the *current* usage would clear five files that fit individually and
     // together do not, and the user would find that out one rejected transfer
     // at a time (spec §79).
-    let projectedBytes = quota.usage?.storageBytes ?? 0;
-    let projectedUploads = uploadsUsedThisMonth(quota.usage);
+    //
+    // Files already staged count towards it too. Since a chosen file now waits
+    // on the page for its date, "what is already on screen" and "what has been
+    // sent" are no longer the same thing, and a projection that ignored the
+    // waiting rows would accept a second batch that leaves no room for the
+    // first.
+    let projectedBytes =
+      (quota.usage?.storageBytes ?? 0) +
+      itemsRef.current
+        .filter((item) => item.state === 'draft')
+        .reduce((sum, item) => sum + item.file.size, 0);
+    let projectedUploads =
+      uploadsUsedThisMonth(quota.usage) +
+      itemsRef.current.filter((item) => item.state === 'draft').length;
 
     const queued: QueueItem[] = selected.map((file) => {
       const id = crypto.randomUUID();
+      const base = { id, file, progress: 0, reportDate: '' };
 
       const problem = validateFile(file, locale);
-      if (problem) return { id, file, state: 'rejected', progress: 0, message: problem.message };
+      if (problem) return { ...base, state: 'rejected', message: problem.message };
 
       const overQuota = checkUploadAllowed(
         {
@@ -232,16 +276,62 @@ export function Upload() {
         },
         locale,
       );
-      if (overQuota) return { id, file, state: 'rejected', progress: 0, message: overQuota.message };
+      if (overQuota) return { ...base, state: 'rejected', message: overQuota.message };
 
       projectedBytes += file.size;
       projectedUploads += 1;
-      return { id, file, state: 'waiting', progress: 0 };
+      // Not sent yet: the file waits here until its owner says which day these
+      // tests were taken. See `handleUploadDrafts`.
+      return { ...base, state: 'draft' };
     });
 
     itemsRef.current = [...itemsRef.current, ...queued];
     publish();
+  }
+
+  /**
+   * Starts the upload for every staged file, once each one has a date.
+   *
+   * All or nothing, deliberately. The button names a number — "Upload 3 files"
+   * — and sending two of them while the third sits there with an empty date
+   * field would be doing something other than what the button said. So an
+   * invalid date marks its own row and stops the batch, which also puts the
+   * error next to the field that has to change.
+   */
+  function handleUploadDrafts() {
+    const today = localToday();
+    const drafts = itemsRef.current.filter((item) => item.state === 'draft');
+    if (drafts.length === 0) return;
+
+    const problems = new Map(
+      drafts
+        .map((item) => [item.id, checkReportDate(item.reportDate, today)] as const)
+        .filter(([, problem]) => problem !== null),
+    );
+
+    if (problems.size > 0) {
+      // Every bad date is marked, not just the first: a user who left three
+      // fields empty should see three fields marked and fix them in one pass.
+      itemsRef.current = itemsRef.current.map((item) =>
+        problems.has(item.id) ? { ...item, dateProblem: problems.get(item.id)! } : item,
+      );
+      publish();
+      return;
+    }
+
+    const staged = new Set(drafts.map((item) => item.id));
+    itemsRef.current = itemsRef.current.map((item) =>
+      staged.has(item.id) ? { ...item, state: 'waiting', dateProblem: undefined } : item,
+    );
+    publish();
     void pump();
+  }
+
+  function handleDateChange(item: QueueItem, value: string) {
+    // The problem clears as soon as the field is touched: leaving a red
+    // "required" under a date the user has just typed reads as a rejection of
+    // what they typed. It is re-checked when they press the button.
+    patch(item.id, { reportDate: value, dateProblem: undefined });
   }
 
   function handleCancel(item: QueueItem) {
@@ -258,16 +348,33 @@ export function Upload() {
   }
 
   function handleClear() {
-    // Only the finished ones: clearing a file mid-transfer would leave an
-    // upload running with nothing on screen to cancel it with.
-    itemsRef.current = itemsRef.current.filter((item) => IN_FLIGHT.includes(item.state));
+    // Only the finished ones. Clearing a file mid-transfer would leave an
+    // upload running with nothing on screen to cancel it with, and clearing a
+    // draft would throw away a file the user has just chosen and may have
+    // already dated.
+    itemsRef.current = itemsRef.current.filter(
+      (item) => IN_FLIGHT.includes(item.state) || item.state === 'draft',
+    );
     publish();
   }
 
   const pending = items.find((item) => item.state === 'confirming');
   const stored = items.filter((item) => item.state === 'stored');
+  const drafts = items.filter((item) => item.state === 'draft');
   const busy = items.some((item) => IN_FLIGHT.includes(item.state));
-  const settled = items.filter((item) => !IN_FLIGHT.includes(item.state));
+  const settled = items.filter(
+    (item) => !IN_FLIGHT.includes(item.state) && item.state !== 'draft',
+  );
+
+  /**
+   * Whether anything on this page is still on its way in.
+   *
+   * A staged file counts. It is not being transferred, but it is a report the
+   * user means to add, and every "all done" on the page has to wait for it —
+   * otherwise dropping a fourth file makes the page congratulate the reader on
+   * finishing while the fourth one sits there undated.
+   */
+  const unfinished = busy || drafts.length > 0;
 
   // The step indicator describes what happens to a report after it lands, and
   // now covers the batch: the first step is complete once everything that is
@@ -275,24 +382,30 @@ export function Upload() {
   const steps: Step[] = [
     {
       label: t('status.report.uploaded'),
-      state: stored.length > 0 && !busy ? 'complete' : busy ? 'current' : 'pending',
+      state: stored.length > 0 && !unfinished ? 'complete' : unfinished ? 'current' : 'pending',
       detail:
-        stored.length > 0 && !busy
+        stored.length > 0 && !unfinished
           ? t('upload.step.stored', {
               size: formatBytes(stored.reduce((sum, item) => sum + item.file.size, 0)),
             })
           : busy
             ? t('upload.step.transferring', { count: items.filter((i) => IN_FLIGHT.includes(i.state)).length })
-            : t('upload.step.chooseFile'),
+            : drafts.length > 0
+              ? t('upload.step.dateFirst', { count: drafts.length })
+              : t('upload.step.chooseFile'),
     },
     {
       label: t('status.report.queued'),
-      state: stored.length > 0 && !busy ? 'current' : 'pending',
-      detail: stored.length > 0 && !busy ? t('upload.step.waitingSlot') : undefined,
+      state: stored.length > 0 && !unfinished ? 'current' : 'pending',
+      detail: stored.length > 0 && !unfinished ? t('upload.step.waitingSlot') : undefined,
     },
     { label: t('status.report.processing'), state: 'pending', detail: t('upload.step.extracting') },
     { label: t('status.report.processed'), state: 'pending', detail: t('upload.step.ready') },
   ];
+
+  // One ceiling for every date field on the page, read once per render so two
+  // rows cannot disagree about what "today" is across a midnight.
+  const today = localToday();
 
   const uploadsBlocked =
     !isEmailVerified ||
@@ -457,16 +570,35 @@ export function Upload() {
                   item={item}
                   t={t}
                   locale={locale}
+                  today={today}
+                  onDateChange={(value) => handleDateChange(item, value)}
                   onCancel={() => handleCancel(item)}
                   onRemove={() => handleRemove(item)}
                 />
               </li>
             ))}
           </ul>
+
+          {/* Nothing is sent until this is pressed. The count is on the button
+              because it is the last thing the user reads before their health
+              records leave their computer, and "upload" alone does not say how
+              many. */}
+          {drafts.length > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <Button variant="primary" icon="upload-simple" onClick={handleUploadDrafts}>
+                {t(drafts.length === 1 ? 'upload.startOne' : 'upload.startMany', {
+                  count: drafts.length,
+                })}
+              </Button>
+              <span className="muted" style={{ fontSize: 13 }}>
+                {t('upload.startHint')}
+              </span>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
-      {stored.length > 0 && !busy ? (
+      {stored.length > 0 && !unfinished ? (
         <Alert
           tone="success"
           title={t(stored.length === 1 ? 'upload.storedTitle' : 'upload.storedTitleMany', {
@@ -507,12 +639,17 @@ function QueueRow({
   item,
   t,
   locale,
+  today,
+  onDateChange,
   onCancel,
   onRemove,
 }: {
   item: QueueItem;
   t: I18nContextValue['t'];
   locale: Locale;
+  /** The latest day the date field will accept — see `localToday`. */
+  today: string;
+  onDateChange: (value: string) => void;
   onCancel: () => void;
   onRemove: () => void;
 }) {
@@ -549,6 +686,30 @@ function QueueRow({
         )}
       </div>
 
+      {/* Asked per file, not once for the batch: three reports dropped together
+          are three different days often enough that a shared date would be a
+          trap, and this field exists precisely because a wrong date is
+          invisible once it is stored. */}
+      {item.state === 'draft' ? (
+        <Field
+          label={t('upload.dateLabel', { file: item.file.name })}
+          hint={t('upload.dateHint')}
+          error={item.dateProblem ? t(DATE_PROBLEM[item.dateProblem]) : null}
+        >
+          {(field) => (
+            <TextInput
+              {...field}
+              type="date"
+              required
+              value={item.reportDate}
+              max={today}
+              style={{ maxWidth: 220 }}
+              onChange={(event) => onDateChange(event.target.value)}
+            />
+          )}
+        </Field>
+      ) : null}
+
       {item.state === 'uploading' ? (
         <ProgressBar value={item.progress} label={t('upload.progressLabel', { file: item.file.name })} />
       ) : null}
@@ -574,6 +735,7 @@ function QueueRow({
 }
 
 const ROW_ICON: Record<ItemState, string> = {
+  draft: 'calendar-blank',
   checking: 'magnifying-glass',
   confirming: 'question',
   waiting: 'clock',
@@ -585,8 +747,18 @@ const ROW_ICON: Record<ItemState, string> = {
   failed: 'warning-circle',
 };
 
+/** Each way a declared date can be wrong, in the words the reader gets. */
+const DATE_PROBLEM: Record<ReportDateProblem, MessageKey> = {
+  required: 'upload.dateRequired',
+  malformed: 'upload.dateMalformed',
+  future: 'upload.dateFuture',
+  tooOld: 'upload.dateTooOld',
+};
+
 function rowStatus(item: QueueItem, t: I18nContextValue['t'], locale: Locale): string {
   switch (item.state) {
+    case 'draft':
+      return t('upload.state.draft');
     case 'checking':
       return t('upload.state.checking');
     case 'confirming':

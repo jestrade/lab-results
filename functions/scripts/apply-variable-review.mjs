@@ -5,7 +5,7 @@
  *   node functions/scripts/apply-variable-review.mjs --dry-run
  *   node functions/scripts/apply-variable-review.mjs
  *
- * Reads `config/variable-review.json` — a human-reviewed verdict for every
+ * Reads `seeds/variable-review.json` — a human-reviewed verdict for every
  * entry that was carrying `needsEnrichment: true` — and writes the `enrich`
  * half of it into Firestore.
  *
@@ -45,11 +45,10 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const REVIEW = resolve(HERE, '../../config/variable-review.json');
+import { REVIEW_SEED } from './seeds.mjs';
+
+const REVIEW = REVIEW_SEED;
 
 const dryRun = process.argv.includes('--dry-run');
 
@@ -73,6 +72,13 @@ const snapshot = await db.collection('variables').get();
 const stored = new Map();
 snapshot.forEach((doc) => stored.set(doc.id, doc.data()));
 
+// Validated against the live collection rather than a list in this file. A
+// review that names a panel this project does not have is a review written
+// against a different project, and that is worth stopping for.
+const categorySnapshot = await db.collection('variableCategories').get();
+const CATEGORIES = new Set(categorySnapshot.docs.map((doc) => doc.id));
+CATEGORIES.add('other');
+
 // ── Validate before writing anything ────────────────────────────────────
 //
 // A review is written against a catalog read at some earlier moment. If an id
@@ -91,19 +97,6 @@ function alreadyApplied(entry, current) {
     (current.descriptions?.en ?? null) === (entry.descriptions.en ?? null)
   );
 }
-
-/**
- * Mirrors `VariableCategory` in `src/domain/types.ts` and `VARIABLE_CATEGORIES`
- * in `functions/src/variables/catalog.ts`. A third copy is one too many, and it
- * is here only because this script runs from source without a build step —
- * `variables.test.ts` fails if any of them drift apart.
- */
-const CATEGORIES = new Set([
-  'complete_blood_count', 'coagulation', 'lipid_profile', 'glucose_metabolism',
-  'liver_function', 'kidney_function', 'thyroid', 'electrolytes', 'iron_metabolism',
-  'vitamins', 'hormones', 'inflammation', 'allergy', 'tumour_markers',
-  'urinalysis', 'faecal', 'semen_analysis', 'other',
-]);
 
 for (const bucket of buckets) {
   for (const entry of review[bucket] ?? []) {

@@ -5,6 +5,7 @@ import { Alert } from '@/components/Alert';
 import { Button, ButtonLink } from '@/components/Button';
 import { DataTable, type Column } from '@/components/DataTable';
 import { EmptyState } from '@/components/EmptyState';
+import { Field, TextInput } from '@/components/Field';
 import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
 import { PdfViewerModal } from '@/components/PdfViewerModal';
@@ -18,6 +19,13 @@ import { useI18n } from '@/i18n/useI18n';
 import type { MessageKey } from '@/i18n/messages';
 import { formatBytes } from '@/domain/quotas';
 import { canRetryReport } from '@/domain/retry';
+import {
+  checkReportDate,
+  localToday,
+  parseReportDate,
+  toIsoDate,
+  type ReportDateProblem,
+} from '@/domain/reportDate';
 import type { Report, ReportStatus } from '@/domain/types';
 import {
   deleteReport,
@@ -30,6 +38,7 @@ import {
   retryErrorMessage,
   retryReport,
   subscribeToReports,
+  updateReportDate,
 } from '@/services/reportsList';
 
 /**
@@ -42,6 +51,14 @@ import {
  */
 
 type Filter = 'all' | ReportStatus;
+
+/** Each way a corrected date can be wrong, in the words the reader gets. */
+const DATE_PROBLEM: Record<ReportDateProblem, MessageKey> = {
+  required: 'reports.dateRequired',
+  malformed: 'upload.dateMalformed',
+  future: 'upload.dateFuture',
+  tooOld: 'upload.dateTooOld',
+};
 
 /**
  * The filter labels reuse the report-status keys, so a status is worded
@@ -84,6 +101,21 @@ export function Reports() {
 
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [confirmingBulk, setConfirmingBulk] = useState(false);
+
+  /**
+   * The report whose date is being corrected, and the day being typed.
+   *
+   * The draft is held here rather than read back from the row on every
+   * keystroke: the subscription can deliver a new snapshot mid-edit, and a
+   * value that reset itself under the reader's cursor would be worse than no
+   * editing at all.
+   */
+  const [editingDate, setEditingDate] = useState<{
+    report: Report;
+    value: string;
+    problem: ReportDateProblem | null;
+  } | null>(null);
+  const [savingDate, setSavingDate] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -198,6 +230,35 @@ export function Reports() {
     }
   }
 
+  /**
+   * Saves a corrected report date (KAN-13).
+   *
+   * Validated against the same rules the upload form uses, so a date that
+   * would have been refused on the way in cannot arrive by the back door.
+   */
+  async function handleSaveDate() {
+    if (!editingDate) return;
+
+    const problem = checkReportDate(editingDate.value, localToday());
+    if (problem) {
+      setEditingDate({ ...editingDate, problem });
+      return;
+    }
+
+    setSavingDate(true);
+    try {
+      await updateReportDate(editingDate.report.id, parseReportDate(editingDate.value)!);
+      // The subscription repaints the row; the toast is what says the change
+      // reached the server rather than just the screen.
+      push(t('reports.dateSaved'), 'success');
+      setEditingDate(null);
+    } catch {
+      push(t('reports.dateSaveFailed'), 'danger');
+    } finally {
+      setSavingDate(false);
+    }
+  }
+
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
     setDeleting(true);
@@ -250,6 +311,21 @@ export function Reports() {
     }
   }
 
+  /**
+   * Opens the editor on the date the row is showing.
+   *
+   * A report with no date of its own opens empty rather than pre-filled with
+   * its upload date: offering the upload date as the answer is how a wrong
+   * date gets confirmed by a reader who is only skimming.
+   */
+  function openDateEditor(report: Report) {
+    setEditingDate({
+      report,
+      value: report.reportDate?.toDate ? toIsoDate(report.reportDate.toDate()) : '',
+      problem: null,
+    });
+  }
+
   function toggleOne(id: string, isSelected: boolean) {
     setSelected((current) => {
       const next = new Set(current);
@@ -278,10 +354,25 @@ export function Reports() {
       sortValue: (report) => effectiveDate(report)?.getTime() ?? 0,
       render: (report) => (
         <>
-          {formatDate(effectiveDate(report), locale)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span>{formatDate(effectiveDate(report), locale)}</span>
+            {/* Next to the value it changes rather than out in the actions
+                column: this is a correction to one field, and a reader
+                spotting a wrong date should find the way to fix it where they
+                found the mistake. */}
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => openDateEditor(report)}
+              aria-label={t('reports.changeDateLabel', { file: report.originalFileName })}
+            >
+              <Icon name="pencil-simple" size={14} />
+            </button>
+          </div>
           {!report.reportDate ? (
             // Being explicit beats showing the upload date as if the laboratory
-            // had printed it.
+            // had printed it. Only reports from before the upload form began
+            // asking for a date can be in this state.
             <div className="faint" style={{ fontSize: 11 }}>
               {t('reports.uploadDateNote')}
             </div>
@@ -537,6 +628,71 @@ export function Reports() {
         error={preview?.error ?? null}
         onClose={() => setPreview(null)}
       />
+
+      {/* Correcting a date, on its own dialog rather than inline in the row.
+          The change is worth a sentence of explanation — the results keep the
+          day they were filed under until the report is processed again — and
+          there is nowhere in a table cell to say that. */}
+      <Modal
+        open={editingDate !== null}
+        onClose={() => (savingDate ? undefined : setEditingDate(null))}
+        title={t('reports.editDateTitle')}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setEditingDate(null)}
+              disabled={savingDate}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => void handleSaveDate()}
+              loading={savingDate}
+              loadingLabel={t('common.saving')}
+            >
+              {t('reports.editDateSave')}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          <Trans
+            id="reports.editDateBody"
+            values={{
+              file: (
+                <strong>
+                  {editingDate?.report.userLabel || editingDate?.report.originalFileName}
+                </strong>
+              ),
+            }}
+          />
+        </p>
+        <Field
+          label={t('reports.editDateField')}
+          hint={t('upload.dateHint')}
+          error={editingDate?.problem ? t(DATE_PROBLEM[editingDate.problem]) : null}
+        >
+          {(field) => (
+            <TextInput
+              {...field}
+              type="date"
+              required
+              value={editingDate?.value ?? ''}
+              max={localToday()}
+              onChange={(event) =>
+                setEditingDate((current) =>
+                  current ? { ...current, value: event.target.value, problem: null } : current,
+                )
+              }
+            />
+          )}
+        </Field>
+        <p className="muted" style={{ fontSize: 13, marginBottom: 0 }}>
+          {t('reports.editDateReprocessNote')}
+        </p>
+      </Modal>
 
       <Modal
         open={pendingDelete !== null}

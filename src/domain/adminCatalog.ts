@@ -123,9 +123,9 @@ export function parseAliases(text: string): string[] {
  * whatever id the importer gave it. It is not identity — the matcher decides
  * that — and this only has to be readable and legal as a Firestore key.
  *
- * Kept in step with the function by shape rather than by import: `functions/`
- * compiles from its own rootDir and cannot be imported here (see the same note
- * on `VARIABLE_CATEGORIES` in functions/src/variables/catalog.ts).
+ * Kept in step with `variableId` in functions/src/variables/matching.ts by
+ * shape rather than by import: `functions/` compiles from its own rootDir and
+ * cannot be imported here.
  */
 export function deriveId(name: string): string {
   const id = name
