@@ -3,6 +3,11 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { renderWithProviders, signedInAuth } from '@/test/renderWithProviders';
+import type { Locale } from '@/domain/locales';
+import { CATALOGS } from '@/i18n/catalogs';
+
+/** The English copy, read the way the page reads it. */
+const t = (key: keyof (typeof CATALOGS)['en']) => CATALOGS.en[key];
 import { expectNoA11yViolations } from '@/test/axe';
 import type { Report } from '@/domain/types';
 import type * as RouterModule from 'react-router-dom';
@@ -82,8 +87,12 @@ const emitReport = (r: Report | null) =>
 const emitResults = (r: ReportResult[]) =>
   (subscribeToResults.mock.calls.at(-1)?.[1] as (v: ReportResult[]) => void)(r);
 
-const render = () =>
-  renderWithProviders(<ReportDetails />, { auth: signedInAuth(), route: '/files/r1' });
+const render = (locale: Locale = 'en') =>
+  renderWithProviders(<ReportDetails />, {
+    auth: signedInAuth(),
+    route: '/files/r1',
+    locale,
+  });
 
 describe('ReportDetails', () => {
   beforeEach(() => {
@@ -246,7 +255,10 @@ describe('ReportDetails', () => {
       }),
     );
     emitResults([]);
-    expect(await screen.findByText(/looks like a scanned report/i)).toBeInTheDocument();
+    // The catalog's sentence for `extraction/no-text-layer`, not the one the
+    // pipeline stored — the code is what carries the cause across the
+    // language boundary, and it also tells the reader what to do about it.
+    expect(await screen.findByText(/scan or a photograph/i)).toBeInTheDocument();
   });
 
   it('offers to reprocess a report that failed for a passing reason', async () => {
@@ -278,7 +290,7 @@ describe('ReportDetails', () => {
     );
     emitResults([]);
 
-    await screen.findByText(/model timed out/i);
+    await screen.findByText(/did not answer in time/i);
     expect(screen.queryByRole('button', { name: /try processing again/i })).toBeNull();
     // A button that has quietly disappeared is a bug report; a sentence
     // explaining that the attempts are spent is an answer.
@@ -320,5 +332,62 @@ describe('ReportDetails', () => {
     emitResults([makeResult(), makeResult({ id: '001-k', rawName: 'Potassium', status: 'high' })]);
     await screen.findByText('Hemoglobin');
     await expectNoA11yViolations(container);
+  });
+});
+
+describe('why a report failed', () => {
+  const rateLimited = makeReport({
+    status: 'failed',
+    warnings: [
+      {
+        code: 'extraction/rate-limited',
+        // As the pipeline writes it: English, because a Cloud Function has no
+        // reader and no locale to write in.
+        message: 'Our AI provider is over its request limit right now.',
+      },
+    ],
+  });
+
+  it('names the cause rather than apologising generically', async () => {
+    render();
+    emitReport(rateLimited);
+
+    // The distinction that matters to somebody staring at a report that did
+    // not work: waiting helps here, and the file is not at fault.
+    expect(await screen.findByText(/request limit/i)).toBeInTheDocument();
+  });
+
+  it('says it in the reader’s language, not the pipeline’s', async () => {
+    render('es');
+    emitReport(rateLimited);
+
+    const alert = await screen.findByText(/límite de peticiones/i);
+    expect(alert).toBeInTheDocument();
+    // The English sentence stored on the document must not leak through.
+    expect(screen.queryByText(/over its request limit/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the pipeline’s own words for a cause it has no translation for', async () => {
+    // A duplicate notice names the other file and a quota refusal names the
+    // allowance; an English sentence that says something beats a Spanish one
+    // that says nothing.
+    render('es');
+    emitReport(
+      makeReport({
+        status: 'failed',
+        warnings: [{ code: 'something/we-have-not-seen', message: 'Specific detail worth keeping.' }],
+      }),
+    );
+
+    expect(await screen.findByText(/Specific detail worth keeping/)).toBeInTheDocument();
+  });
+
+  it('falls back to the generic sentence when there is no warning at all', async () => {
+    render();
+    emitReport(makeReport({ status: 'failed', warnings: [] }));
+
+    // No `role="alert"` to look for: this notice is on the page when it opens
+    // rather than announced in response to something the reader did.
+    expect(await screen.findByText(t('detail.failedFallback'))).toBeInTheDocument();
   });
 });

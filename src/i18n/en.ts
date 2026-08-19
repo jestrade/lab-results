@@ -44,6 +44,7 @@ export const en = {
   'common.unexpectedError': 'An unexpected error occurred. Reloading the page usually helps.',
   'common.reload': 'Reload the page',
   'common.uploadReport': 'Upload a report',
+  'common.actions': 'Actions',
 
   // ── Language ──────────────────────────────────────────────────────────
   'lang.heading': 'Language',
@@ -300,6 +301,39 @@ export const en = {
   'reports.extracting': 'Extracting results…',
   'reports.pageOne': '{count} page',
   'reports.pageMany': '{count} pages',
+
+  // ── Why a report failed (KAN-7) ───────────────────────────────────────
+  //
+  // Keyed by the warning code the pipeline writes, and shown instead of the
+  // pipeline's own English sentence. Each one names the cause, because the
+  // next thing the reader decides is whether to wait, to press retry, or to
+  // upload a different file.
+  'warning.consent.missing':
+    'This report was not processed because you have not agreed to AI processing. Agree on the upload page and it will be processed without spending another upload.',
+  'warning.extraction.noTextLayer':
+    'This looks like a scan or a photograph: the file carries images of the pages, not text we can read. Upload the PDF as the laboratory issued it.',
+  'warning.extraction.unreadable':
+    'This PDF could not be opened. It may be password-protected or damaged. Upload an unprotected copy.',
+  'warning.extraction.rateLimited':
+    'Our AI provider is over its request limit right now, so nothing could be read from this report. Nothing is wrong with your file — wait a few minutes and try again.',
+  'warning.extraction.timeout':
+    'Our AI provider did not answer in time, so nothing could be read from this report. This usually clears on its own — try again in a few minutes.',
+  'warning.extraction.unavailable':
+    'Our AI provider is unavailable right now, so nothing could be read from this report. Try again in a few minutes.',
+  'warning.extraction.unauthenticated':
+    'Our AI provider rejected our credentials, so nothing could be read from this report. This is a fault on our side, not with your file, and retrying will not help until we fix it.',
+  'warning.extraction.blocked':
+    "Our AI provider's safety filters stopped part-way through this report, so nothing was extracted. This is usually a false alarm on clinical wording; trying again may work.",
+  'warning.extraction.truncated':
+    'This report holds more results than one reading pass allows: the model reached its output limit before finishing, so no results were saved. Try uploading it split into fewer pages.',
+  'warning.extraction.invalidResponse':
+    'Our AI provider returned an answer we could not read as laboratory results, so nothing was extracted. Trying again often works.',
+  'warning.extraction.unknown':
+    'Nothing could be read from this report because of an unexpected fault on our side. Please try again later.',
+  'warning.storage.objectMissing':
+    'The uploaded file is no longer stored, so this report cannot be processed again. Please upload it again.',
+  'warning.processing.unexpected':
+    'Something went wrong while reprocessing this report. Please try again in a few minutes.',
 
   // ── File and quota refusals ───────────────────────────────────────────
   'fileError.empty': '{file} is empty. Nothing was uploaded.',

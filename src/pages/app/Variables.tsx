@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '@/auth/useAuth';
+import { ActionsMenu } from '@/components/ActionsMenu';
 import { Alert } from '@/components/Alert';
 import { Button, ButtonLink } from '@/components/Button';
 import { DisclaimerBanner } from '@/components/DisclaimerBanner';
 import { EmptyState } from '@/components/EmptyState';
 import { Field, TextInput } from '@/components/Field';
+import { Icon } from '@/components/Icon';
 import { Modal } from '@/components/Modal';
 import { Skeleton } from '@/components/Skeleton';
 import { Sparkline } from '@/components/Sparkline';
@@ -236,8 +238,8 @@ export function Variables() {
         {/* In the header rather than at the foot of the page. An account with
             a hundred tracked variables scrolls for a long time, and a control
             for removing them all that only exists past the last card is a
-            control the user cannot find. It stays a secondary button beside
-            the search field — reachable, not inviting. */}
+            control the user cannot find. Behind the actions menu rather than
+            beside the search field — reachable, not inviting. */}
         {all.length > 0 ? <ClearDataButton count={all.length} t={t} /> : null}
       </div>
 
@@ -454,10 +456,21 @@ function ClearDataButton({ count, t }: { count: number; t: I18nContextValue['t']
 
   return (
     <>
-      <Button variant="secondary" icon="trash" onClick={() => setOpen(true)}>
-        {t('variables.clearButton')}
-      </Button>
+      <ActionsMenu label={t('common.actions')}>
+        <button
+          type="button"
+          className="actions-panel-item"
+          data-tone="danger"
+          onClick={() => setOpen(true)}
+        >
+          <Icon name="trash" size={15} />
+          {t('variables.clearButton')}
+        </button>
+      </ActionsMenu>
 
+      {/* Outside the menu, deliberately. The panel unmounts when an item in it
+          is activated, and a dialog rendered inside it would go with it — the
+          click would open something that vanished in the same frame. */}
       <Modal
         open={open}
         onClose={() => (clearing ? undefined : setOpen(false))}

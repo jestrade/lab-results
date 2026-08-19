@@ -131,6 +131,8 @@ export class AiProviderError extends Error {
       | 'timeout'
       | 'blocked'
       | 'invalid-response'
+      /** The answer was cut off by the output token limit, so it is incomplete. */
+      | 'truncated'
       | 'unavailable',
     options?: { cause?: unknown },
   ) {

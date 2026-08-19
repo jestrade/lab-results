@@ -42,6 +42,18 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    /**
+     * Raised from the 5s default, and the reason is worth knowing.
+     *
+     * These are component tests that wait on a subscription callback and a
+     * React render — normally a few milliseconds. Run in parallel across
+     * fifty files on a loaded machine, three of them started exceeding the
+     * default and failed with "unable to find an element", which reads
+     * exactly like a broken assertion and is not one. A suite whose result
+     * depends on how busy the laptop is teaches people to re-run it rather
+     * than to read it.
+     */
+    testTimeout: 15_000,
     // `functions/` is a separate package with its own toolchain and its own
     // vitest run — its sources are CommonJS and depend on a generated JSON
     // file that only its build produces.

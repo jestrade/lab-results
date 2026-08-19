@@ -24,6 +24,7 @@ import { deleteObject, getDownloadURL, ref } from 'firebase/storage';
 
 import { getDb, getFunctionsClient, getStorageClient } from '@/lib/firebase';
 import { canRetryReport } from '@/domain/retry';
+import { warningText } from '@/domain/reportWarnings';
 import { DEFAULT_LOCALE, type Locale } from '@/domain/locales';
 import { messageFor } from '@/i18n/catalogs';
 import { formatShortDate } from '@/i18n/dates';
@@ -297,9 +298,12 @@ export function reportSubtitle(
   locale: Locale = DEFAULT_LOCALE,
 ): { text: string; tone: 'muted' | 'danger' } {
   if (report.status === 'failed') {
-    // The warning text comes from the pipeline and is English whatever the
-    // reader chose; our own fallback is not, and is what most failures show.
-    const reason = report.warnings[0]?.message;
+    // Translated from the warning's code where we know the cause, so the line
+    // says *why* — rate limit, safety block, scan with no text — rather than
+    // "it failed". Codes we do not have a translation for keep the pipeline's
+    // own English sentence, which still says more than the fallback.
+    const warning = report.warnings[0];
+    const reason = warning ? warningText(warning, locale) : undefined;
     // The fallback no longer sends the user back to the upload page: when a
     // retry is on offer it costs them nothing, and re-uploading costs an
     // upload operation out of their monthly allowance.
@@ -323,7 +327,7 @@ export function reportSubtitle(
     );
   }
   if (report.status === 'partially_processed' && report.warnings.length > 0) {
-    parts.push(report.warnings[0]!.message);
+    parts.push(warningText(report.warnings[0]!, locale));
   }
   return { text: parts.join(' · '), tone: 'muted' };
 }

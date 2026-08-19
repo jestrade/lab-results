@@ -406,18 +406,59 @@ describe('Variables', () => {
   });
 
   describe('clearing the tracked data', () => {
+    /** Opens the actions menu and presses the item inside it. */
+    async function openClearDialog(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole('button', { name: /^actions$/i }));
+      await user.click(screen.getByRole('button', { name: /clear variable data/i }));
+    }
+
     it('offers the control only once there is something to remove', async () => {
+      const user = userEvent.setup();
       renderPage();
       emit([]);
       await screen.findByText(/no variables tracked yet/i);
-      // An account with nothing tracked gets the empty state, not a button
-      // that would delete nothing.
-      expect(screen.queryByRole('button', { name: /clear variable data/i })).not.toBeInTheDocument();
+      // An account with nothing tracked gets the empty state, not a menu whose
+      // only item would delete nothing.
+      expect(screen.queryByRole('button', { name: /^actions$/i })).not.toBeInTheDocument();
 
       emit([makeSeries()]);
-      expect(
-        await screen.findByRole('button', { name: /clear variable data/i }),
-      ).toBeInTheDocument();
+      await user.click(await screen.findByRole('button', { name: /^actions$/i }));
+      expect(screen.getByRole('button', { name: /clear variable data/i })).toBeInTheDocument();
+    });
+
+    it('keeps the destructive control behind the menu until it is opened', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeSeries()]);
+
+      // Shut, the panel is not in the DOM at all — not merely hidden. A
+      // hidden panel leaves this button in the tab order, and the one control
+      // that erases every tracked value is the last one a keyboard reader
+      // should land on without having asked for it.
+      expect(await screen.findByRole('button', { name: /^actions$/i })).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+      expect(screen.queryByRole('button', { name: /clear variable data/i })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /^actions$/i }));
+      expect(screen.getByRole('button', { name: /^actions$/i })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      );
+      expect(screen.getByRole('button', { name: /clear variable data/i })).toBeInTheDocument();
+    });
+
+    it('closes the menu when the dialog it opened takes over', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      emit([makeSeries()]);
+      await openClearDialog(user);
+
+      // The dialog outlives the panel that opened it: rendered inside, it
+      // would unmount in the same click that summoned it.
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /clear variable data/i })).not.toBeInTheDocument();
     });
 
     it('asks before removing anything, and says what survives', async () => {
@@ -425,7 +466,7 @@ describe('Variables', () => {
       renderPage();
       emit([potassium, makeSeries()]);
 
-      await user.click(await screen.findByRole('button', { name: /clear variable data/i }));
+      await openClearDialog(user);
 
       const dialog = screen.getByRole('dialog');
       expect(within(dialog).getByText(/all 2 tracked variables/i)).toBeInTheDocument();
@@ -442,7 +483,7 @@ describe('Variables', () => {
       renderPage();
       emit([potassium, makeSeries()]);
 
-      await user.click(await screen.findByRole('button', { name: /clear variable data/i }));
+      await openClearDialog(user);
       await user.click(screen.getByRole('button', { name: /clear everything/i }));
 
       await waitFor(() => expect(clearVariableData).toHaveBeenCalledTimes(1));
@@ -457,7 +498,7 @@ describe('Variables', () => {
       renderPage();
       emit([makeSeries()]);
 
-      await user.click(await screen.findByRole('button', { name: /clear variable data/i }));
+      await openClearDialog(user);
       await user.click(screen.getByRole('button', { name: /clear everything/i }));
 
       expect(await screen.findByText(/could not be cleared/i)).toBeInTheDocument();

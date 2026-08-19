@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseExtraction } from './extraction';
+import { describeExtractionFailure, parseExtraction } from './extraction';
+import { AiProviderError } from './ai/types';
 
 /**
  * `parseExtraction` is the boundary where a model's output stops being a
@@ -98,5 +99,47 @@ describe('parseExtraction', () => {
 
   it('survives a response that is entirely unexpected', () => {
     expect(() => parseExtraction({ results: 'lots' })).toThrow();
+  });
+});
+
+/**
+ * The sentence a failed report shows is the only thing the user gets. It has
+ * to name the cause, because the decision it feeds — wait, retry, or upload
+ * something different — is different for each one.
+ */
+describe('describeExtractionFailure', () => {
+  it('names the provider limit rather than saying "try again later"', () => {
+    const failure = describeExtractionFailure(
+      new AiProviderError('Gemini rate limit reached', 'rate-limited'),
+    );
+
+    expect(failure.code).toBe('extraction/rate-limited');
+    expect(failure.message).toMatch(/request limit/i);
+    expect(failure.message).toMatch(/wait a few minutes/i);
+  });
+
+  it('tells a report that ran out of output tokens to be split up', () => {
+    const failure = describeExtractionFailure(
+      new AiProviderError('Gemini hit the output token limit', 'truncated'),
+    );
+
+    expect(failure.code).toBe('extraction/truncated');
+    expect(failure.message).toMatch(/output limit/i);
+  });
+
+  it('does not blame the file for a rejected API key', () => {
+    const failure = describeExtractionFailure(
+      new AiProviderError('Gemini rejected the API key', 'unauthenticated'),
+    );
+
+    expect(failure.code).toBe('extraction/unauthenticated');
+    expect(failure.message).toMatch(/fault on our side/i);
+  });
+
+  it('falls back to one unknown cause for anything that is not a provider error', () => {
+    const failure = describeExtractionFailure(new TypeError('boom'));
+
+    expect(failure.code).toBe('extraction/unknown');
+    expect(failure.message).toMatch(/unexpected fault/i);
   });
 });

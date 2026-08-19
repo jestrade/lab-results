@@ -191,6 +191,54 @@ function numeric(key: string, value: unknown): Record<string, number> {
   return typeof value === 'number' && Number.isFinite(value) ? { [key]: value } : {};
 }
 
+/**
+ * What went wrong, in a sentence the person who uploaded the file can act on.
+ *
+ * One entry per cause, because "please try again later" is the wrong advice
+ * for half of them: a rate limit clears in minutes, a rejected API key never
+ * clears on its own, and a response cut off at the token limit will be cut off
+ * again at exactly the same place unless the report gets smaller. The code
+ * travels with the message so the web app can show its own translation of the
+ * same cause (`src/domain/reportWarnings.ts`) and so `config/retry.json` can
+ * decide, per cause, whether a retry is worth offering.
+ */
+const EXTRACTION_FAILURE_MESSAGES: Record<string, string> = {
+  'rate-limited':
+    'Our AI provider is over its request limit right now, so nothing could be read from ' +
+    'this report. Nothing is wrong with your file — wait a few minutes and try again.',
+  timeout:
+    'Our AI provider did not answer in time, so nothing could be read from this report. ' +
+    'This usually clears on its own — try again in a few minutes.',
+  unavailable:
+    'Our AI provider is unavailable right now, so nothing could be read from this report. ' +
+    'Try again in a few minutes.',
+  unauthenticated:
+    'Our AI provider rejected our credentials, so nothing could be read from this report. ' +
+    'This is a fault on our side, not with your file, and retrying will not help until we fix it.',
+  blocked:
+    "Our AI provider's safety filters stopped part-way through this report, so nothing was " +
+    'extracted. This is usually a false alarm on clinical wording; trying again may work.',
+  truncated:
+    'This report holds more results than one reading pass allows: the model reached its ' +
+    'output limit before finishing, so no results were saved. Try uploading it split into ' +
+    'fewer pages.',
+  'invalid-response':
+    'Our AI provider returned an answer we could not read as laboratory results, so nothing ' +
+    'was extracted. Trying again often works.',
+  unknown:
+    'Nothing could be read from this report because of an unexpected fault on our side. ' +
+    'Please try again later.',
+};
+
+/** The warning to write on a report whose extraction call failed. */
+export function describeExtractionFailure(error: unknown): { code: string; message: string } {
+  const cause = error instanceof AiProviderError ? error.code : 'unknown';
+  return {
+    code: `extraction/${cause}`,
+    message: EXTRACTION_FAILURE_MESSAGES[cause] ?? EXTRACTION_FAILURE_MESSAGES.unknown!,
+  };
+}
+
 export interface ExtractionResult {
   output: ExtractionOutput;
   dropped: number;

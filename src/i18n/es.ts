@@ -36,6 +36,7 @@ export const es: Messages = {
     'Ha ocurrido un error inesperado. Normalmente basta con recargar la página.',
   'common.reload': 'Recargar la página',
   'common.uploadReport': 'Subir un informe',
+  'common.actions': 'Acciones',
 
   // ── Language ──────────────────────────────────────────────────────────
   'lang.heading': 'Idioma',
@@ -295,6 +296,38 @@ export const es: Messages = {
   'reports.extracting': 'Extrayendo los resultados…',
   'reports.pageOne': '{count} página',
   'reports.pageMany': '{count} páginas',
+
+  // ── Por qué ha fallado un reporte (KAN-7) ─────────────────────────────
+  //
+  // Indexadas por el código que escribe el pipeline, y se muestran en lugar
+  // de su frase en inglés. Cada una nombra la causa, porque lo siguiente que
+  // decide quien lee es si esperar, reintentar o subir otro archivo.
+  'warning.consent.missing':
+    'Este reporte no se ha procesado porque no has aceptado el procesamiento con IA. Acéptalo en la página de subida y se procesará sin gastar otra subida.',
+  'warning.extraction.noTextLayer':
+    'Esto parece un escaneo o una fotografía: el archivo contiene imágenes de las páginas, no texto que podamos leer. Sube el PDF tal como lo emitió el laboratorio.',
+  'warning.extraction.unreadable':
+    'No se ha podido abrir este PDF. Puede estar protegido con contraseña o dañado. Sube una copia sin protección.',
+  'warning.extraction.rateLimited':
+    'Nuestro proveedor de IA ha superado su límite de peticiones ahora mismo, así que no se ha podido leer nada de este reporte. Tu archivo no tiene ningún problema: espera unos minutos y vuelve a intentarlo.',
+  'warning.extraction.timeout':
+    'Nuestro proveedor de IA no ha respondido a tiempo, así que no se ha podido leer nada de este reporte. Suele resolverse solo: inténtalo de nuevo en unos minutos.',
+  'warning.extraction.unavailable':
+    'Nuestro proveedor de IA no está disponible ahora mismo, así que no se ha podido leer nada de este reporte. Inténtalo de nuevo en unos minutos.',
+  'warning.extraction.unauthenticated':
+    'Nuestro proveedor de IA ha rechazado nuestras credenciales, así que no se ha podido leer nada de este reporte. Es un fallo nuestro, no de tu archivo, y reintentar no servirá hasta que lo arreglemos.',
+  'warning.extraction.blocked':
+    'Los filtros de seguridad de nuestro proveedor de IA han detenido la lectura a mitad de este reporte, así que no se ha extraído nada. Suele ser una falsa alarma con el vocabulario clínico; reintentarlo puede funcionar.',
+  'warning.extraction.truncated':
+    'Este reporte tiene más resultados de los que caben en una sola lectura: el modelo ha alcanzado su límite de salida antes de terminar, así que no se ha guardado ningún resultado. Prueba a subirlo dividido en menos páginas.',
+  'warning.extraction.invalidResponse':
+    'Nuestro proveedor de IA ha devuelto una respuesta que no hemos podido interpretar como resultados de laboratorio, así que no se ha extraído nada. Reintentarlo suele funcionar.',
+  'warning.extraction.unknown':
+    'No se ha podido leer nada de este reporte por un fallo inesperado en nuestro lado. Inténtalo de nuevo más tarde.',
+  'warning.storage.objectMissing':
+    'El archivo subido ya no está almacenado, así que este reporte no se puede volver a procesar. Súbelo de nuevo.',
+  'warning.processing.unexpected':
+    'Algo ha fallado al reprocesar este reporte. Inténtalo de nuevo en unos minutos.',
 
   // ── File and quota refusals ───────────────────────────────────────────
   'fileError.empty': '{file} está vacío. No se ha subido nada.',

@@ -20,6 +20,7 @@ import { formatReferenceRange } from '@/domain/variables';
 import type { Report } from '@/domain/types';
 import { formatBytes } from '@/domain/quotas';
 import type { Locale } from '@/domain/locales';
+import { warningText } from '@/domain/reportWarnings';
 import { useI18n } from '@/i18n/useI18n';
 import type { I18nContextValue } from '@/i18n/I18nContext';
 import { getReportDownloadUrl, retryErrorMessage, retryReport } from '@/services/reportsList';
@@ -205,9 +206,17 @@ export function ReportDetails() {
 
       {report.status === 'failed' ? (
         <Alert tone="danger" title={t('detail.failedTitle')} actions={retryButton}>
-          {/* The warning is the pipeline's own words and stays English; our
-              fallback, which is what most failures show, does not. */}
-          {report.warnings[0]?.message ?? t('detail.failedFallback')}
+          {/* Translated through the warning's code rather than shown as the
+              pipeline wrote it. The sentence on the document is English —
+              it is written in a Cloud Function, which has no reader and no
+              locale — and this is the screen where somebody is trying to
+              find out why their own report did not work. `warningText`
+              falls back to the pipeline's words for a code it does not know,
+              because a duplicate notice naming the other file says more in
+              English than a generic apology does in Spanish. */}
+          {report.warnings[0]
+            ? warningText(report.warnings[0], locale)
+            : t('detail.failedFallback')}
           {/* Why there is no button, when there is no button. */}
           {retryHint(report) ? ` ${retryHint(report)}` : null}
         </Alert>

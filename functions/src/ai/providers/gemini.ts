@@ -85,12 +85,15 @@ export function createGeminiProvider(config: AiConfig, apiKey: string): AiProvid
       }
 
       // MAX_TOKENS on a JSON response means truncated, therefore unparseable —
-      // a clearer error here than a confusing JSON syntax failure below.
+      // a clearer error here than a confusing JSON syntax failure below. Its
+      // own code rather than `invalid-response`, because the cause is known
+      // and the user can act on it: this report is too long for one pass, and
+      // no amount of retrying the same bytes will change that.
       if (finishReason === 'MAX_TOKENS' && wantsJson) {
         throw new AiProviderError(
           'Gemini hit the output token limit before completing its JSON response. ' +
             'Raise AI_MAX_OUTPUT_TOKENS or split the request.',
-          'invalid-response',
+          'truncated',
         );
       }
 

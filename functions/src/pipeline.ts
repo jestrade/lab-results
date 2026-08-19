@@ -28,11 +28,15 @@ import {
   duplicateNotice,
   findLikelyDuplicate,
 } from './duplicates';
-import { extractResults, NoTextLayerError, readPdfText } from './extraction';
+import {
+  describeExtractionFailure,
+  extractResults,
+  NoTextLayerError,
+  readPdfText,
+} from './extraction';
 import { calculateTrend, mergePoints } from './trends';
 import { resolveVariables, type ResolvedVariable } from './variables/catalog';
 import { enrichVariables } from './variables/enrichment';
-import { AiProviderError } from './ai/types';
 
 /** Bounded so one pathological report cannot spend the month's AI budget. */
 const MAX_ANALYSES_PER_REPORT = 12;
@@ -151,17 +155,16 @@ export async function processReport(report: ReportRef): Promise<void> {
   try {
     extraction = await extractResults(text);
   } catch (error) {
-    const code = error instanceof AiProviderError ? error.code : 'unknown';
-    logger.error('Extraction failed', { reportId: report.id, code });
+    // The reason, not just the fact. "Try again later" is advice the user can
+    // only follow blindly; "the provider is rate-limited" tells them whether
+    // waiting is the answer, whether their file is at fault, and whether it is
+    // worth pressing retry at all. `describeExtractionFailure` owns the wording
+    // per cause, and the code it returns is what the UI translates.
+    const failure = describeExtractionFailure(error);
+    logger.error('Extraction failed', { reportId: report.id, code: failure.code });
     await setStatus(report.id, {
       status: 'failed',
-      warnings: [
-        {
-          code: `extraction/${code}`,
-          message:
-            'We could not read the results from this report. Nothing was extracted — please try again later.',
-        },
-      ],
+      warnings: [failure],
     });
     return;
   }
