@@ -51,7 +51,7 @@ graph TD
 
   ST -->|"onObjectFinalized"| CF["<b>Cloud Functions</b> · us-east1<br/>Admin SDK — writes what<br/>no client may write"]
   CF -->|"results, status, counters"| FS
-  CF -->|"redacted text"| AI["<b>Gemini API</b><br/>via the provider registry"]
+  CF -->|"redacted text"| AI["<b>Gemini</b><br/>via Firebase AI Logic"]
 
   FS -.->|"usage counters, read on every upload"| ST
 ```
@@ -139,7 +139,29 @@ provider anywhere in this codebase, and what it returns is always wrapped in
 redaction — the raw constructors are not exported. Redaction that each caller
 has to remember is redaction that will eventually be forgotten, so the promise
 on the landing page is a property of the architecture rather than a convention.
-Swapping provider is three edits; see [docs/ai.md](docs/ai.md).
+
+There are two paths to the same model, chosen by `AI_MODEL` in the root `.env`:
+
+| `AI_MODEL` | Path | Credential |
+| --- | --- | --- |
+| `firebase` **(default)** | [Firebase AI Logic](https://firebase.google.com/docs/ai-logic/get-started?platform=web), proxying to the Gemini Developer API or Vertex AI | The public Firebase web config |
+| `gemini` | The Gemini Developer API directly, via `@google/genai` | `GEMINI_API_KEY` in Secret Manager |
+
+Firebase AI Logic is the default because it needs no additional secret: the web
+config it authenticates with identifies the project rather than granting access
+to it, and is already in the browser bundle. The direct Gemini path is kept,
+tested and deployable — set `AI_MODEL=gemini` and redeploy.
+
+Two things about the Firebase path are not obvious and are worth knowing before
+you touch it. It **requires an App Check token**, and a Cloud Function cannot
+attest itself, so the provider mints one with `firebase-admin` and hands it to
+the SDK through a `CustomProvider`. And it **does not serve the same model ids**
+as the direct API — `gemini-2.5-flash` comes back as "no longer available to new
+users" — which is why `FIREBASE_AI_MODEL` and `GEMINI_MODEL` are separate
+variables with separate defaults and no fallback between them.
+
+Adding a third provider is three edits, none of which touch the pipeline, the
+prompts or the data model; see [docs/ai.md](docs/ai.md).
 
 ## Tools
 
@@ -150,7 +172,7 @@ Swapping provider is three edits; see [docs/ai.md](docs/ai.md).
 | **Styling** | Plain CSS with design tokens (`src/styles`), Plus Jakarta Sans, Phosphor icons |
 | **Backend** | Cloud Functions v2 on Node 22, firebase-admin |
 | **Data** | Cloud Firestore, Cloud Storage, Firebase Auth |
-| **AI** | Google Gemini via `@google/genai`, behind a provider interface |
+| **AI** | Google Gemini via Firebase AI Logic, behind a provider interface (`@google/genai` direct is the alternative) |
 | **PDF** | `pdf-parse` reads the text inside the function; the browser frames the stored file from Storage rather than rendering it itself |
 | **Tests** | Vitest + Testing Library (unit and component), Playwright + axe-core (end-to-end and accessibility) |
 | **Static checks** | ESLint 9 flat config, `tsc --noEmit`, `npm audit`, gitleaks in CI |
@@ -188,6 +210,13 @@ come from Secret Manager:
 firebase functions:secrets:set GEMINI_API_KEY
 ```
 
+Only `AI_MODEL=gemini` needs that key. Under the default, `sync:env` mirrors
+three `VITE_FIREBASE_*` values into `functions/.env` unprefixed — `FIREBASE_API_KEY`,
+`FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID` — because Firebase AI Logic
+authenticates with the web config. That is the one exception to the prefix rule
+and it does not weaken it: the rule stops secrets reaching the browser, and this
+moves already-public values the other way, toward the server.
+
 ### Every variable
 
 | Variable | Default | What it is |
@@ -204,14 +233,16 @@ firebase functions:secrets:set GEMINI_API_KEY
 | `VITE_SENTRY_ENVIRONMENT` | `development` | |
 | `VITE_APP_VERSION` | `dev` | CI sets the commit SHA, so an error report names a build |
 | `VITE_GA_MEASUREMENT_ID` | blank | GA4 id. Blank disables analytics completely — no script fetched, no request made, which is how local development and the test suite run. What is sent is deliberately narrow: route *patterns* (`/variables/:variableId`, never `/variables/hemoglobin`), no user id, no advertising signals. The header of `src/lib/analytics.ts` explains why that is not optional in an app whose URLs name laboratory tests |
-| `AI_PROVIDER` | `gemini` | Selects the provider in the registry |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | |
-| `GEMINI_BILLING_ENABLED` | `false` | Set true **only** after enabling billing on the Gemini project. On the free tier Google's terms allow submitted content to be used to improve their products; leaving this false makes the app report that truthfully in the metadata attached to every AI statement |
+| `AI_MODEL` | `firebase` | Selects the provider: `firebase` (Firebase AI Logic) or `gemini` (direct Gemini API). `AI_PROVIDER` is the superseded name and is still read |
+| `FIREBASE_AI_BACKEND` | `googleai` | What Firebase AI Logic proxies to: `googleai` or `vertexai` |
+| `FIREBASE_AI_MODEL` | `gemini-3.6-flash` | Model when `AI_MODEL=firebase`. Deliberately not the same default as `GEMINI_MODEL`: this path no longer serves 2.5 to new projects |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Model when `AI_MODEL=gemini` |
+| `AI_BILLING_ENABLED` | `false` | Set true **only** after enabling billing. On the free tier Google's terms allow submitted content to be used to improve their products; leaving this false makes the app report that truthfully in the metadata attached to every AI statement. `GEMINI_BILLING_ENABLED` is the superseded name and is still read |
 | `AI_MAX_OUTPUT_TOKENS` | `2048` | |
 | `AI_TEMPERATURE` | `0` | |
 | `AI_TIMEOUT_MS` | `30000` | |
 | `AI_MAX_RETRIES` | `2` | |
-| `GEMINI_API_KEY` | — | **Secret.** Local and emulator only; deployed functions read it from Secret Manager |
+| `GEMINI_API_KEY` | — | **Secret.** Only needed when `AI_MODEL=gemini`. Local and emulator only; deployed functions read it from Secret Manager |
 
 `src/lib/env.ts` validates the `VITE_FIREBASE_*` values at startup and fails with
 one message naming everything missing, rather than letting `undefined` disappear

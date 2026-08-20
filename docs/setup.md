@@ -49,7 +49,7 @@ Firebase SDK.
 | `VITE_USE_FIREBASE_EMULATORS` | `true` routes Auth/Firestore/Storage to the local suite |
 | `VITE_SENTRY_DSN` | Leave blank to disable error reporting entirely |
 | `VITE_GA_MEASUREMENT_ID` | GA4 id. Leave blank to disable analytics entirely |
-| `AI_PROVIDER`, `GEMINI_MODEL` | AI provider and model selection — see [ai.md](ai.md) |
+| `AI_MODEL`, `FIREBASE_AI_MODEL`, `GEMINI_MODEL` | AI provider and model selection. Defaults to Firebase AI Logic — see [ai.md](ai.md) |
 | `GEMINI_API_KEY` | **Server-only.** Emulator reads it here; deploys read Secret Manager |
 
 ## Two ways to run
@@ -112,7 +112,22 @@ the codebase.
    runs out its remaining lifetime. To end access immediately, delete the
    account.
 
-5. **Billing budget** — required, and not optional. The capacity caps protect
+5. **AI Logic** — required under the default `AI_MODEL=firebase`. Enable it in
+   the console, choosing the **Gemini Developer API**. Two follow-on settings
+   are what a first run actually trips over:
+
+   - The function mints its own App Check token, because a Cloud Function
+     cannot attest itself. Its service account needs the **Firebase App Check
+     Token Creator** role — the default App Engine account has it via Editor.
+     Without it every AI call fails `401 Firebase App Check token is invalid`.
+   - `FIREBASE_AI_MODEL` must name a model this path still serves.
+     `gemini-2.5-flash` is not one of them; the default is `gemini-3.6-flash`.
+
+   `aiHealthCheck`, called as an admin, answers all of this in one round trip.
+   See [ai.md](ai.md). Skip this step entirely if you set `AI_MODEL=gemini`,
+   which needs only `GEMINI_API_KEY`.
+
+6. **Billing budget** — required, and not optional. The capacity caps protect
    the free tier, not the bill. Set a $1 budget with alerts at 50/90/100% on
    project `labresults-2a13f`. Full rationale in
    [quotas.md](quotas.md#what-this-does-not-protect-against).

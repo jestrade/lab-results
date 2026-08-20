@@ -19,12 +19,7 @@ import {
   type AiProvider,
   type AiResult,
 } from '../types';
-
-/**
- * Gemini's `finishReason` values that mean "the model stopped for a reason you
- * need to handle", rather than "it finished normally".
- */
-const BLOCKED_REASONS = new Set(['SAFETY', 'RECITATION', 'PROHIBITED_CONTENT', 'BLOCKLIST']);
+import { BLOCKED_FINISH_REASONS, callWithRetry, withTimeout } from './shared';
 
 export function createGeminiProvider(config: AiConfig, apiKey: string): AiProvider {
   const client = new GoogleGenAI({ apiKey });
@@ -38,7 +33,7 @@ export function createGeminiProvider(config: AiConfig, apiKey: string): AiProvid
       const startedAt = Date.now();
       const wantsJson = options.responseSchema !== undefined;
 
-      const response = await callWithRetry(config, () =>
+      const response = await callWithRetry(config, toProviderError, () =>
         withTimeout(
           options.timeoutMs ?? config.timeoutMs,
           client.models.generateContent({
@@ -66,7 +61,7 @@ export function createGeminiProvider(config: AiConfig, apiKey: string): AiProvid
 
       const finishReason = response.candidates?.[0]?.finishReason ?? 'STOP';
 
-      if (BLOCKED_REASONS.has(finishReason)) {
+      if (BLOCKED_FINISH_REASONS.has(finishReason)) {
         // Worth surfacing distinctly: a safety block on a laboratory report is
         // usually a false positive on clinical vocabulary, and the pipeline may
         // want to fall back rather than mark the report failed.
@@ -132,48 +127,6 @@ export function createGeminiProvider(config: AiConfig, apiKey: string): AiProvid
       };
     },
   };
-}
-
-/** The SDK has no timeout of its own; a hung call would hold the function open. */
-async function withTimeout<T>(ms: number, promise: Promise<T>): Promise<T> {
-  let timer: NodeJS.Timeout | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new AiProviderError(`AI request exceeded ${ms}ms`, 'timeout')),
-          ms,
-        );
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
-async function callWithRetry<T>(config: AiConfig, run: () => Promise<T>): Promise<T> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
-    try {
-      return await run();
-    } catch (caught) {
-      lastError = caught;
-      const error = toProviderError(caught);
-
-      // A safety block or a malformed response will fail identically on retry;
-      // only transient faults are worth spending another call on.
-      if (!error.retryable || attempt === config.maxRetries) throw error;
-
-      // Exponential backoff with jitter, so a batch of reports failing at once
-      // does not retry in lockstep and re-create the rate limit it hit.
-      const backoff = 2 ** attempt * 500;
-      await new Promise((resolve) => setTimeout(resolve, backoff + Math.random() * 250));
-    }
-  }
-
-  throw toProviderError(lastError);
 }
 
 function toProviderError(caught: unknown): AiProviderError {

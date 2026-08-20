@@ -31,6 +31,18 @@
  * Deployed secrets do not come from either file — they come from Secret
  * Manager (`firebase functions:secrets:set`). These files are a local
  * development convenience.
+ *
+ * ── The one exception to the prefix rule ─────────────────────────────────
+ *
+ * Firebase AI Logic (`AI_MODEL=firebase`) runs inside a Cloud Function but
+ * authenticates with the *web* config — the same apiKey/projectId/appId the
+ * browser bundle already carries. So three `VITE_FIREBASE_*` values are
+ * mirrored, unprefixed, into `functions/.env` as well.
+ *
+ * That is not a hole in the boundary. The boundary exists to stop secrets
+ * reaching the browser; this moves public values the other way, toward the
+ * server, and the alternative — asking a human to keep two copies of the same
+ * project id in one file in sync — is the version that eventually goes wrong.
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -87,7 +99,22 @@ if (leaked.length > 0) {
   process.exit(1);
 }
 
-const serverEntries = entries.filter(([key]) => !key.startsWith('VITE_'));
+/**
+ * Public web-config values the functions need for Firebase AI Logic, mirrored
+ * from `VITE_<name>` to `<name>`. An explicit unprefixed entry in the root
+ * .env wins, which is what lets a deployment point the functions at a
+ * different Firebase app than the one in the bundle.
+ */
+const MIRRORED_TO_SERVER = ['FIREBASE_API_KEY', 'FIREBASE_PROJECT_ID', 'FIREBASE_APP_ID'];
+
+const declared = new Set(entries.map(([key]) => key));
+const mirrored = MIRRORED_TO_SERVER.flatMap((name) => {
+  if (declared.has(name)) return [];
+  const source = entries.find(([key]) => key === `VITE_${name}`);
+  return source ? [[name, source[1]]] : [];
+});
+
+const serverEntries = [...entries.filter(([key]) => !key.startsWith('VITE_')), ...mirrored];
 const secretEntries = serverEntries.filter(([key]) => SECRETS.has(key));
 const configEntries = serverEntries.filter(([key]) => !SECRETS.has(key));
 
@@ -110,8 +137,11 @@ writeFileSync(
   ),
 );
 
+const viteCount = entries.filter(([key]) => key.startsWith('VITE_')).length;
+
 console.log(
   `sync-env: ${configEntries.length} config + ${secretEntries.length} secret ` +
-    `variable(s) written to functions/. ` +
-    `${entries.length - serverEntries.length} VITE_ variable(s) left for the web app.`,
+    `variable(s) written to functions/ ` +
+    `(${mirrored.length} mirrored from VITE_ for Firebase AI Logic). ` +
+    `${viteCount} VITE_ variable(s) left for the web app.`,
 );

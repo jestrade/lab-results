@@ -17,13 +17,22 @@
  *   2. Add the id to `AiProviderId` in config.ts.
  *   3. Add one case to the switch below.
  *
+ * `providers/shared.ts` already carries the timeout and retry/backoff behaviour,
+ * so a new provider inherits it rather than reimplementing it slightly wrong.
+ *
  * Nothing else changes. The pipeline, the prompts and the stored metadata are
  * all provider-agnostic by construction.
  */
 
 import * as logger from 'firebase-functions/logger';
 
-import { loadAiConfig, resolveApiKey, type AiConfig } from './config';
+import {
+  loadAiConfig,
+  resolveApiKey,
+  resolveFirebaseAiCredentials,
+  type AiConfig,
+} from './config';
+import { createFirebaseAiProvider } from './providers/firebase';
 import { createGeminiProvider } from './providers/gemini';
 import { redact, redactionTotal } from './redaction';
 import type { AiGenerateOptions, AiProvider, AiResult } from './types';
@@ -63,6 +72,8 @@ function withRedaction(provider: AiProvider): AiProvider {
 
 function createProvider(config: AiConfig): AiProvider {
   switch (config.provider) {
+    case 'firebase':
+      return createFirebaseAiProvider(config, resolveFirebaseAiCredentials());
     case 'gemini':
       return createGeminiProvider(config, resolveApiKey('gemini'));
     default: {
@@ -85,7 +96,12 @@ let cached: { provider: AiProvider; config: AiConfig } | undefined;
 export function getAiProvider(): AiProvider {
   const config = loadAiConfig();
 
-  if (cached && cached.config.provider === config.provider && cached.config.model === config.model) {
+  if (
+    cached &&
+    cached.config.provider === config.provider &&
+    cached.config.model === config.model &&
+    cached.config.firebaseBackend === config.firebaseBackend
+  ) {
     return cached.provider;
   }
 
@@ -95,6 +111,7 @@ export function getAiProvider(): AiProvider {
   logger.info('AI provider initialised', {
     provider: provider.id,
     model: provider.model,
+    ...(config.provider === 'firebase' ? { backend: config.firebaseBackend } : {}),
     contentUsedForTraining: provider.contentUsedForTraining,
   });
 

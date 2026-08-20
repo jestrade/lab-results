@@ -7,7 +7,14 @@
  */
 
 export { getAiProvider } from './registry';
-export { loadAiConfig, AI_SECRETS, GEMINI_API_KEY, type AiConfig } from './config';
+export {
+  loadAiConfig,
+  AI_SECRETS,
+  GEMINI_API_KEY,
+  type AiConfig,
+  type AiProviderId,
+  type FirebaseAiBackend,
+} from './config';
 export { redact, redactionTotal, type RedactionCategory } from './redaction';
 export * as prompts from './prompts';
 export {
