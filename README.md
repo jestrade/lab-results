@@ -11,6 +11,16 @@ See [the medical disclaimer](src/domain/disclaimers.ts).
 React + TypeScript + Vite on Firebase (Auth, Firestore, Storage, Hosting).
 Bilingual (English and Spanish) with light, dark and system themes.
 
+## Screenshots
+
+![Landing page](docs/screenshots/landing.webp)
+
+![Home — every tracked variable, grouped by panel](docs/screenshots/home.webp)
+
+![Files — uploaded reports and their processing status](docs/screenshots/files.webp)
+
+![Variable detail — latest result, reference range and history](docs/screenshots/variable.webp)
+
 ## Getting started
 
 ```bash
